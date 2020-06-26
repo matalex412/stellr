@@ -1,12 +1,17 @@
 import { createAppContainer, createSwitchNavigator } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
-import { createBottomTabNavigator } from "react-navigation-tabs";
+import {
+  createBottomTabNavigator,
+  createMaterialTopTabNavigator
+} from "react-navigation-tabs";
 import createAnimatedSwitchNavigator from "react-navigation-animated-switch";
 import { Transition } from "react-native-reanimated";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import React from "react";
+import { connect } from "react-redux";
 
+import MessageBox from "./screens/MessageBox";
 import HomeScreen from "./screens/HomeScreen";
 import CreateScreen from "./screens/CreateScreen";
 import SearchScreen from "./screens/SearchScreen";
@@ -20,7 +25,9 @@ import TopicScreen from "./screens/TopicScreen";
 import UserPosts from "./screens/UserPosts";
 import UserPostScreen from "./screens/UserPostScreen";
 import HistoryScreen from "./screens/HistoryScreen";
-
+import AskScreen from "./screens/AskScreen";
+import ForgotScreen from "./screens/ForgotScreen";
+import MessageScreen from "./screens/MessageScreen";
 
 const SearchStack = createStackNavigator(
   {
@@ -59,18 +66,31 @@ const HomeStack = createStackNavigator(
   }
 );
 
+const LoginStack = createStackNavigator(
+  {
+    Login: LoginScreen,
+    Forgot: ForgotScreen
+  },
+  {
+    initialRouteName: "Login",
+    headerMode: "none"
+  }
+);
+
 const AppTabs = createBottomTabNavigator(
   {
     Home: HomeStack,
     Create: CreateStack,
-    Search: SearchStack
+    Search: SearchStack,
+    Ask: AskScreen
   },
   {
     tabBarOptions: {
-      activeTintColor: "coral",
+      activeTintColor: "#0b5c87",
       inactiveTintColor: "white",
       style: {
-        backgroundColor: "cornflowerblue"
+        backgroundColor: "#6da9c9",
+        borderTopColor: "transparent"
       }
     }
   }
@@ -79,7 +99,7 @@ const AppTabs = createBottomTabNavigator(
 const AuthStack = createAnimatedSwitchNavigator(
   {
     Loading: LoadingScreen,
-    Login: LoginScreen,
+    Login: LoginStack,
     SignUp: {
       screen: Signup,
       navigationOptions: {
@@ -107,21 +127,34 @@ const AppStack = createStackNavigator(
       screen: AppTabs,
       navigationOptions: ({ navigation, goBack }) => ({
         title: "Skoach",
-        headerStyle: {
-          backgroundColor: "cornflowerblue"
-        },
-        headerTitleStyle: {
-          color: "white"
-        },
         headerRight: () => (
-          <TouchableOpacity
-            style={{ paddingRight: 10 }}
-            onPress={() => {
-              navigation.navigate("Account");
-            }}
-          >
-            <Text style={{ color: "white" }}>Account</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row" }}>
+            <TouchableOpacity
+              style={{ paddingRight: 10 }}
+              onPress={() => {
+                navigation.navigate("Messages");
+              }}
+            >
+              <MessageBox />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ paddingRight: 10 }}
+              onPress={() => {
+                navigation.navigate("Account");
+              }}
+            >
+              <View style={{ flexDirection: "row" }}>
+                <Text style={{ color: "white", paddingRight: 10 }}>
+                  Account
+                </Text>
+                <Ionicons
+                  style={{ color: "white" }}
+                  name="md-person"
+                  size={20}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
         )
       })
     },
@@ -129,7 +162,25 @@ const AppStack = createStackNavigator(
       screen: AccountScreen,
       navigationOptions: {
         headerBackImage: () => (
-          <Ionicons style={{ margin: 10 }} name="md-close" size={25} />
+          <Ionicons
+            color="white"
+            style={{ margin: 10 }}
+            name="md-close"
+            size={25}
+          />
+        )
+      }
+    },
+    Messages: {
+      screen: MessageScreen,
+      navigationOptions: {
+        headerBackImage: () => (
+          <Ionicons
+            color="white"
+            style={{ margin: 10 }}
+            name="md-close"
+            size={25}
+          />
         )
       }
     },
@@ -137,10 +188,25 @@ const AppStack = createStackNavigator(
       screen: UserPosts,
       navigationOptions: { title: "Your Posts" }
     },
+    UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
     UserTutorial: { screen: UserPostScreen, navigationOptions: { title: "" } },
     History: HistoryScreen
   },
   {
+    defaultNavigationOptions: {
+      headerStyle: { backgroundColor: "#0b5c87" },
+      headerTitleStyle: {
+        color: "white"
+      },
+      headerBackImage: () => (
+        <Ionicons
+          color="white"
+          style={{ margin: 10 }}
+          name="md-arrow-back"
+          size={25}
+        />
+      )
+    },
     initialRouteName: "Tabs"
   }
 );
@@ -165,24 +231,54 @@ const AppNavigator = createAnimatedSwitchNavigator(
   }
 );
 
+AskScreen.navigationOptions = {
+  tabBarIcon: ({ tintColor }) => (
+    <Ionicons
+      style={{ alignSelf: "center" }}
+      name="ios-list-box"
+      size={25}
+      color={tintColor}
+    />
+  )
+};
+
 HomeStack.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <Ionicons name="md-home" size={25} color={tintColor} />
+    <Ionicons
+      style={{ alignSelf: "center" }}
+      name="md-home"
+      size={25}
+      color={tintColor}
+    />
   )
 };
 
 CreateStack.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <Ionicons name="md-create" size={25} color={tintColor} />
+    <Ionicons
+      style={{ alignSelf: "center" }}
+      name="md-create"
+      size={25}
+      color={tintColor}
+    />
   )
 };
 
 SearchStack.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <Ionicons name="ios-search" size={25} color={tintColor} />
+    <Ionicons
+      style={{ alignSelf: "center" }}
+      name="ios-search"
+      size={25}
+      color={tintColor}
+    />
   )
 };
 
 const AppContainer = createAppContainer(AppNavigator);
 
-export default AppContainer;
+const mapStateToProps = state => ({
+  tutorials: state.tutorials
+});
+
+export default connect(mapStateToProps)(AppContainer);

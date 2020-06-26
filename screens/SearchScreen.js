@@ -6,9 +6,16 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  Image,
+  BackHandler,
+  Alert,
+  Dimensions
 } from "react-native";
 import { connect } from "react-redux";
+import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -19,9 +26,27 @@ class SearchScreen extends React.Component {
     isLoading: true
   };
 
+  backAction = () => {
+    if (this.props.tutorials.current_topic.length > 0) {
+      this.goBack();
+      return true;
+    } else {
+      return false;
+    }
+  };
+
   componentDidMount = () => {
+    this.backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      this.backAction
+    );
+
     this.setup();
   };
+
+  componentWillUnmount() {
+    this.backHandler.remove();
+  }
 
   setup = async () => {
     // page items loading
@@ -43,6 +68,12 @@ class SearchScreen extends React.Component {
     for (step of current_topic) {
       topics = topics[step];
     }
+
+    // removes icon key
+    if (topics["icon"] != null) {
+      delete topics.icon;
+    }
+
     await this.setState({ topics });
     await this.setState({ topicnames: Object.keys(topics) });
 
@@ -78,46 +109,6 @@ class SearchScreen extends React.Component {
     this.setState({ isLoading: false });
   };
 
-  addFolder = async () => {
-    // get topic so far
-    var topic_route = this.props.tutorials.current_topic;
-    var route;
-    var topic = "";
-    for (route of topic_route) {
-      topic = topic + "/" + route;
-    }
-
-    // format new topic
-    var new_topic = this.state.new[0].toUpperCase() + this.state.new.slice(1);
-
-    // get existing topics
-    var old_topics = await firebase
-      .database()
-      .ref("categories")
-      .once("value");
-    old_topics = old_topics.toJSON();
-    if (old_topics != null) {
-      old_topics = Object.keys(old_topics);
-    }
-
-    // check if new_topic already exists
-    if (old_topics.includes(new_topic)) {
-      this.setState({ errorMessage: "Topic already exists" });
-    } else if (new_topic == "Undefined") {
-      this.setState({ errorMessage: "Invalid Topic Name" });
-    } else {
-      await firebase
-        .database()
-        .ref("categories/" + topic)
-        .update({
-          [new_topic]: ""
-        });
-      this.setup();
-    }
-
-    this.setState({ new: "" });
-  };
-
   clickedTopic = async topic => {
     // update topic
     await store.dispatch(
@@ -131,6 +122,7 @@ class SearchScreen extends React.Component {
   };
 
   handlePress = async postid => {
+    // store clicked post and go to tutorial page
     await store.dispatch(updateTutorials({ current_key: postid }));
     await store.dispatch(
       updateTutorials({ current: this.state.contents[postid] })
@@ -139,6 +131,7 @@ class SearchScreen extends React.Component {
   };
 
   goBack = async () => {
+    // go back one topic layer
     var current_topic = this.props.tutorials.current_topic;
     current_topic.pop();
     await store.dispatch(updateTutorials({ current_topic }));
@@ -149,7 +142,6 @@ class SearchScreen extends React.Component {
     // create new tutorial with current topic
     store.dispatch(updateTutorials({ title: "" }));
     store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
-    store.dispatch(updateTutorials({ create_topic: [] }));
     await store.dispatch(
       updateTutorials({ create_topic: this.props.tutorials.current_topic })
     );
@@ -169,48 +161,83 @@ class SearchScreen extends React.Component {
     this.props.navigation.navigate("Create");
   };
 
+  addFolder = () => {
+    var topic_route = this.props.tutorials.current_topic;
+    var route;
+    var topic = "";
+    for (route of topic_route) {
+      topic = topic + "/" + route;
+    }
+
+    firebase
+      .database()
+      .ref("categories" + topic)
+      .update({
+        icon: this.state.new
+      });
+    this.setState({ new: "" });
+  };
+
   render() {
     var postids = this.state.postids;
     var topics = this.state.topicnames;
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
+          <LinearGradient
+            colors={["#0b5c87", "#6da9c9"]}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: "100%"
+            }}
+          />
           {this.state.isLoading ? (
-            <ActivityIndicator size="large" />
+            <ActivityIndicator color="#fff" size="large" />
           ) : (
-            <View style={{ justifyContent: "center", alignItems: "center" }}>
+            <View>
               {topics.length < 1 ? null : (
-                <View style={styles.centerview}>
+                <View>
                   <Text style={styles.heading}>Topics</Text>
-                  {topics.map((topic, index) => {
-                    return (
-                      <View style={{ padding: 10 }} key={index}>
+                  <View
+                    style={{
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      flexWrap: "wrap"
+                    }}
+                  >
+                    {topics.map((topic, index) => {
+                      return (
                         <TouchableOpacity
+                          style={styles.square}
+                          key={index}
                           onPress={() => this.clickedTopic(topic)}
                         >
+                          <MaterialCommunityIcons
+                            name={this.state.topics[topic].icon}
+                            size={40}
+                            color="#0b5c87"
+                          />
                           <View>
                             <Text style={styles.text}>{topic}</Text>
                           </View>
                         </TouchableOpacity>
-                      </View>
-                    );
-                  })}
-                  <View style={styles.line} />
+                      );
+                    })}
+                  </View>
                 </View>
               )}
               {postids.length < 1 ? (
                 this.props.tutorials.current_topic.length < 1 ? null : (
-                  <View style={styles.centerview}>
+                  <View style={{ alignItems: "center" }}>
                     <Text style={styles.heading}>Posts</Text>
-                    <TouchableOpacity
-                      style={{ margin: 10 }}
-                      onPress={() => this.noPosts()}
-                    >
-                      <Text style={{ color: "cornflowerblue" }}>
+                    <TouchableOpacity onPress={() => this.noPosts()}>
+                      <Text style={{ fontSize: 18, color: "white" }}>
                         None made yet, be the first
                       </Text>
                     </TouchableOpacity>
-                    <View style={styles.line} />
                   </View>
                 )
               ) : (
@@ -221,38 +248,33 @@ class SearchScreen extends React.Component {
                       <TouchableOpacity
                         key={index}
                         onPress={() => this.handlePress(postid)}
-                        style={{ padding: 5 }}
                       >
-                        <View>
-                          <Text>{this.state.contents[postid].title}</Text>
+                        <View
+                          style={{
+                            padding: 5,
+                            flexDirection: "row",
+                            flexWrap: "wrap",
+                            justifyContent: "center"
+                          }}
+                        >
+                          <Image
+                            resizeMode={"cover"}
+                            style={{ width: "100%", height: 200 }}
+                            source={{
+                              uri: this.state.contents[postid].thumbnail
+                            }}
+                          />
+                          <View style={{ margin: 10, alignSelf: "center" }}>
+                            <Text style={{ color: "white", fontSize: 20 }}>
+                              {this.state.contents[postid].title}
+                            </Text>
+                          </View>
                         </View>
                       </TouchableOpacity>
                     );
                   })}
-                  <View style={styles.line} />
                 </View>
               )}
-              {this.props.tutorials.current_topic.length < 1 ? null : (
-                <TouchableOpacity onPress={() => this.goBack()}>
-                  <View>
-                    <Text style={{ color: "cornflowerblue" }}>Go back</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              {this.state.errorMessage && (
-                <Text style={{ color: "red" }}>{this.state.errorMessage}</Text>
-              )}
-              <TextInput
-                value={this.state.new}
-                placeholder="Enter Group Name"
-                onChangeText={value => this.setState({ new: value })}
-                style={{ padding: 10, fontSize: 15 }}
-              />
-              <TouchableOpacity onPress={this.addFolder}>
-                <View>
-                  <Text style={styles.text}>Add New Group</Text>
-                </View>
-              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -270,27 +292,42 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
+    borderRightWidth: 1,
+    borderColor: "#0b5c87"
+  },
+  square: {
+    margin: 10,
+    width: Dimensions.get("window").width / 3 - 30,
+    height: Dimensions.get("window").width / 3 - 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 10,
+    backgroundColor: "white"
   },
   text: {
-    color: "black"
+    textAlign: "center",
+    color: "#0b5c87",
+    fontSize: 15
   },
   heading: {
-    fontSize: 15,
-    color: "black",
-    fontWeight: "bold"
+    fontSize: 22,
+    color: "white",
+    fontWeight: "bold",
+    padding: 2,
+    alignSelf: "center"
   },
   line: {
-    borderBottomColor: "black",
+    borderBottomColor: "white",
     borderBottomWidth: 1,
-    alignSelf: "stretch",
-    margin: 10,
-    width: 200
-  },
-  centerview: {
-    justifyContent: "center",
-    alignItems: "center"
+    alignSelf: "center",
+    width: "100%"
   }
 });
 

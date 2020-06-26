@@ -5,9 +5,13 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  Image,
+  ScrollView
 } from "react-native";
 import { connect } from "react-redux";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -23,6 +27,14 @@ class HomeScreen extends React.Component {
     this.getPosts();
   };
 
+  componentWillUnmount = () => {
+    // turn of tutorial listener if user isn't anonymous
+    var learnRef = this.state.learnRef;
+    if (learnRef) {
+      learnRef.off("value");
+    }
+  };
+
   getPosts = async () => {
     this.setState({ isLoading: true });
     var { currentUser } = await firebase.auth();
@@ -33,67 +45,134 @@ class HomeScreen extends React.Component {
         .catch(err => {
           console.log(err.message);
         });
-      currentUser = await firebase.auth().currentUser
+      currentUser = await firebase.auth().currentUser;
       await this.setState({ currentUser });
       await this.setState({ isLoading: false });
     } else if (!currentUser.isAnonymous) {
       // get user's added tutorials
-      await firebase
+      var learnRef = await firebase
         .database()
-        .ref("users/" + currentUser.uid + "/learning")
-        .on("value", async snapshot => {
-          var posts = snapshot.val()
-          if (posts == null) {
-            posts = [];
-          } else {
-            posts = Object.values(posts);
-          }
+        .ref("users/" + currentUser.uid + "/learning");
+      await learnRef.on("value", async snapshot => {
+        this.setState({ isLoading: true });
+        var posts = snapshot.val();
+        if (posts == null) {
+          var keys = [];
+        } else {
+          var keys = Object.keys(posts);
+        }
 
-          await this.setState({ posts });
-          await this.setState({ currentUser });
-          await this.setState({ isLoading: false });
-        });
+        await this.setState({ posts });
+        await this.setState({ keys });
+        await this.setState({ currentUser });
+        await this.setState({ isLoading: false });
+      });
+      await this.setState({ learnRef });
+
+      // check user is verified
+      var user = await firebase
+        .database()
+        .ref("users/" + currentUser.uid)
+        .once("value");
+      if (user.verified == "false") {
+        currentUser.sendEmailVerification();
+        alert(
+          "Your account hasn't been verified yet so we've sent you an email verification link"
+        );
+        firebase
+          .database()
+          .ref("users/" + currentUser.uid)
+          .update({ verified: "pending" });
+      }
     } else {
       await this.setState({ currentUser });
-      this.setState({ isLoading: false })
+      this.setState({ isLoading: false });
     }
   };
 
-  handlePress = async post => {
-    await store.dispatch(updateTutorials({ added: post }));
+  handlePress = async key => {
+    await store.dispatch(updateTutorials({ learn_key: key }));
+    await store.dispatch(updateTutorials({ added: this.state.posts[key] }));
     this.props.navigation.navigate("Added");
+  };
+
+  remove = async key => {
+    const { currentUser } = firebase.auth();
+
+    var postRef = await firebase
+      .database()
+      .ref("users/" + currentUser.uid + "/learning/" + key);
+    postRef.remove();
   };
 
   render() {
     return (
       <View style={styles.container}>
-        {this.state.isLoading ? (
-          <ActivityIndicator size="large" />
-        ) : this.state.currentUser.isAnonymous ? (
-          <Text style={{ fontSize: 20 }}>Welcome to Skoach</Text>
-        ) :
-        this.state.posts.length < 1 ? (
-          <View style={{ justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ fontSize: 20, fontStyle: "italic" }}>Welcome to Skoach</Text>
-            <Text style={{ fontSize: 15 }}>Tutorials you add will appear here</Text>
-          </View>
-        ) : (
-          <View style={{ justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ fontWeight: "bold" }}>Continue Learning</Text>
-            {this.state.posts.map((post, index) => {
-              return (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => this.handlePress(post)}
-                >
-                  <View>
-                    <Text>{post.title}</Text>
+        <ScrollView contentContainerStyle={styles.contentContainer}>
+          <LinearGradient
+            colors={["#0b5c87", "#6da9c9"]}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: "100%"
+            }}
+          />
+          <Text
+            style={{
+              fontFamily: "serif",
+              margin: 10,
+              fontSize: 25,
+              fontStyle: "italic",
+              color: "white"
+            }}
+          >
+            'an expert in anything was once a beginner'
+          </Text>
+          {this.state.isLoading ? (
+            <ActivityIndicator color="#fff" size="large" />
+          ) : this.state.currentUser.isAnonymous ? null : this.state.posts ==
+            null ? null : (
+            <View style={{ justifyContent: "center", alignItems: "center" }}>
+              {this.state.keys.map((key, index) => {
+                return (
+                  <View key={index} style={{ marginBottom: 5 }}>
+                    <TouchableOpacity onPress={() => this.handlePress(key)}>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                        <Image
+                          resizeMode={"cover"}
+                          style={{ width: "100%", height: 200 }}
+                          source={{ uri: this.state.posts[key].thumbnail }}
+                        />
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={() => this.remove(key)}
+                        >
+                          <Ionicons
+                            name="md-close"
+                            size={35}
+                            color="#0b5c87"
+                          />
+                        </TouchableOpacity>
+                        <Text
+                          style={{
+                            marginLeft: 10,
+                            color: "white",
+                            fontSize: 20,
+                            margin: 5
+                          }}
+                        >
+                          {this.state.posts[key].title}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
       </View>
     );
   }
@@ -102,9 +181,29 @@ class HomeScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff"
+  },
+  contentContainer: {
+    flexGrow: 1,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderRightWidth: 1,
+    borderColor: "#0b5c87"
+  },
+  button: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 35,
+    height: 35,
+    backgroundColor: "white",
+    borderRadius: 35,
+    margin: 5
   }
 });
 

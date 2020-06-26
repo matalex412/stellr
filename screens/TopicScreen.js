@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  BackHandler,
   ScrollView
 } from "react-native";
 import { connect } from "react-redux";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -24,13 +26,28 @@ class SearchScreen extends React.Component {
   };
 
   componentDidMount = () => {
+    this.backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      this.backAction
+    );
+
     this.setup();
   };
+
+  backAction = () => {
+    this.goBack();
+    return true;
+  };
+
+  componentWillUnmount() {
+    this.backHandler.remove();
+  }
 
   setup = async () => {
     // page items loading
     this.setState({ isLoading: true });
 
+    // get topics
     const current_topic = this.state.current_topic;
     var topics = await firebase
       .database()
@@ -41,24 +58,39 @@ class SearchScreen extends React.Component {
     for (step of current_topic) {
       topics = topics[step];
     }
+
+    // prevent users from creating "Meta" tutorials
+    if (topics["Meta"] != null) {
+      delete topics.Meta;
+    }
+
+    if (topics.icon) {
+      delete topics.icon;
+    }
+
     await this.setState({ topics: topics });
     await this.setState({ keys: Object.keys(this.state.topics) });
     this.setState({ isLoading: false });
   };
 
   addFolder = async () => {
+    // get current topic route
     var topic_route = this.state.current_topic;
     var route;
     var topic = "";
-    for (route in topic_route) {
+    for (route of topic_route) {
       topic = topic + "/" + route;
     }
 
+    // format new topic
+    var new_topic = this.state.new[0].toUpperCase() + this.state.new.slice(1);
+
+    // add new topic to firebase
     await firebase
       .database()
       .ref("categories/" + topic)
       .update({
-        [this.state.new]: ""
+        [new_topic]: ""
       });
     this.setState({ new: "" });
     this.setup();
@@ -68,11 +100,29 @@ class SearchScreen extends React.Component {
     var old_topics = this.state.topics;
     var new_topics = old_topics[topic];
 
-    if (new_topics == "") {
-      await store.dispatch(
-        updateTutorials({ create_topic: [...this.state.current_topic, topic] })
-      );
-      this.props.navigation.navigate("Create");
+    // removes icon key
+    delete new_topics.icon;
+
+    if (Object.keys(new_topics).length == 0) {
+      var post = this.props.tutorials.userpost;
+      if (post) {
+        topic = [...this.state.current_topic, topic];
+        var route;
+        var topicstring = "";
+        for (route of topic) {
+          topicstring = topicstring + "/" + route;
+        }
+        post.topic = topicstring;
+        await store.dispatch(updateTutorials({ userpost: post }));
+        this.props.navigation.navigate("UserTutorial");
+      } else {
+        await store.dispatch(
+          updateTutorials({
+            create_topic: [...this.state.current_topic, topic]
+          })
+        );
+        this.props.navigation.navigate("Create");
+      }
     } else {
       await this.setState({
         current_topic: [...this.state.current_topic, topic]
@@ -104,9 +154,17 @@ class SearchScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Text style={{ fontSize: 18, color: "white" }}>
-            Search Posted Tutorials
-          </Text>
+          <LinearGradient
+            colors={["#0b5c87", "#6da9c9"]}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 0,
+              height: "100%"
+            }}
+          />
+          <Text style={styles.heading}>Topics</Text>
           {this.state.isLoading ? (
             <ActivityIndicator size="large" />
           ) : (
@@ -126,33 +184,12 @@ class SearchScreen extends React.Component {
                 {this.state.current_topic.length < 1 ? null : (
                   <TouchableOpacity onPress={() => this.pickTopic()}>
                     <View>
-                      <Text style={{ color: "cornflowerblue" }}>
+                      <Text style={{ color: "coral" }}>
                         Select Current Topic
                       </Text>
                     </View>
                   </TouchableOpacity>
                 )}
-                <View style={styles.line} />
-                <View
-                  style={{ justifyContent: "center", alignItems: "center" }}
-                >
-                  <TouchableOpacity onPress={() => this.goBack()}>
-                    <View>
-                      <Text style={{ color: "cornflowerblue" }}>Go back</Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TextInput
-                    value={this.state.new}
-                    placeholder="Enter New Group Name"
-                    onChangeText={value => this.setState({ new: value })}
-                    style={{ padding: 10, fontSize: 15 }}
-                  />
-                  <TouchableOpacity onPress={this.addFolder}>
-                    <View>
-                      <Text style={styles.text}>Add New Group</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
               </View>
             </View>
           )}
@@ -168,13 +205,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff"
   },
   text: {
-    color: "black"
+    color: "white",
+    fontSize: 16,
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
     backgroundColor: "#fff"
   },
   line: {
@@ -183,7 +220,12 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     margin: 10,
     width: 200
-  }
+  },
+  heading: {
+    fontSize: 18,
+    color: "white",
+    fontWeight: "bold",
+  },
 });
 
 const mapStateToProps = state => ({

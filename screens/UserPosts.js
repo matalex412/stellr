@@ -8,6 +8,7 @@ import {
   ActivityIndicator
 } from "react-native";
 import { connect } from "react-redux";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -22,54 +23,76 @@ class UserPosts extends React.Component {
     this.setup();
   };
 
-  // no posts case
   setup = async () => {
     const { currentUser } = firebase.auth();
-    var data = await firebase
+    var madeRef = await firebase
       .database()
-      .ref("users/" + currentUser.uid + "/made")
-      .once("value");
-    data = data.toJSON();
+      .ref("users/" + currentUser.uid + "/made");
+    await madeRef.on("value", async snapshot => {
+      this.setState({ isLoading: true });
+      var data = snapshot.val();
 
-    if (posts == null) {
-      postrefs = [];
-    } else {
-      var postrefs = Object.values(data);
-    }
-
-    var postref;
-    var posts = [];
-    for (postref of postrefs) {
-      var post = await firebase
-        .database()
-        .ref("posts" + postref.topic + "/" + postref.postid)
-        .once("value");
-      post = post.toJSON();
-      if (post != null) {
-        posts.push(post);
+      if (data == null) {
+        postrefs = [];
+      } else {
+        var postrefs = Object.values(data);
       }
-    }
-    await this.setState({ posts });
-    this.setState({ isLoading: false });
+
+      var postref;
+      var posts = [];
+      for (postref of postrefs) {
+        var post = await firebase
+          .database()
+          .ref("posts" + postref.topic + "/" + postref.postid)
+          .once("value");
+        post = post.toJSON();
+        if (post != null) {
+          post.postid = postref.postid;
+          post.topic = postref.topic;
+          post.old_topic = postref.topic;
+          posts.push(post);
+        }
+      }
+      await this.setState({ posts });
+      this.setState({ madeRef });
+      this.setState({ isLoading: false });
+    });
   };
 
-  handlePress = post => {
-    store.dispatch(updateTutorials({ userpost: post }));
+  handlePress = async post => {
+    await store.dispatch(updateTutorials({ userpost: post }));
     this.props.navigation.navigate("UserTutorial");
+  };
+
+  componentWillUnmount = () => {
+    madeRef = this.state.madeRef;
+    if (madeRef) {
+      madeRef.off("value");
+    }
   };
 
   render() {
     return (
       <View style={styles.container}>
+        <LinearGradient
+          colors={["#0b5c87", "#6da9c9"]}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: "100%"
+          }}
+        />
         {this.state.isLoading ? (
-          <ActivityIndicator size="large" />
+          <ActivityIndicator color="#fff" size="large" />
         ) : this.state.posts.length < 1 ? (
           <View style={{ alignItems: "center" }}>
-            <Text>You haven't made any yet</Text>
+            <Text style={{ color: "white" }}>You haven't made any yet</Text>
             <TouchableOpacity
               onPress={() => this.props.navigation.navigate("Create")}
             >
-              <Text style={{ color: "cornflowerblue" }}>Make one now</Text>
+              <Text style={{ color: "coral" }}>Make one now</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -80,7 +103,9 @@ class UserPosts extends React.Component {
                 onPress={() => this.handlePress(post)}
               >
                 <View>
-                  <Text>{post.title}</Text>
+                  <Text style={{ color: "white", fontSize: 20 }}>
+                    {post.title}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -97,6 +122,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center"
+  },
+  button: {
+    borderWidth: 0,
+    borderColor: "rgba(0,0,0,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 40,
+    height: 40,
+    backgroundColor: "#fff",
+    borderRadius: 40,
+    margin: 0
   }
 });
 

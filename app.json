@@ -9,7 +9,7 @@
       "android",
       "web"
     ],
-    "version": "1.0.6",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "primaryColor": "#6495ed",
@@ -35,9 +35,9 @@
       "adaptiveIcon": {
         "backgroundColor": "#6495ed"
       },
-      "permissions": ["READ_EXTERNAL_STORAGE"],
+      "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "package": "com.iam.skoach",
-      "versionCode": 6,
+      "versionCode": 10,
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3262091936426324~4886429471" 
       }
