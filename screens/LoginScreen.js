@@ -68,7 +68,16 @@ class LoginScreen extends React.Component {
             flexWrap: "wrap"
           }}
         >
-          <Ionicons name="md-mail" size={25} color="white" />
+          <View
+            style={{
+              paddingTop: 2,
+              alignItems: "center",
+              width: 25,
+              height: 25
+            }}
+          >
+            <Ionicons name="md-mail" size={25} color="white" />
+          </View>
           <TextInput
             style={styles.textInput}
             keyboardType="email-address"
@@ -86,7 +95,16 @@ class LoginScreen extends React.Component {
             flexWrap: "wrap"
           }}
         >
-          <Ionicons name="md-lock" size={25} color="white" />
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              width: 25,
+              height: 25
+            }}
+          >
+            <Ionicons name="md-lock" size={25} color="white" />
+          </View>
           <TextInput
             secureTextEntry
             style={styles.textInput}
@@ -159,7 +177,7 @@ const styles = StyleSheet.create({
   textInput: {
     fontSize: 18,
     width: "60%",
-    marginLeft: 10,
+    marginLeft: 5,
     borderBottomWidth: 1,
     borderBottomColor: "white",
     color: "white"

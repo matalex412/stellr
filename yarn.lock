@@ -2728,6 +2728,14 @@ expo-constants@~9.0.0:
   resolved "https://registry.yarnpkg.com/expo-constants/-/expo-constants-9.0.0.tgz#35c600079ee91d38fe4f56375caae6e90f122fdd"
   integrity sha512-1kqZMM8Ez5JT3sTEx8I69fP6NYFLOJjeM6Z63dD/m2NiwvzSADiO5+BhghnWNGN1L3bxbgOjXS6EHtS7CdSfxA==
 
+expo-constants@~9.1.1:
+  version "9.1.1"
+  resolved "https://registry.yarnpkg.com/expo-constants/-/expo-constants-9.1.1.tgz#bca141ee3d4550e308798128f66c6d9c6a206ca1"
+  integrity sha512-zCa/wRARODHd6BSwxjBhidmao0AqQnKmLkl0tsVIoZlRyPDHsEaxNR/m+7wqGC7qiC+UpG1qRnvLOLwCGt2ihg==
+  dependencies:
+    fbjs "1.0.0"
+    uuid "^3.3.2"
+
 expo-error-recovery@~1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/expo-error-recovery/-/expo-error-recovery-1.1.0.tgz#98b9de5400dbfd022d1631739f3bf5e7016565da"
@@ -2763,6 +2771,15 @@ expo-linear-gradient@~8.1.0:
   version "8.1.0"
   resolved "https://registry.yarnpkg.com/expo-linear-gradient/-/expo-linear-gradient-8.1.0.tgz#6933765cf1e76ef2928fd8495e779929699ac4c6"
   integrity sha512-AIy2pOXQRcgk2XE5IgAzd1S2jTFLutiDfveNm6m3fPAk00Rw4qFe98qzte1ayNrGYLJvQ2xq/Y7C0BmBP051mg==
+
+expo-linking@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/expo-linking/-/expo-linking-1.0.3.tgz#8c0f68e89262d09d4b280479010ac21ccfa1e971"
+  integrity sha512-Bzm8qVlSRBmoQcnveBBLO4ea/AEW4t10WFiJ18m/w8OnEXbsP7WT39UyhTuFsrnjYSLMjW4/JXkfmswBOhISuA==
+  dependencies:
+    expo-constants "~9.1.1"
+    qs "^6.5.0"
+    url-parse "^1.4.4"
 
 expo-location@~8.1.0:
   version "8.1.0"
@@ -2937,12 +2954,13 @@ fbjs-scripts@^1.1.0:
     semver "^5.1.0"
     through2 "^2.0.0"
 
-fbjs@^0.8.4, fbjs@^0.8.9:
-  version "0.8.17"
-  resolved "https://registry.yarnpkg.com/fbjs/-/fbjs-0.8.17.tgz#c4d598ead6949112653d6588b01a5cdcd9f90fdd"
-  integrity sha1-xNWY6taUkRJlPWWIsBpc3Nn5D90=
+fbjs@1.0.0, fbjs@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/fbjs/-/fbjs-1.0.0.tgz#52c215e0883a3c86af2a7a776ed51525ae8e0a5a"
+  integrity sha512-MUgcMEJaFhCaF1QtWGnmq9ZDRAzECTCRAF7O6UZIlAlkTs1SasiX9aP0Iw7wfD2mJ7wDTNfg2w7u5fSCwJk1OA==
   dependencies:
-    core-js "^1.0.0"
+    core-js "^2.4.1"
+    fbjs-css-vars "^1.0.0"
     isomorphic-fetch "^2.1.1"
     loose-envify "^1.0.0"
     object-assign "^4.1.0"
@@ -2950,13 +2968,12 @@ fbjs@^0.8.4, fbjs@^0.8.9:
     setimmediate "^1.0.5"
     ua-parser-js "^0.7.18"
 
-fbjs@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/fbjs/-/fbjs-1.0.0.tgz#52c215e0883a3c86af2a7a776ed51525ae8e0a5a"
-  integrity sha512-MUgcMEJaFhCaF1QtWGnmq9ZDRAzECTCRAF7O6UZIlAlkTs1SasiX9aP0Iw7wfD2mJ7wDTNfg2w7u5fSCwJk1OA==
+fbjs@^0.8.4, fbjs@^0.8.9:
+  version "0.8.17"
+  resolved "https://registry.yarnpkg.com/fbjs/-/fbjs-0.8.17.tgz#c4d598ead6949112653d6588b01a5cdcd9f90fdd"
+  integrity sha1-xNWY6taUkRJlPWWIsBpc3Nn5D90=
   dependencies:
-    core-js "^2.4.1"
-    fbjs-css-vars "^1.0.0"
+    core-js "^1.0.0"
     isomorphic-fetch "^2.1.1"
     loose-envify "^1.0.0"
     object-assign "^4.1.0"

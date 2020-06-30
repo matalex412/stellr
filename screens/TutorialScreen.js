@@ -63,11 +63,6 @@ class TutorialScreen extends React.Component {
   addHome = async () => {
     const { currentUser } = await firebase.auth();
 
-    console.log(this.props.tutorials.current_key)
-    console.log(this.props.tutorials.tutorial_topic)
-    console.log(this.props.tutorials.current.title)
-    console.log(this.props.tutorials.current.thumbnail)
-
     await firebase
       .database()
       .ref("users/" + currentUser.uid + "/learning")
@@ -227,7 +222,7 @@ class TutorialScreen extends React.Component {
                     <View style={{ margin: 5 }}>
                       <Button
                         color="coral"
-                        title="Finish"
+                        title="Learnt"
                         onPress={() => this.learnt(true)}
                       />
                     </View>

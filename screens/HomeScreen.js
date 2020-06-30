@@ -23,17 +23,30 @@ class HomeScreen extends React.Component {
     isLoading: true
   };
 
+
   componentDidMount = () => {
     this.getPosts();
   };
 
   componentWillUnmount = () => {
-    // turn of tutorial listener if user isn't anonymous
+    // turn off tutorial listener if user isn't anonymous
     var learnRef = this.state.learnRef;
     if (learnRef) {
       learnRef.off("value");
     }
   };
+
+  addCollection = async () => {
+    var tutorial = await firebase.database().ref("Art/-MAVkJxm9CTEgAc3tS97").once("value")
+    tutorial.steps = Object.values(tutorial.steps)
+
+    console.log(tutorial)
+/*    firebase.firestore().collection("posts").doc("Art").add({
+      name: "Los Angeles",
+      state: "CA",
+      country: "USA"
+    })*/
+  }
 
   getPosts = async () => {
     this.setState({ isLoading: true });
@@ -119,6 +132,7 @@ class HomeScreen extends React.Component {
               height: "100%"
             }}
           />
+          <TouchableOpacity onPress={this.addCollection}><Text>Add</Text></TouchableOpacity>
           <Text
             style={{
               fontFamily: "serif",
@@ -149,11 +163,7 @@ class HomeScreen extends React.Component {
                           style={styles.button}
                           onPress={() => this.remove(key)}
                         >
-                          <Ionicons
-                            name="md-close"
-                            size={35}
-                            color="#0b5c87"
-                          />
+                          <Ionicons name="md-close" size={35} color="#0b5c87" />
                         </TouchableOpacity>
                         <Text
                           style={{

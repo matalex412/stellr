@@ -93,7 +93,7 @@ class SignUp extends React.Component {
           .database()
           .ref("users/" + user.uid)
           .update({
-            messages: {"Please verify your email": "unread"},
+            messages: { "Please verify your email": "unread" },
             username: this.state.username,
             verified: "pending"
           });
@@ -141,7 +141,16 @@ class SignUp extends React.Component {
             flexWrap: "wrap"
           }}
         >
-          <Ionicons name="md-person" size={25} color="white" />
+          <View
+            style={{
+              paddingTop: 2,
+              alignItems: "center",
+              width: 25,
+              height: 25
+            }}
+          >
+            <Ionicons name="md-person" size={25} color="white" />
+          </View>
           <TextInput
             placeholder="Username"
             autoCapitalize="none"
@@ -158,7 +167,9 @@ class SignUp extends React.Component {
             flexWrap: "wrap"
           }}
         >
-          <Ionicons name="md-mail" size={25} color="white" />
+          <View style={{ alignItems: "center", width: 25, height: 25 }}>
+            <Ionicons name="md-mail" size={25} color="white" />
+          </View>
           <TextInput
             keyboardType="email-address"
             placeholder="Email"
@@ -176,7 +187,9 @@ class SignUp extends React.Component {
             flexWrap: "wrap"
           }}
         >
-          <Ionicons name="md-lock" size={25} color="white" />
+          <View style={{ alignItems: "center", width: 25, height: 25 }}>
+            <Ionicons name="md-lock" size={25} color="white" />
+          </View>
           <TextInput
             secureTextEntry
             placeholder="Password"
@@ -230,7 +243,7 @@ const styles = StyleSheet.create({
   textInput: {
     fontSize: 18,
     width: "60%",
-    marginLeft: 10,
+    marginLeft: 3,
     borderBottomWidth: 1,
     borderBottomColor: "white",
     color: "white"

@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: "white",
-    fontSize: 16,
+    fontSize: 16
   },
   contentContainer: {
     flexGrow: 1,
@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 18,
     color: "white",
-    fontWeight: "bold",
-  },
+    fontWeight: "bold"
+  }
 });
 
 const mapStateToProps = state => ({

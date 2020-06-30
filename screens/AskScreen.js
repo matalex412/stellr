@@ -24,26 +24,36 @@ class AskScreen extends React.Component {
     this.setup();
   };
 
+  componentWillUnmount = () => {
+    // turn off request listener if user isn't anonymous
+    var askRef  = this.state.askRef;
+    if (askRef) {
+      askRef.off("value");
+    }
+  };
+
   setup = async () => {
-    await firebase
+    var askRef = await firebase
       .database()
       .ref("requests")
-      .on("value", async snapshot => {
+    await askRef.on("value", async snapshot => {
         var requests = snapshot.val();
 
         if (requests != null) {
           this.setState({ requests });
         }
       });
+
+    this.setState({ askRef })
   };
 
   addRequest = async () => {
     // check request is valid
     var request = this.state.request;
     if (request.length == 0) {
-      this.setState({ errorMessage: "Invalid Topic Name" });
+      this.setState({ errorMessage: "Invalid Request" });
     } else if (Object.keys(this.state.requests).includes(request)) {
-      this.setState({ errorMessage: "Topic already exists" });
+      this.setState({ errorMessage: "Someone's already asked for this tutorial" });
     } else {
       await firebase
         .database()
@@ -64,8 +74,9 @@ class AskScreen extends React.Component {
       .once("value");
     post = post.toJSON();
 
+    await store.dispatch(updateTutorials({ tutorial_topic: request.topic }))
     await store.dispatch(updateTutorials({ current: post }));
-    await store.dispatch(updateTutorials({ current_key: request.postid }))
+    await store.dispatch(updateTutorials({ current_key: request.postid }));
 
     this.props.navigation.navigate("Tutorial");
   };
@@ -125,7 +136,7 @@ class AskScreen extends React.Component {
           ))}
           <View style={styles.line} />
           {this.state.errorMessage && (
-            <Text style={{ color: "red" }}>{this.state.errorMessage}</Text>
+            <Text style={{ color: "coral" }}>{this.state.errorMessage}</Text>
           )}
           <TextInput
             value={this.state.request}

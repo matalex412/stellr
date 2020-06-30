@@ -85,25 +85,30 @@ class SearchScreen extends React.Component {
     }
     await store.dispatch(updateTutorials({ tutorial_topic: topic }));
 
-    // find posts in topic folder
-    var contents = await firebase
-      .database()
-      .ref("posts" + topic)
-      .once("value");
-    contents = contents.toJSON();
-    var keys = [];
-    var postids = [];
-    var key;
-    if (contents != null) {
-      keys = Object.keys(contents);
-      for (key of keys) {
-        if (key[0] == "-") {
-          postids.push(key);
+    if (topic != "/") {
+      // find posts in topic folder
+      var contents = await firebase
+        .database()
+        .ref("posts" + topic)
+        .once("value");
+      contents = contents.toJSON();
+      var keys = [];
+      var postids = [];
+      var key;
+      if (contents != null) {
+        keys = Object.keys(contents);
+        for (key of keys) {
+          if (key[0] == "-") {
+            postids.push(key);
+          }
         }
+        await this.setState({ contents });
       }
-      await this.setState({ contents });
+      await this.setState({ postids });
+    } else {
+      this.setState({ contents: {} })
+      this.setState({ postids: [] })
     }
-    await this.setState({ postids });
 
     // page finished loading
     this.setState({ isLoading: false });

@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   message: {
     marginLeft: 10,
-    marginRight: 10, 
+    marginRight: 10
   },
   line: {
     borderBottomColor: "black",

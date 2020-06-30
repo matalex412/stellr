@@ -9,10 +9,10 @@
       "android",
       "web"
     ],
-    "version": "1.1.0",
+    "version": "1.1.0c",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "primaryColor": "#6495ed",
+    "primaryColor": "#0b5c87",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -33,11 +33,11 @@
         "image": "./assets/splash.png"
       },
       "adaptiveIcon": {
-        "backgroundColor": "#6495ed"
+        "backgroundColor": "#0b5c87"
       },
       "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "package": "com.iam.skoach",
-      "versionCode": 10,
+      "versionCode": 12,
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3262091936426324~4886429471" 
       }

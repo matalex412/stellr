@@ -5,7 +5,6 @@ import {
   StyleSheet,
   StatusBar,
   TextInput,
-  Button,
   TouchableOpacity,
   Image,
   ScrollView,
@@ -29,7 +28,8 @@ class CreateScreen extends React.Component {
   state = {
     isLoading: true,
     isFormValid: false,
-    steps: [{ step: "" }]
+    steps: [{ step: "" }],
+    checked: false
   };
 
   componentDidMount = () => {
@@ -39,7 +39,6 @@ class CreateScreen extends React.Component {
       this.vids = [];
     }
     this.makeTopic();
-    this.validateForm();
   };
 
   componentWillUnmount = async () => {
@@ -65,7 +64,6 @@ class CreateScreen extends React.Component {
   thumbnail = async () => {
     await this.setState({ pickThumbnail: true });
     await this._pickMedia("Images");
-    await this.validateForm();
     await this.setState({ pickThumbnail: false });
   };
 
@@ -88,28 +86,47 @@ class CreateScreen extends React.Component {
       await this.getPermissionAsync();
     }
     if (this.state.permission == true) {
-      try {
-        let result = await ImagePicker.launchImageLibraryAsync({
+      if (this.state.pickThumbnail) {
+        var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
-          aspect: [4, 3],
-          quality: 1
-        });
+          quality: 0.8,
+          allowsEditing: true
+        }
+      } else {
+        var options = {
+          mediaTypes: ImagePicker.MediaTypeOptions[type],
+          quality: 0.8,
+          aspect: [1, 1],
+          allowsEditing: true
+        }
+      }
+      try {
+        let result = await ImagePicker.launchImageLibraryAsync(options);
         if (!result.cancelled) {
           if (this.state.pickThumbnail) {
             await store.dispatch(updateTutorials({ thumbnail: result.uri }));
           } else {
             var steps = this.props.tutorials.steps;
-            steps[index][type] = result.uri;
+            if (steps[index].error) {
+              delete steps[index].error
+            }
             if (type == "Images") {
+              steps[index][type] = result.uri;
               steps[index].Videos = null;
 
               // remove video ref
               if (this.vids[index]) {
                 this.vids.slice(index, 1);
               }
-            } else {
+            } else if (result.duration <= 60000) {
+              steps[index][type] = result.uri;
               steps[index].Images = null;
+            } else {
+              steps[index].Videos = null;
+              steps[index].error =
+                "Videos cannot be longer than 1 minute";
             }
+
             store.dispatch(updateTutorials({ steps: steps }));
           }
         }
@@ -120,172 +137,184 @@ class CreateScreen extends React.Component {
   };
 
   validateForm = async () => {
+    // check enough writing for each step
     var steps = this.props.tutorials.steps;
     if (steps.length >= 1) {
       var checkquery = steps.every(query => {
         return query.step.length > 3;
       });
     }
+
+    // check tutorial requirements
     var checkthumbnail = this.props.tutorials.thumbnail;
     var checktitle = this.props.tutorials.title.length > 3;
     var checktopic = this.props.tutorials.create_topic.length > 0;
     if (checkquery && checktitle && checktopic && checkthumbnail) {
       await this.setState({ isFormValid: true });
     } else {
-      this.setState({ isFormValid: false });
+      this.setState({ checked: true });
     }
   };
 
   handleTitleChange = async title => {
     await store.dispatch(updateTutorials({ title: title }));
-    this.validateForm();
   };
 
   handleSubmit = async () => {
-    this.setState({ isLoading: true });
-    const { currentUser } = firebase.auth();
-    if (currentUser.isAnonymous) {
-      Alert.alert(
-        "Create an Account",
-        "To post your own tutorials and add other people's tutorials, please create an account"
-      );
-      this.props.navigation.navigate("Login");
-    } else {
-      var tutorial = {};
-      tutorial.request = this.props.tutorials.request;
-      tutorial.title = this.props.tutorials.title;
-      tutorial.steps = this.props.tutorials.steps;
-      tutorial.create_topic = this.props.tutorials.create_topic;
-      tutorial.thumbnail = this.props.tutorials.thumbnail;
+    await this.validateForm();
+    if (this.state.isFormValid) {
+      this.setState({ isLoading: true });
+      const { currentUser } = firebase.auth();
+      if (currentUser.isAnonymous) {
+        Alert.alert(
+          "Create an Account",
+          "To post your own tutorials and add other people's tutorials, please create an account"
+        );
+        this.props.navigation.navigate("Login");
+      } else {
+        var tutorial = {};
+        tutorial.request = this.props.tutorials.request;
+        tutorial.title = this.props.tutorials.title;
+        tutorial.steps = this.props.tutorials.steps;
+        tutorial.create_topic = this.props.tutorials.create_topic;
+        tutorial.thumbnail = this.props.tutorials.thumbnail;
 
-      // reset screen data
-      await store.dispatch(updateTutorials({ request: null }));
-      await store.dispatch(updateTutorials({ title: "" }));
-      await store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
-      await store.dispatch(updateTutorials({ create_topic: [] }));
-      await store.dispatch(updateTutorials({ create_topic_string: null }));
-      await store.dispatch(updateTutorials({ thumbnail: null }));
+        // reset screen data
+        await store.dispatch(updateTutorials({ request: null }));
+        await store.dispatch(updateTutorials({ title: "" }));
+        await store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
+        await store.dispatch(updateTutorials({ create_topic: [] }));
+        await store.dispatch(updateTutorials({ create_topic_string: null }));
+        await store.dispatch(updateTutorials({ thumbnail: null }));
 
-      this.setState({ isFormValid: false });
-      this.setState({ isLoading: false });
+        this.setState({ isFormValid: false });
+        this.setState({ isLoading: false });
 
-      Alert.alert("Thanks", "Thank you for making a tutorial and helping Skoach to grow. You're tutorial is being uploaded and we'll send you a message when it's done!")
-      this.props.navigation.navigate("Home");
+        Alert.alert(
+          "Thanks",
+          "Thank you for making a tutorial and helping Skoach to grow. You're tutorial is being uploaded and we'll send you a message when it's done!"
+        );
+        this.props.navigation.navigate("Home");
 
-      // get topic route
-      var topic_route = tutorial.create_topic;
-      var route;
-      var topic = "";
-      for (route of topic_route) {
-        topic = topic + "/" + route;
-      }
-
-      var steps = tutorial.steps;
-      var snapshot = await firebase
-        .database()
-        .ref("posts" + topic)
-        .push({
-          title: tutorial.title,
-          steps: steps,
-          username: currentUser.displayName
-        });
-
-      // get thumbnail route
-      const response = await fetch(tutorial.thumbnail);
-      const blob = await response.blob();
-
-      var ref = await firebase
-        .storage()
-        .ref()
-        .child(`posts${topic}/${snapshot.key}/Thumbnail`);
-      await ref.put(blob);
-      var thumbnail = await ref.getDownloadURL();
-
-      // iterate over steps and store all media in Firebase Storage
-      var i;
-      for (i = 0; i < steps.length; i++) {
-        if (steps[i].Images != null) {
-          const response = await fetch(steps[i].Images);
-          const blob = await response.blob();
-
-          ref = await firebase
-            .storage()
-            .ref()
-            .child(`posts${topic}/${snapshot.key}/steps/${i}/Image`);
-          await ref.put(blob);
-
-          var url = await firebase
-            .storage()
-            .ref()
-            .child(`posts${topic}/${snapshot.key}/steps/${i}/Image`)
-            .getDownloadURL();
-          steps[i].Images = url;
-        } else if (steps[i].Videos != null) {
-          const response = await fetch(steps[i].Videos);
-          const blob = await response.blob();
-
-          ref = await firebase
-            .storage()
-            .ref()
-            .child(`posts${topic}/${snapshot.key}/steps/${i}/Video`);
-          await ref.put(blob);
-
-          var url = await firebase
-            .storage()
-            .ref()
-            .child(`posts${topic}/${snapshot.key}/steps/${i}/Video`)
-            .getDownloadURL();
-          steps[i].Videos = url;
+        // get topic route
+        var topic_route = tutorial.create_topic;
+        var route;
+        var topic = "";
+        for (route of topic_route) {
+          topic = topic + "/" + route;
         }
-      }
 
-      firebase
-        .database()
-        .ref("posts/" + topic + "/" + snapshot.key)
-        .update({
-          steps: steps,
-          thumbnail: thumbnail
-        });
+        var steps = tutorial.steps;
+        var snapshot = await firebase
+          .database()
+          .ref("posts" + topic)
+          .push({
+            title: tutorial.title,
+            steps: steps,
+            username: currentUser.displayName
+          });
 
-      await firebase
-        .database()
-        .ref("users/" + currentUser.uid + "/made")
-        .push({
-          postid: snapshot.key,
-          topic: topic,
-          thumbnail: thumbnail
-        });
+        // get thumbnail route
+        const response = await fetch(tutorial.thumbnail);
+        const blob = await response.blob();
 
-      // update request list
-      if (tutorial.request == tutorial.title) {
+        var ref = await firebase
+          .storage()
+          .ref()
+          .child(`posts${topic}/${snapshot.key}/Thumbnail`);
+        await ref.put(blob);
+        var thumbnail = await ref.getDownloadURL();
+
+        // iterate over steps and store all media in Firebase Storage
+        var i;
+        for (i = 0; i < steps.length; i++) {
+          // remove error messages
+          delete steps[i].error;
+
+          if (steps[i].Images != null) {
+            const response = await fetch(steps[i].Images);
+            const blob = await response.blob();
+
+            ref = await firebase
+              .storage()
+              .ref()
+              .child(`posts${topic}/${snapshot.key}/steps/${i}/Image`);
+            await ref.put(blob);
+
+            var url = await firebase
+              .storage()
+              .ref()
+              .child(`posts${topic}/${snapshot.key}/steps/${i}/Image`)
+              .getDownloadURL();
+            steps[i].Images = url;
+          } else if (steps[i].Videos != null) {
+            const response = await fetch(steps[i].Videos);
+            const blob = await response.blob();
+
+            ref = await firebase
+              .storage()
+              .ref()
+              .child(`posts${topic}/${snapshot.key}/steps/${i}/Video`);
+            await ref.put(blob);
+
+            var url = await firebase
+              .storage()
+              .ref()
+              .child(`posts${topic}/${snapshot.key}/steps/${i}/Video`)
+              .getDownloadURL();
+            steps[i].Videos = url;
+          }
+        }
+
         await firebase
           .database()
-          .ref("requests")
+          .ref("posts/" + topic + "/" + snapshot.key)
           .update({
-            [tutorial.request]: {
-              topic: topic,
-              postid: snapshot.key
-            }
+            steps: steps,
+            thumbnail: thumbnail
           });
+
+        await firebase
+          .database()
+          .ref("users/" + currentUser.uid + "/made")
+          .push({
+            postid: snapshot.key,
+            topic: topic,
+            thumbnail: thumbnail
+          });
+
+        // update request list
+        if (tutorial.request == tutorial.title) {
+          await firebase
+            .database()
+            .ref("requests")
+            .update({
+              [tutorial.request]: {
+                topic: topic,
+                postid: snapshot.key
+              }
+            });
+        }
+
+        const message = `You're tutorial "${tutorial.title}" has been made!`;
+
+        firebase
+          .database()
+          .ref("users/" + currentUser.uid + "/messages")
+          .update({
+            [message]: "unread"
+          });
+
+        await store.dispatch(updateTutorials({ unread: true }));
       }
-
-      const message = `You're tutorial "${tutorial.title}" has been made!`
-
-      firebase
-        .database()
-        .ref("users/" + currentUser.uid + "/messages")
-        .update({
-          [message]: "unread"
-        });
-
-      await store.dispatch(updateTutorials({ unread: true }));
+    } else {
+      Alert.alert("Not Finished", "Sorry, your tutorial doesn't have all requirements fulfilled");
     }
   };
 
   addStep = async () => {
     var steps = this.props.tutorials.steps;
     await store.dispatch(updateTutorials({ steps: [...steps, { step: "" }] }));
-    this.validateForm();
     this.vids.push("");
   };
 
@@ -293,7 +322,6 @@ class CreateScreen extends React.Component {
     var steps = this.props.tutorials.steps;
     steps.splice(index, 1);
     store.dispatch(updateTutorials({ steps: steps }));
-    this.validateForm();
 
     if (this.vids[index]) {
       this.vids.splice(index, 1);
@@ -328,7 +356,6 @@ class CreateScreen extends React.Component {
     var steps = [...this.props.tutorials.steps];
     steps[index].step = value;
     store.dispatch(updateTutorials({ steps: steps }));
-    this.validateForm();
   };
 
   _onPlaybackStatusUpdate = (playbackStatus, index) => {
@@ -344,6 +371,12 @@ class CreateScreen extends React.Component {
   bannerError = () => {
     console.log("banner ad not loading");
   };
+
+  removeMedia = (index, type) => {
+    var steps = this.props.tutorials.steps
+    steps[index][type] = null
+    store.dispatch(updateTutorials({ steps: steps }))
+  }
 
   render() {
     var width = Dimensions.get("window").width;
@@ -373,6 +406,7 @@ class CreateScreen extends React.Component {
               </View>
               <View style={{ flex: 1, alignItems: "center" }}>
                 <TextInput
+                  placeholderTextColor={this.state.checked ? (this.props.tutorials.title.length < 4 ? "coral" : "white") : "white"}
                   value={this.props.tutorials.title}
                   placeholder="Enter Title"
                   onChangeText={title => this.handleTitleChange(title)}
@@ -409,7 +443,12 @@ class CreateScreen extends React.Component {
                         style={{ margin: 3 }}
                         color="coral"
                       />
-                      <Text style={{ color: "white", margin: 3 }}>
+                      <Text
+                        style={{
+                          color: this.state.checked ? (this.props.tutorials.create_topic.length > 1 ? "white" : "coral") : "white",
+                          margin: 3
+                        }}
+                      >
                         Thumbnail
                       </Text>
                     </View>
@@ -425,7 +464,14 @@ class CreateScreen extends React.Component {
                         style={{ margin: 3 }}
                         color="coral"
                       />
-                      <Text style={{ color: "white", margin: 3 }}>Topic</Text>
+                      <Text
+                        style={{
+                          color: this.state.checked ? (this.props.tutorials.create_topic.length > 1 ? "white" : "coral") : "white",
+                          margin: 3
+                        }}
+                      >
+                        Topic
+                      </Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -452,30 +498,47 @@ class CreateScreen extends React.Component {
                         style={styles.button}
                         onPress={() => this.removeStep(index)}
                       >
-                        <Ionicons name="md-close" size={25} color="coral" />
+                        <Ionicons name="md-trash" size={25} color="coral" />
                       </TouchableOpacity>
                     </View>
                     {step.Videos && (
-                      <Video
-                        onPlaybackStatusUpdate={playbackStatus =>
-                          this._onPlaybackStatusUpdate(playbackStatus, index)
-                        }
-                        ref={component => this.addRef(component, index)}
-                        source={{ uri: step.Videos }}
-                        rate={1.0}
-                        volume={1.0}
-                        isMuted={false}
-                        resizeMode={Video.RESIZE_MODE_CONTAIN}
-                        useNativeControls
-                        style={{ margin: 10, width: 200, height: 200 }}
-                      />
+                      <View>
+                        <Video
+                          onPlaybackStatusUpdate={playbackStatus =>
+                            this._onPlaybackStatusUpdate(playbackStatus, index)
+                          }
+                          ref={component => this.addRef(component, index)}
+                          source={{ uri: step.Videos }}
+                          rate={1.0}
+                          volume={1.0}
+                          isMuted={false}
+                          resizeMode={Video.RESIZE_MODE_CONTAIN}
+                          useNativeControls
+                          style={{ margin: 10, width: 200, height: 200 }}
+                        />
+                        <TouchableOpacity
+                          style={[styles.button, styles.corner]}
+                          onPress={() => this.removeMedia(index, "Videos")}
+                        >
+                          <Ionicons name="md-close" size={20} color="#0b5c87" />
+                        </TouchableOpacity>
+                      </View>
                     )}
                     {step.Images && (
-                      <Image
-                        source={{ uri: step.Images }}
-                        style={{ margin: 10, width: 200, height: 200 }}
-                      />
+                      <View>
+                        <Image
+                          source={{ uri: step.Images }}
+                          style={{ margin: 10, width: 200, height: 200 }}
+                        />
+                        <TouchableOpacity
+                          style={[styles.button, styles.corner]}
+                          onPress={() => this.removeMedia(index, "Images")}
+                        >
+                          <Ionicons name="md-close" size={20} color="#0b5c87" />
+                        </TouchableOpacity>
+                      </View>
                     )}
+                    {step.error && <Text style={{fontWeight: "bold", fontSize: 17, color: "coral"}}>{step.error}</Text>}
                     <TextInput
                       multiline={true}
                       value={step.step}
@@ -483,10 +546,12 @@ class CreateScreen extends React.Component {
                       onChangeText={value =>
                         this.handleFieldChange(value, index)
                       }
+                      placeholderTextColor={this.state.checked ? (step.step.length < 4 ? "coral" : "white") : "white"}
                       style={{
-                        color: "white",
+                        borderColor: "coral",
+                        color: this.state.checked ? (step.step.length < 4 ? "coral" : "white") : "white",
                         width: width,
-                        padding: 10,
+                        margin: 10,
                         fontSize: 15,
                         textAlign: "center"
                       }}
@@ -496,6 +561,7 @@ class CreateScreen extends React.Component {
                 <TouchableOpacity
                   style={{ padding: 10 }}
                   onPress={this.addStep}
+                  disabled={this.props.tutorials.steps.length > 9}
                 >
                   <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                     <Ionicons
@@ -509,12 +575,29 @@ class CreateScreen extends React.Component {
                     </Text>
                   </View>
                 </TouchableOpacity>
-                <Button
-                  color="coral"
-                  title="Publish Post"
-                  onPress={this.handleSubmit}
-                  disabled={!this.state.isFormValid}
-                />
+                <TouchableOpacity onPress={this.handleSubmit}>
+                  <View
+                    style={{
+                      borderRadius: 20,
+                      alignItems: "center",
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      backgroundColor: "#0b5c87",
+                      paddingRight: 5,
+                      paddingLeft: 5,
+                    }}
+                  >
+                    <Ionicons
+                      name="ios-send"
+                      size={20}
+                      color="coral"
+                      style={{ margin: 5 }}
+                    />
+                    <Text style={{ margin: 5, fontSize: 16, color: "coral" }}>
+                      Publish Tutorial
+                    </Text>
+                  </View>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => this.info()}>
                   <View
                     style={{
@@ -568,6 +651,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff"
+  },
+  corner: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 30,
+    height: 30,
+    margin: 10
   },
   button: {
     borderWidth: 1,

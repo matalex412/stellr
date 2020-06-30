@@ -11,7 +11,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { connect } from "react-redux";
 
-import MessageBox from "./screens/MessageBox";
+import AppHeader from "./screens/components/AppHeader";
 import HomeScreen from "./screens/HomeScreen";
 import CreateScreen from "./screens/CreateScreen";
 import SearchScreen from "./screens/SearchScreen";
@@ -128,33 +128,7 @@ const AppStack = createStackNavigator(
       navigationOptions: ({ navigation, goBack }) => ({
         title: "Skoach",
         headerRight: () => (
-          <View style={{ flexDirection: "row" }}>
-            <TouchableOpacity
-              style={{ paddingRight: 10 }}
-              onPress={() => {
-                navigation.navigate("Messages");
-              }}
-            >
-              <MessageBox />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ paddingRight: 10 }}
-              onPress={() => {
-                navigation.navigate("Account");
-              }}
-            >
-              <View style={{ flexDirection: "row" }}>
-                <Text style={{ color: "white", paddingRight: 10 }}>
-                  Account
-                </Text>
-                <Ionicons
-                  style={{ color: "white" }}
-                  name="md-person"
-                  size={20}
-                />
-              </View>
-            </TouchableOpacity>
-          </View>
+          <AppHeader navigation={navigation} />
         )
       })
     },
