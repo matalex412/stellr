@@ -3,14 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   TextInput,
   TouchableOpacity,
   Image,
   ScrollView,
   Alert,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { Video } from "expo-av";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,10 +28,11 @@ class CreateScreen extends React.Component {
     isLoading: true,
     isFormValid: false,
     steps: [{ step: "" }],
-    checked: false
+    checked: false,
   };
 
   componentDidMount = () => {
+    // get video references (for after user chooses topic)
     if (this.props.tutorials.vids[0] != "") {
       this.vids = this.props.tutorials.vids;
     } else {
@@ -42,6 +42,7 @@ class CreateScreen extends React.Component {
   };
 
   componentWillUnmount = async () => {
+    // store video references (when users chooses topic)
     await store.dispatch(updateTutorials({ vids: this.vids }));
   };
 
@@ -68,6 +69,7 @@ class CreateScreen extends React.Component {
   };
 
   getPermissionAsync = async () => {
+    // ask for permission to access camera roll
     const permission1 = Permissions.getAsync(Permissions.CAMERA_ROLL);
     if (permission1.status !== "granted") {
       const permission = await Permissions.askAsync(Permissions.CAMERA_ROLL);
@@ -82,6 +84,7 @@ class CreateScreen extends React.Component {
   };
 
   _pickMedia = async (type, index) => {
+    // get permissions
     if (this.state.permission != true) {
       await this.getPermissionAsync();
     }
@@ -90,15 +93,15 @@ class CreateScreen extends React.Component {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
           quality: 0.8,
-          allowsEditing: true
-        }
+          allowsEditing: true,
+        };
       } else {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
           quality: 0.8,
           aspect: [1, 1],
-          allowsEditing: true
-        }
+          allowsEditing: true,
+        };
       }
       try {
         let result = await ImagePicker.launchImageLibraryAsync(options);
@@ -108,7 +111,7 @@ class CreateScreen extends React.Component {
           } else {
             var steps = this.props.tutorials.steps;
             if (steps[index].error) {
-              delete steps[index].error
+              delete steps[index].error;
             }
             if (type == "Images") {
               steps[index][type] = result.uri;
@@ -123,8 +126,7 @@ class CreateScreen extends React.Component {
               steps[index].Images = null;
             } else {
               steps[index].Videos = null;
-              steps[index].error =
-                "Videos cannot be longer than 1 minute";
+              steps[index].error = "Videos cannot be longer than 1 minute";
             }
 
             store.dispatch(updateTutorials({ steps: steps }));
@@ -140,7 +142,7 @@ class CreateScreen extends React.Component {
     // check enough writing for each step
     var steps = this.props.tutorials.steps;
     if (steps.length >= 1) {
-      var checkquery = steps.every(query => {
+      var checkquery = steps.every((query) => {
         return query.step.length > 3;
       });
     }
@@ -156,7 +158,7 @@ class CreateScreen extends React.Component {
     }
   };
 
-  handleTitleChange = async title => {
+  handleTitleChange = async (title) => {
     await store.dispatch(updateTutorials({ title: title }));
   };
 
@@ -170,14 +172,16 @@ class CreateScreen extends React.Component {
           "Create an Account",
           "To post your own tutorials and add other people's tutorials, please create an account"
         );
-        this.props.navigation.navigate("Login");
+        firebase.auth().signOut();
       } else {
+        // store tutorial data
         var tutorial = {};
+        var steps = this.props.tutorials.steps;
         tutorial.request = this.props.tutorials.request;
         tutorial.title = this.props.tutorials.title;
-        tutorial.steps = this.props.tutorials.steps;
         tutorial.create_topic = this.props.tutorials.create_topic;
         tutorial.thumbnail = this.props.tutorials.thumbnail;
+        var topic = this.props.tutorials.create_topic;
 
         // reset screen data
         await store.dispatch(updateTutorials({ request: null }));
@@ -190,9 +194,10 @@ class CreateScreen extends React.Component {
         this.setState({ isFormValid: false });
         this.setState({ isLoading: false });
 
+        // redirect user
         Alert.alert(
           "Thanks",
-          "Thank you for making a tutorial and helping Skoach to grow. You're tutorial is being uploaded and we'll send you a message when it's done!"
+          "Thank you for making a tutorial and helping Skoach grow. You're tutorial is being uploaded and we'll send you a message when it's done!"
         );
         this.props.navigation.navigate("Home");
 
@@ -201,27 +206,32 @@ class CreateScreen extends React.Component {
         var route;
         var topic = "";
         for (route of topic_route) {
-          topic = topic + "/" + route;
+          topic = topic + "/topics/" + route;
         }
 
-        var steps = tutorial.steps;
-        var snapshot = await firebase
-          .database()
-          .ref("posts" + topic)
-          .push({
+        // add base for tutorial
+        var docRef = {};
+        await firebase
+          .firestore()
+          .collection(topic + "/posts")
+          .doc(this.props.tutorials.testid)
+          .set({
             title: tutorial.title,
-            steps: steps,
-            username: currentUser.displayName
+            username: currentUser.displayName,
+            uid: currentUser.uid,
+            topic: topic,
+            stars: 0,
+            active: 0,
+            learns: 0,
           });
 
-        // get thumbnail route
+        // store thumbnail and get route
         const response = await fetch(tutorial.thumbnail);
         const blob = await response.blob();
-
         var ref = await firebase
           .storage()
           .ref()
-          .child(`posts${topic}/${snapshot.key}/Thumbnail`);
+          .child(`${topic}/${docRef.id}/Thumbnail`);
         await ref.put(blob);
         var thumbnail = await ref.getDownloadURL();
 
@@ -238,13 +248,13 @@ class CreateScreen extends React.Component {
             ref = await firebase
               .storage()
               .ref()
-              .child(`posts${topic}/${snapshot.key}/steps/${i}/Image`);
+              .child(`${topic}/${docRef.id}/steps/${i}/Image`);
             await ref.put(blob);
 
             var url = await firebase
               .storage()
               .ref()
-              .child(`posts${topic}/${snapshot.key}/steps/${i}/Image`)
+              .child(`${topic}/${docRef.id}/steps/${i}/Image`)
               .getDownloadURL();
             steps[i].Images = url;
           } else if (steps[i].Videos != null) {
@@ -254,34 +264,44 @@ class CreateScreen extends React.Component {
             ref = await firebase
               .storage()
               .ref()
-              .child(`posts${topic}/${snapshot.key}/steps/${i}/Video`);
+              .child(`${topic}/${docRef.id}/steps/${i}/Video`);
             await ref.put(blob);
 
             var url = await firebase
               .storage()
               .ref()
-              .child(`posts${topic}/${snapshot.key}/steps/${i}/Video`)
+              .child(`${topic}/${docRef.id}/steps/${i}/Video`)
               .getDownloadURL();
             steps[i].Videos = url;
           }
         }
 
+        // update tutorial with valid links to media
         await firebase
-          .database()
-          .ref("posts/" + topic + "/" + snapshot.key)
+          .firestore()
+          .collection(topic + "/posts")
+          .doc(docRef.id)
           .update({
             steps: steps,
-            thumbnail: thumbnail
+            thumbnail: thumbnail,
+            time: Date.now(),
           });
 
+        // add tutorial to made document for user
         await firebase
-          .database()
-          .ref("users/" + currentUser.uid + "/made")
-          .push({
-            postid: snapshot.key,
-            topic: topic,
-            thumbnail: thumbnail
-          });
+          .firestore()
+          .collection("users/" + currentUser.uid + "/data")
+          .doc("made")
+          .set(
+            {
+              [docRef.id]: {
+                topic: topic,
+                thumbnail: thumbnail,
+                title: tutorial.title,
+              },
+            },
+            { merge: true }
+          );
 
         // update request list
         if (tutorial.request == tutorial.title) {
@@ -291,52 +311,65 @@ class CreateScreen extends React.Component {
             .update({
               [tutorial.request]: {
                 topic: topic,
-                postid: snapshot.key
-              }
+                postid: docRef.id,
+              },
             });
         }
 
+        // notify user that tutorial has been made
         const message = `You're tutorial "${tutorial.title}" has been made!`;
-
         firebase
-          .database()
-          .ref("users/" + currentUser.uid + "/messages")
-          .update({
-            [message]: "unread"
-          });
-
+          .firestore()
+          .collection(`users/${currentUser.uid}/data`)
+          .doc("messages")
+          .set(
+            {
+              [Date.now()]: {
+                message: message,
+                status: "unread",
+              },
+            },
+            { merge: true }
+          );
         await store.dispatch(updateTutorials({ unread: true }));
       }
     } else {
-      Alert.alert("Not Finished", "Sorry, your tutorial doesn't have all requirements fulfilled");
+      Alert.alert(
+        "Not Finished",
+        "Sorry, your tutorial doesn't have all requirements fulfilled"
+      );
     }
   };
 
   addStep = async () => {
+    // add new step and empty video ref
     var steps = this.props.tutorials.steps;
     await store.dispatch(updateTutorials({ steps: [...steps, { step: "" }] }));
     this.vids.push("");
   };
 
-  removeStep = async index => {
+  removeStep = async (index) => {
+    // remove step and video reference
     var steps = this.props.tutorials.steps;
     steps.splice(index, 1);
     store.dispatch(updateTutorials({ steps: steps }));
-
     if (this.vids[index]) {
       this.vids.splice(index, 1);
     }
   };
 
   help = async () => {
-    var post = await firebase
-      .database()
-      .ref("posts/Meta/-M9Ehcn1WiABy_0wDMKN")
-      .once("value");
-    post = post.toJSON();
-
+    // store post and redirect user to tutorial screen
+    var post = firebase
+      .firestore()
+      .collection(`topics/Meta/posts`)
+      .doc("iuyEJIBF63QJRhcBNNQ6")
+      .get();
     await store.dispatch(updateTutorials({ current: post }));
-
+    await store.dispatch(updateTutorials({ tutorial_topic: "topics/Meta" }));
+    await store.dispatch(
+      updateTutorials({ current_key: "iuyEJIBF63QJRhcBNNQ6" })
+    );
     this.props.navigation.navigate("Tutorial");
   };
 
@@ -348,6 +381,7 @@ class CreateScreen extends React.Component {
   };
 
   changeTopic = async () => {
+    // clear data about user's made post and redirect user to topic screen
     await store.dispatch(updateTutorials({ userpost: null }));
     this.props.navigation.navigate("Topic");
   };
@@ -364,19 +398,12 @@ class CreateScreen extends React.Component {
     }
   };
 
-  addRef = (component, index) => {
-    this.vids[index] = component;
-  };
-
-  bannerError = () => {
-    console.log("banner ad not loading");
-  };
-
   removeMedia = (index, type) => {
-    var steps = this.props.tutorials.steps
-    steps[index][type] = null
-    store.dispatch(updateTutorials({ steps: steps }))
-  }
+    // remove media
+    var steps = this.props.tutorials.steps;
+    steps[index][type] = null;
+    store.dispatch(updateTutorials({ steps: steps }));
+  };
 
   render() {
     var width = Dimensions.get("window").width;
@@ -384,42 +411,55 @@ class CreateScreen extends React.Component {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <View>
+              <Text>
+                'Do you see a man skillful in his work? He will stand before
+                kings'
+              </Text>
+              <ActivityIndicator color="#fff" size="large" />
+            </View>
           ) : (
             <View>
               <View style={{ margin: 10, flex: 1, flexDirection: "column" }}>
                 <AdMobBanner
                   adUnitID="ca-app-pub-3262091936426324/7558442816"
-                  onDidFailToReceiveAdWithError={this.bannerError}
+                  onDidFailToReceiveAdWithError={() =>
+                    console.log("banner ad not loading")
+                  }
                   servePersonalizedAds
                 />
               </View>
               <View style={{ flex: 1, alignItems: "center" }}>
                 <TextInput
-                  placeholderTextColor={this.state.checked ? (this.props.tutorials.title.length < 4 ? "coral" : "white") : "white"}
+                  placeholderTextColor={
+                    this.state.checked
+                      ? this.props.tutorials.title.length < 4
+                        ? "#ffb52b"
+                        : "white"
+                      : "white"
+                  }
                   value={this.props.tutorials.title}
                   placeholder="Enter Title"
-                  onChangeText={title => this.handleTitleChange(title)}
+                  onChangeText={(title) =>
+                    store.dispatch(updateTutorials({ title: title }))
+                  }
                   style={{
-                    color: "white",
+                    color: "black",
                     padding: 10,
                     fontSize: 23,
-                    fontStyle: "italic"
+                    fontStyle: "italic",
                   }}
                 />
-                <View>
-                  <View style={styles.line} />
-                </View>
                 {this.props.tutorials.thumbnail && (
                   <Image
                     source={{ uri: this.props.tutorials.thumbnail }}
@@ -427,11 +467,19 @@ class CreateScreen extends React.Component {
                   />
                 )}
                 {this.props.tutorials.create_topic_string && (
-                  <Text style={{ color: "white", padding: 10 }}>
+                  <Text style={{ color: "black", padding: 10 }}>
                     Topic: {this.props.tutorials.create_topic_string}
                   </Text>
                 )}
-                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                <View
+                  style={{
+                    backgroundColor: "black",
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    padding: 10,
+                    borderRadius: 30,
+                  }}
+                >
                   <TouchableOpacity
                     style={{ marginRight: 5 }}
                     onPress={this.thumbnail}
@@ -441,12 +489,16 @@ class CreateScreen extends React.Component {
                         name="md-image"
                         size={20}
                         style={{ margin: 3 }}
-                        color="coral"
+                        color="#ffb52b"
                       />
                       <Text
                         style={{
-                          color: this.state.checked ? (this.props.tutorials.create_topic.length > 1 ? "white" : "coral") : "white",
-                          margin: 3
+                          color: this.state.checked
+                            ? this.props.tutorials.create_topic.length > 1
+                              ? "white"
+                              : "#ffb52b"
+                            : "white",
+                          margin: 3,
                         }}
                       >
                         Thumbnail
@@ -462,12 +514,16 @@ class CreateScreen extends React.Component {
                         name="ios-folder"
                         size={20}
                         style={{ margin: 3 }}
-                        color="coral"
+                        color="#ffb52b"
                       />
                       <Text
                         style={{
-                          color: this.state.checked ? (this.props.tutorials.create_topic.length > 1 ? "white" : "coral") : "white",
-                          margin: 3
+                          color: this.state.checked
+                            ? this.props.tutorials.create_topic.length > 1
+                              ? "white"
+                              : "#ffb52b"
+                            : "white",
+                          margin: 3,
                         }}
                       >
                         Topic
@@ -475,87 +531,149 @@ class CreateScreen extends React.Component {
                     </View>
                   </TouchableOpacity>
                 </View>
-                <View>
-                  <View style={styles.line} />
-                </View>
                 {this.props.tutorials.steps.map((step, index) => (
-                  <View style={{ alignItems: "center" }} key={index}>
-                    <Text style={styles.heading}>Step {index + 1}</Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  <View
+                    key={index}
+                    style={{
+                      alginItems: "center",
+                      margin: 5,
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <View
+                      style={{
+                        justifyContent: "center",
+                        backgroundColor: "#6da9c9",
+                        borderRadius: 10,
+                      }}
+                    >
                       <TouchableOpacity
                         style={styles.button}
                         onPress={() => this._pickMedia("Images", index)}
                       >
-                        <Ionicons name="md-image" size={25} color="coral" />
+                        <Ionicons name="md-image" size={25} color="#ffb52b" />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.button}
                         onPress={() => this._pickMedia("Videos", index)}
                       >
-                        <Ionicons name="ios-videocam" size={25} color="coral" />
+                        <Ionicons
+                          name="ios-videocam"
+                          size={25}
+                          color="#ffb52b"
+                        />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.button}
                         onPress={() => this.removeStep(index)}
                       >
-                        <Ionicons name="md-trash" size={25} color="coral" />
+                        <Ionicons name="md-trash" size={25} color="#ffb52b" />
                       </TouchableOpacity>
                     </View>
-                    {step.Videos && (
-                      <View>
-                        <Video
-                          onPlaybackStatusUpdate={playbackStatus =>
-                            this._onPlaybackStatusUpdate(playbackStatus, index)
-                          }
-                          ref={component => this.addRef(component, index)}
-                          source={{ uri: step.Videos }}
-                          rate={1.0}
-                          volume={1.0}
-                          isMuted={false}
-                          resizeMode={Video.RESIZE_MODE_CONTAIN}
-                          useNativeControls
-                          style={{ margin: 10, width: 200, height: 200 }}
-                        />
-                        <TouchableOpacity
-                          style={[styles.button, styles.corner]}
-                          onPress={() => this.removeMedia(index, "Videos")}
-                        >
-                          <Ionicons name="md-close" size={20} color="#0b5c87" />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    {step.Images && (
-                      <View>
-                        <Image
-                          source={{ uri: step.Images }}
-                          style={{ margin: 10, width: 200, height: 200 }}
-                        />
-                        <TouchableOpacity
-                          style={[styles.button, styles.corner]}
-                          onPress={() => this.removeMedia(index, "Images")}
-                        >
-                          <Ionicons name="md-close" size={20} color="#0b5c87" />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    {step.error && <Text style={{fontWeight: "bold", fontSize: 17, color: "coral"}}>{step.error}</Text>}
-                    <TextInput
-                      multiline={true}
-                      value={step.step}
-                      placeholder="Enter Step"
-                      onChangeText={value =>
-                        this.handleFieldChange(value, index)
-                      }
-                      placeholderTextColor={this.state.checked ? (step.step.length < 4 ? "coral" : "white") : "white"}
+                    <View
                       style={{
-                        borderColor: "coral",
-                        color: this.state.checked ? (step.step.length < 4 ? "coral" : "white") : "white",
-                        width: width,
+                        alignItems: "center",
+                        backgroundColor: "#6da9c9",
+                        width: width - 100,
+                        padding: 10,
                         margin: 10,
-                        fontSize: 15,
-                        textAlign: "center"
+                        borderRadius: 5,
+                        shadowOffset: { width: 10, height: 10 },
+                        shadowColor: "black",
+                        shadowOpacity: 1.0,
                       }}
-                    />
+                    >
+                      <Text style={styles.heading}>Step {index + 1}</Text>
+                      {step.Videos && (
+                        <View>
+                          <Video
+                            onPlaybackStatusUpdate={(playbackStatus) =>
+                              this._onPlaybackStatusUpdate(
+                                playbackStatus,
+                                index
+                              )
+                            }
+                            ref={(component) => (this.vids[index] = component)}
+                            source={{ uri: step.Videos }}
+                            rate={1.0}
+                            volume={1.0}
+                            isMuted={false}
+                            resizeMode={Video.RESIZE_MODE_CONTAIN}
+                            useNativeControls
+                            style={{ margin: 10, width: 200, height: 200 }}
+                          />
+                          <TouchableOpacity
+                            style={[styles.button, styles.corner]}
+                            onPress={() => this.removeMedia(index, "Videos")}
+                          >
+                            <Ionicons
+                              name="md-close"
+                              size={20}
+                              color="#6da9c9"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {step.Images && (
+                        <View>
+                          <Image
+                            source={{ uri: step.Images }}
+                            style={{ margin: 10, width: 200, height: 200 }}
+                          />
+                          <TouchableOpacity
+                            style={[styles.button, styles.corner]}
+                            onPress={() => this.removeMedia(index, "Images")}
+                          >
+                            <Ionicons
+                              name="md-close"
+                              size={20}
+                              color="#6da9c9"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {step.error && (
+                        <Text
+                          style={{
+                            fontWeight: "bold",
+                            fontSize: 17,
+                            color: "#ffb52b",
+                          }}
+                        >
+                          {step.error}
+                        </Text>
+                      )}
+                      <TextInput
+                        multiline={true}
+                        value={step.step}
+                        placeholder="Enter Step"
+                        onChangeText={(value) =>
+                          this.handleFieldChange(value, index)
+                        }
+                        placeholderTextColor={
+                          this.state.checked
+                            ? step.step.length < 4
+                              ? "#ffb52b"
+                              : "black"
+                            : "black"
+                        }
+                        style={{
+                          borderColor: "#ffb52b",
+                          color: this.state.checked
+                            ? step.step.length < 4
+                              ? "#ffb52b"
+                              : "black"
+                            : "black",
+                          width: width,
+                          paddingLeft: 60,
+                          paddingRight: 60,
+                          margin: 10,
+                          fontSize: 15,
+                          textAlign: "center",
+                        }}
+                      />
+                    </View>
                   </View>
                 ))}
                 <TouchableOpacity
@@ -568,62 +686,48 @@ class CreateScreen extends React.Component {
                       name="md-add-circle"
                       size={20}
                       style={{ margin: 3 }}
-                      color="coral"
+                      color="#ffb52b"
                     />
-                    <Text style={{ margin: 3, color: "white" }}>
+                    <Text style={{ margin: 3, color: "#ffb52b" }}>
                       Add New Step
                     </Text>
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={this.handleSubmit}>
-                  <View
-                    style={{
-                      borderRadius: 20,
-                      alignItems: "center",
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      backgroundColor: "#0b5c87",
-                      paddingRight: 5,
-                      paddingLeft: 5,
-                    }}
-                  >
-                    <Ionicons
-                      name="ios-send"
-                      size={20}
-                      color="coral"
-                      style={{ margin: 5 }}
-                    />
-                    <Text style={{ margin: 5, fontSize: 16, color: "coral" }}>
-                      Publish Tutorial
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => this.info()}>
-                  <View
-                    style={{
-                      alignItems: "center",
-                      margin: 10,
-                      flexDirection: "row",
-                      flexWrap: "wrap"
-                    }}
-                  >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <TouchableOpacity onPress={this.handleSubmit}>
+                    <View
+                      style={{
+                        borderRadius: 20,
+                        alignItems: "center",
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        backgroundColor: "#6da9c9",
+                        paddingRight: 5,
+                        paddingLeft: 5,
+                      }}
+                    >
+                      <Ionicons
+                        name="ios-send"
+                        size={20}
+                        color="#ffb52b"
+                        style={{ margin: 5 }}
+                      />
+                      <Text
+                        style={{ margin: 5, fontSize: 16, color: "#ffb52b" }}
+                      >
+                        Publish Tutorial
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={this.info}>
                     <Ionicons
                       name="md-information-circle-outline"
-                      size={12}
-                      color="coral"
+                      size={20}
+                      style={{ margin: 5 }}
+                      color="#ffb52b"
                     />
-                    <Text
-                      style={{ marginLeft: 5, fontSize: 12, color: "coral" }}
-                    >
-                      Requirements
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => this.help()}>
-                  <Text style={{ marginBottom: 10, color: "white" }}>
-                    Check out how to make a tutorial
-                  </Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
@@ -638,7 +742,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     margin: 10,
-    color: "white"
+    color: "black",
   },
   contentContainer: {
     flexGrow: 1,
@@ -646,11 +750,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
     borderRightWidth: 1,
-    borderColor: "#0b5c87"
+    borderColor: "#6da9c9",
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   corner: {
     position: "absolute",
@@ -658,7 +762,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: 30,
     height: 30,
-    margin: 10
+    margin: 10,
   },
   button: {
     borderWidth: 1,
@@ -667,21 +771,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 40,
     height: 40,
-    backgroundColor: "#fff",
+    backgroundColor: "#000",
     borderRadius: 40,
-    margin: 5
+    margin: 5,
   },
   line: {
-    borderBottomColor: "white",
+    borderBottomColor: "black",
     borderBottomWidth: 1,
     alignSelf: "stretch",
     margin: 10,
-    width: 200
-  }
+    width: 200,
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(CreateScreen);

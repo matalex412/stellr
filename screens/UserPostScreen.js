@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
   TextInput,
   Button,
   TouchableOpacity,
@@ -19,6 +18,7 @@ import * as Permissions from "expo-permissions";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
+import Firebase from "firebase";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -36,7 +36,6 @@ class UserPostScreen extends React.Component {
     } else {
       this.vids = [];
     }
-
     this.setup();
   };
 
@@ -45,11 +44,21 @@ class UserPostScreen extends React.Component {
   };
 
   setup = async () => {
-    // get and format user's post
+    // format topic string
     var post = this.props.tutorials.userpost;
+    var i;
+    var subtopics = post.topic.split("/topics/");
+    var topic_string = subtopics[1];
+    for (i = 2; i < subtopics.length; i++) {
+      topic_string = topic_string + " > " + subtopics[i];
+    }
+    await store.dispatch(updateTutorials({ usertopic_string: topic_string }));
+
+    // format user's post
     post.steps = Object.values(post.steps);
+    post.old_topic = post.topic;
     await store.dispatch(updateTutorials({ userpost: post }));
-    this.setState({ isLoading: false })
+    this.setState({ isLoading: false });
   };
 
   getPermissionAsync = async () => {
@@ -73,14 +82,14 @@ class UserPostScreen extends React.Component {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
           quality: 0.8,
           allowsEditing: true
-        }
+        };
       } else {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
           quality: 0.8,
           aspect: [1, 1],
           allowsEditing: true
-        }
+        };
       }
       try {
         let result = await ImagePicker.launchImageLibraryAsync(options);
@@ -95,7 +104,7 @@ class UserPostScreen extends React.Component {
 
             // remove previous errors
             if (post.steps[index].error) {
-              delete post.steps[index].error
+              delete post.steps[index].error;
             }
 
             if (type == "Images") {
@@ -152,14 +161,12 @@ class UserPostScreen extends React.Component {
     // change step field
     var post = this.props.tutorials.userpost;
     post.steps[index].step = value;
-    post.steps[index].changed = true;
     await store.dispatch(updateTutorials({ userpost: post }));
   };
 
   handleSubmit = async () => {
-    await this.validateForm()
+    await this.validateForm();
     if (this.state.isFormValid) {
-      // get current user
       await this.setState({ isLoading: true });
       const { currentUser } = firebase.auth();
 
@@ -171,35 +178,33 @@ class UserPostScreen extends React.Component {
 
       // if topic hasn't changed
       if (old_topic == topic) {
-        // update tutorial info
+        // update base tutorial info
         await firebase
-          .database()
-          .ref("posts" + topic + "/" + id)
+          .firestore()
+          .collection(`${topic}/posts`)
+          .doc(id)
           .update({
-            title: this.props.tutorials.userpost.title,
-            steps: this.props.tutorials.userpost.steps
+            title: this.props.tutorials.userpost.title
           });
       } else {
-        // remove old tutorial made by user
-        var made = await firebase
-          .database()
-          .ref("users/" + currentUser.uid + "/made")
-          .once("value");
-        made = made.toJSON();
-        var keys = Object.keys(made);
-        var key;
-        for (key of keys) {
-          if (made[key].postid == id) {
-            var madeid = key;
-          }
-        }
-        var postRef = await firebase
-          .database()
-          .ref("posts" + old_topic + "/" + id);
-        postRef.remove();
+        // remove old version of user's tutorial
+        await firebase
+          .firestore()
+          .collection(`${old_topic}/posts`)
+          .doc(id)
+          .delete();
+        await firebase
+          .firestore()
+          .collection(`users/${currentUser.uid}/data`)
+          .doc("made")
+          .update({
+            [id]: Firebase.firestore.FieldValue.delete()
+          });
 
         // remove media from firebase storage
-        var ref = await firebase.storage().ref(`posts${old_topic}/${id}/steps/`);
+        var ref = await firebase
+          .storage()
+          .ref(`posts${old_topic}/${id}/steps/`);
         var i;
         for (i = 0; i < steps.length; i++) {
           // check if step has been changed
@@ -214,23 +219,18 @@ class UserPostScreen extends React.Component {
           }
         }
 
-        // create updated tutorial
-        var snapshot = await firebase
-          .database()
-          .ref("posts" + topic)
-          .push({
+        // create updated tutorial in new topic section
+        var doc = await firebase
+          .firestore()
+          .collection(`${topic}/posts`)
+          .add({
             title: this.props.tutorials.userpost.title,
-            username: this.props.tutorials.userpost.username
-          });
-        await firebase
-          .database()
-          .ref("users/" + currentUser.uid + "/made/" + madeid)
-          .update({
-            postid: snapshot.key,
+            username: this.props.tutorials.userpost.username,
+            uid: currentUser.uid,
             topic: topic
           });
 
-        id = snapshot.key;
+        id = doc.id;
       }
 
       // iterate over steps and store all media in Firebase Storage
@@ -248,7 +248,7 @@ class UserPostScreen extends React.Component {
             var ref = await firebase
               .storage()
               .ref()
-              .child(`posts${topic}/${id}/steps/${i}/Image`);
+              .child(`${topic}/${id}/steps/${i}/Image`);
             await ref.put(blob);
 
             var url = await ref.getDownloadURL();
@@ -260,50 +260,78 @@ class UserPostScreen extends React.Component {
             var ref = firebase
               .storage()
               .ref()
-              .child(`posts${topic}/${id}/steps/${i}/Video`);
+              .child(`${topic}/${id}/steps/${i}/Video`);
             await ref.put(blob);
 
             var url = await ref.getDownloadURL();
             steps[i].Videos = url;
           }
         }
-        steps[i].changed = false;
+        delete steps[i].changed;
       }
 
+      var thumbnail = this.props.tutorials.userpost.thumbnail;
+      // if thumbnail was changed
       if (this.state.thumb_change) {
-        // get thumbnail link
+        // store thumbnail and get reference
         const response = await fetch(this.props.tutorials.userpost.thumbnail);
         const blob = await response.blob();
         ref = await firebase
           .storage()
           .ref()
-          .child(`posts${topic}/${id}/Thumbnail`);
+          .child(`${topic}/${id}/Thumbnail`);
         await ref.put(blob);
-        var thumbnail = await ref.getDownloadURL();
+        thumbnail = await ref.getDownloadURL();
 
         await firebase
-          .database()
-          .ref("posts/" + topic + "/" + id)
-          .update({ thumbnail: thumbnail });
+          .firestore()
+          .collection(`${topic}/posts`)
+          .doc(id)
+          .update({
+            thumbnail: thumbnail,
+            steps: steps,
+            time: Date.now()
+          });
+      } else {
+        await firebase
+          .firestore()
+          .collection(`${topic}/posts`)
+          .doc(id)
+          .update({
+            steps: steps,
+            time: Date.now()
+          });
       }
 
-      // add steps to updated tutorial
+      // update tutorial in made section
       await firebase
-        .database()
-        .ref("posts/" + topic + "/" + id)
-        .update({
-          steps: steps
-        });
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("made")
+        .set(
+          {
+            [id]: {
+              topic: topic,
+              thumbnail: thumbnail,
+              title: this.props.tutorials.userpost.title
+            }
+          },
+          { merge: true }
+        );
 
-      // reset information
       Alert.alert(
         "Posted",
         "Your tutorial has been edited. Find it on the Search page or on the 'Your Posts' page"
       );
+      // reset information
       await store.dispatch(updateTutorials({ userpost: null }));
+      this.vids = [""];
       this.props.navigation.navigate("UserPosts");
     } else {
-      Alert.alert("Not Finished", "Sorry, your tutorial doesn't have all requirements fulfilled")
+      Alert.alert(
+        "Not Finished",
+        "Sorry, your tutorial doesn't have all requirements fulfilled"
+      );
     }
   };
 
@@ -325,57 +353,60 @@ class UserPostScreen extends React.Component {
   };
 
   deletePost = async () => {
-    // check user wants to delete post
     await this.setState({ isLoading: true });
+    // check user wants to delete post
     Alert.alert("Delete Post", "Are you sure you want to delete this post?", [
       {
         text: "Yes",
         onPress: async () => {
-          await firebase
-            .database()
-            .ref(
-              "posts" +
-                this.props.tutorials.userpost.old_topic +
-                "/" +
-                this.props.tutorials.userpost.postid
-            )
-            .remove();
-
-          // remove old tutorial made by user
           var { currentUser } = firebase.auth();
           var post = this.props.tutorials.userpost;
-          var made = await firebase
-            .database()
-            .ref("users/" + currentUser.uid + "/made")
-            .once("value");
-          made = made.toJSON();
-          var keys = Object.keys(made);
-          var key;
-          for (key of keys) {
-            if (made[key].postid == post.postid) {
-              var madeRef = await firebase
-                .database()
-                .ref("users/" + currentUser.uid + "/made/" + key);
-              madeRef.remove();
 
-              // remove media from firebase storage
-              var ref = await firebase
-                .storage()
-                .ref(`posts${post.topic}/${post.postid}/steps/`);
-              var i;
-              for (i = 0; i < post.steps.length; i++) {
-                if (post.steps[i].Images != null) {
-                  var postRef = ref.child(`${i}/Image`);
-                  postRef.delete();
-                } else if (post.steps[i].Videos != null) {
-                  var postRef = ref.child(`${i}/Video`);
-                  postRef.delete();
-                }
-              }
+          // remove tutorial
+          await firebase
+            .firestore()
+            .collection(`${post.old_topic}/posts`)
+            .doc(post.postid)
+            .delete();
+          await firebase
+            .firestore()
+            .collection(`users/${currentUser.uid}/data`)
+            .doc("made")
+            .update({
+              [post.postid]: Firebase.firestore.FieldValue.delete()
+            });
 
-              break;
+          // remove media from firebase storage
+          var ref = await firebase
+            .storage()
+            .ref(`posts${post.topic}/${post.postid}/steps/`);
+          var i;
+          for (i = 0; i < post.steps.length; i++) {
+            if (post.steps[i].Images != null) {
+              var postRef = ref.child(`${i}/Image`);
+              postRef.delete();
+            } else if (post.steps[i].Videos != null) {
+              var postRef = ref.child(`${i}/Video`);
+              postRef.delete();
             }
           }
+
+          // send user message that tutorial has been made
+          const message = `You're tutorial "${post.title}" has been deleted!`;
+          firebase
+            .firestore()
+            .collection(`users/${currentUser.uid}/data`)
+            .doc("messages")
+            .set(
+              {
+                [Date.now()]: {
+                  message: message,
+                  status: "unread"
+                }
+              },
+              { merge: true }
+            );
+          await store.dispatch(updateTutorials({ unread: true }));
 
           await store.dispatch(updateTutorials({ userpost: null }));
           this.props.navigation.navigate("UserPosts");
@@ -410,11 +441,10 @@ class UserPostScreen extends React.Component {
 
   removeMedia = (index, type) => {
     // remove media
-    var post = this.props.tutorials.userpost
-    post.steps[index][type] = null
-    store.dispatch(updateTutorials({ userpost: post }))
-  }
-
+    var post = this.props.tutorials.userpost;
+    post.steps[index][type] = null;
+    store.dispatch(updateTutorials({ userpost: post }));
+  };
 
   render() {
     if (this.props.tutorials.userpost) {
@@ -427,7 +457,7 @@ class UserPostScreen extends React.Component {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
@@ -459,7 +489,7 @@ class UserPostScreen extends React.Component {
                 style={{ margin: 10, width: width, height: 200 }}
               />
               <Text style={{ padding: 10, color: "white" }}>
-                Topic: {this.props.tutorials.userpost.topic}
+                Topic: {this.props.tutorials.usertopic_string}
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                 <TouchableOpacity
@@ -471,7 +501,7 @@ class UserPostScreen extends React.Component {
                       name="md-image"
                       size={20}
                       style={{ margin: 3 }}
-                      color="coral"
+                      color="#ffb52b"
                     />
                     <Text style={{ margin: 3, color: "white" }}>Thumbnail</Text>
                   </View>
@@ -485,7 +515,7 @@ class UserPostScreen extends React.Component {
                       name="ios-folder"
                       size={20}
                       style={{ margin: 3 }}
-                      color="coral"
+                      color="#ffb52b"
                     />
                     <Text style={{ margin: 3, color: "white" }}>Topic</Text>
                   </View>
@@ -502,19 +532,19 @@ class UserPostScreen extends React.Component {
                       style={styles.button}
                       onPress={() => this._pickMedia(index, "Images")}
                     >
-                      <Ionicons name="md-image" size={25} color="coral" />
+                      <Ionicons name="md-image" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.button}
                       onPress={() => this._pickMedia(index, "Videos")}
                     >
-                      <Ionicons name="ios-videocam" size={25} color="coral" />
+                      <Ionicons name="ios-videocam" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.button}
                       onPress={() => this.removeStep(index)}
                     >
-                      <Ionicons name="md-trash" size={25} color="coral" />
+                      <Ionicons name="md-trash" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                   </View>
                   {step.Videos && (
@@ -536,25 +566,35 @@ class UserPostScreen extends React.Component {
                         style={[styles.button, styles.corner]}
                         onPress={() => this.removeMedia(index, "Videos")}
                       >
-                        <Ionicons name="md-close" size={20} color="#0b5c87" />
+                        <Ionicons name="md-close" size={20} color="#6da9c9" />
                       </TouchableOpacity>
                     </View>
                   )}
                   {step.Images && (
-                      <View>
-                        <Image
-                          source={{ uri: step.Images }}
-                          style={{ margin: 10, width: 200, height: 200 }}
-                        />
-                        <TouchableOpacity
-                          style={[styles.button, styles.corner]}
-                          onPress={() => this.removeMedia(index, "Images")}
-                        >
-                          <Ionicons name="md-close" size={20} color="#0b5c87" />
-                        </TouchableOpacity>
-                      </View>
+                    <View>
+                      <Image
+                        source={{ uri: step.Images }}
+                        style={{ margin: 10, width: 200, height: 200 }}
+                      />
+                      <TouchableOpacity
+                        style={[styles.button, styles.corner]}
+                        onPress={() => this.removeMedia(index, "Images")}
+                      >
+                        <Ionicons name="md-close" size={20} color="#6da9c9" />
+                      </TouchableOpacity>
+                    </View>
                   )}
-                  {step.error && <Text style={{fontWeight: "bold", fontSize: 17, color: "coral"}}>{step.error}</Text>}
+                  {step.error && (
+                    <Text
+                      style={{
+                        fontWeight: "bold",
+                        fontSize: 17,
+                        color: "#ffb52b"
+                      }}
+                    >
+                      {step.error}
+                    </Text>
+                  )}
                   <TextInput
                     multiline={true}
                     value={step.step}
@@ -576,7 +616,7 @@ class UserPostScreen extends React.Component {
                     name="md-add-circle"
                     size={20}
                     style={{ margin: 3 }}
-                    color="coral"
+                    color="#ffb52b"
                   />
                   <Text style={{ color: "white", margin: 3 }}>
                     Add New Step
@@ -590,25 +630,25 @@ class UserPostScreen extends React.Component {
                     alignItems: "center",
                     flexDirection: "row",
                     flexWrap: "wrap",
-                    backgroundColor: "#0b5c87",
+                    backgroundColor: "#6da9c9",
                     paddingRight: 5,
-                    paddingLeft: 5,
+                    paddingLeft: 5
                   }}
                 >
                   <Ionicons
                     name="ios-send"
                     size={20}
-                    color="coral"
+                    color="#ffb52b"
                     style={{ margin: 5 }}
                   />
-                  <Text style={{ margin: 5, fontSize: 16, color: "coral" }}>
-                    Publish Tutorial
+                  <Text style={{ margin: 5, fontSize: 16, color: "#ffb52b" }}>
+                    Update Tutorial
                   </Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity onPress={this.deletePost}>
                 <Text
-                  style={{ padding: 10, color: "coral", fontWeight: "bold" }}
+                  style={{ padding: 10, color: "#ffb52b", fontWeight: "bold" }}
                 >
                   Delete Post
                 </Text>
@@ -648,12 +688,11 @@ const styles = StyleSheet.create({
   },
   button: {
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.2)",
     alignItems: "center",
     justifyContent: "center",
     width: 40,
     height: 40,
-    backgroundColor: "#fff",
+    backgroundColor: "black",
     borderRadius: 40,
     margin: 5
   },

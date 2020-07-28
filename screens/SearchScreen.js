@@ -10,7 +10,7 @@ import {
   Image,
   BackHandler,
   Alert,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,11 +23,15 @@ import { firebase } from "./../src/config";
 
 class SearchScreen extends React.Component {
   state = {
-    isLoading: true
+    isLoading: true,
   };
 
   backAction = () => {
-    if (this.props.tutorials.current_topic.length > 0) {
+    // go back a topic when user clicks hardware back button
+    if (
+      this.props.tutorials.current_topic.length > 0 &&
+      !this.props.tutorials.current_key
+    ) {
       this.goBack();
       return true;
     } else {
@@ -36,6 +40,7 @@ class SearchScreen extends React.Component {
   };
 
   componentDidMount = () => {
+    store.dispatch(updateTutorials({ tutorial_topic: null }));
     this.backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       this.backAction
@@ -45,10 +50,12 @@ class SearchScreen extends React.Component {
   };
 
   componentWillUnmount() {
+    // remove back button listener
     this.backHandler.remove();
   }
 
   setup = async () => {
+    await store.dispatch(updateTutorials({ headerShown: false }));
     // page items loading
     this.setState({ isLoading: true });
 
@@ -81,44 +88,44 @@ class SearchScreen extends React.Component {
     var route;
     var topic = "";
     for (route of current_topic) {
-      topic = topic + "/" + route;
+      topic = topic + "/topics/" + route;
     }
     await store.dispatch(updateTutorials({ tutorial_topic: topic }));
 
-    if (topic != "/") {
+    if (topic != "") {
       // find posts in topic folder
-      var contents = await firebase
-        .database()
-        .ref("posts" + topic)
-        .once("value");
-      contents = contents.toJSON();
-      var keys = [];
+      var posts = await firebase
+        .firestore()
+        .collection(topic + "/posts")
+        .get();
+
+      var contents = {};
       var postids = [];
-      var key;
-      if (contents != null) {
-        keys = Object.keys(contents);
-        for (key of keys) {
-          if (key[0] == "-") {
-            postids.push(key);
-          }
-        }
+      if (posts.docs.length > 0) {
+        posts.forEach((doc) => {
+          postids.push(doc.id);
+          contents[doc.id] = doc.data();
+        });
         await this.setState({ contents });
+        await this.setState({ postids });
+      } else {
+        this.setState({ contents: {} });
+        this.setState({ postids: [] });
       }
-      await this.setState({ postids });
     } else {
-      this.setState({ contents: {} })
-      this.setState({ postids: [] })
+      this.setState({ contents: {} });
+      this.setState({ postids: [] });
     }
 
     // page finished loading
     this.setState({ isLoading: false });
   };
 
-  clickedTopic = async topic => {
+  clickedTopic = async (topic) => {
     // update topic
     await store.dispatch(
       updateTutorials({
-        current_topic: [...this.props.tutorials.current_topic, topic]
+        current_topic: [...this.props.tutorials.current_topic, topic],
       })
     );
 
@@ -126,7 +133,7 @@ class SearchScreen extends React.Component {
     this.setup();
   };
 
-  handlePress = async postid => {
+  handlePress = async (postid) => {
     // store clicked post and go to tutorial page
     await store.dispatch(updateTutorials({ current_key: postid }));
     await store.dispatch(
@@ -166,23 +173,6 @@ class SearchScreen extends React.Component {
     this.props.navigation.navigate("Create");
   };
 
-  addFolder = () => {
-    var topic_route = this.props.tutorials.current_topic;
-    var route;
-    var topic = "";
-    for (route of topic_route) {
-      topic = topic + "/" + route;
-    }
-
-    firebase
-      .database()
-      .ref("categories" + topic)
-      .update({
-        icon: this.state.new
-      });
-    this.setState({ new: "" });
-  };
-
   render() {
     var postids = this.state.postids;
     var topics = this.state.topicnames;
@@ -190,27 +180,48 @@ class SearchScreen extends React.Component {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
           {this.state.isLoading ? (
             <ActivityIndicator color="#fff" size="large" />
           ) : (
             <View>
+              {this.props.tutorials.current_topic.length < 1 ? null : (
+                <TouchableOpacity onPress={this.goBack}>
+                  <View
+                    style={{
+                      marginBottom: 10,
+                      flexDirection: "row",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      color="white"
+                      style={{ margin: 10 }}
+                      name="md-arrow-back"
+                      size={25}
+                    />
+                    <Text style={{ fontSize: 15, color: "white" }}>
+                      Go Back
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
               {topics.length < 1 ? null : (
                 <View>
-                  <Text style={styles.heading}>Topics</Text>
                   <View
                     style={{
                       justifyContent: "center",
                       flexDirection: "row",
-                      flexWrap: "wrap"
+                      flexWrap: "wrap",
                     }}
                   >
                     {topics.map((topic, index) => {
@@ -223,7 +234,7 @@ class SearchScreen extends React.Component {
                           <MaterialCommunityIcons
                             name={this.state.topics[topic].icon}
                             size={40}
-                            color="#0b5c87"
+                            color="#ffb52b"
                           />
                           <View>
                             <Text style={styles.text}>{topic}</Text>
@@ -236,18 +247,16 @@ class SearchScreen extends React.Component {
               )}
               {postids.length < 1 ? (
                 this.props.tutorials.current_topic.length < 1 ? null : (
-                  <View style={{ alignItems: "center" }}>
-                    <Text style={styles.heading}>Posts</Text>
+                  <View style={{ padding: 20, alignItems: "center" }}>
                     <TouchableOpacity onPress={() => this.noPosts()}>
-                      <Text style={{ fontSize: 18, color: "white" }}>
-                        None made yet, be the first
+                      <Text style={{ fontSize: 18, color: "#6da9c9" }}>
+                        No tutorials have been made yet, be the first
                       </Text>
                     </TouchableOpacity>
                   </View>
                 )
               ) : (
                 <View style={styles.centerview}>
-                  <Text style={styles.heading}>Posts</Text>
                   {postids.map((postid, index) => {
                     return (
                       <TouchableOpacity
@@ -259,18 +268,29 @@ class SearchScreen extends React.Component {
                             padding: 5,
                             flexDirection: "row",
                             flexWrap: "wrap",
-                            justifyContent: "center"
+                            justifyContent: "center",
                           }}
                         >
                           <Image
                             resizeMode={"cover"}
-                            style={{ width: "100%", height: 200 }}
+                            style={{
+                              width: "100%",
+                              height: 200,
+                              marginBottom: -10,
+                            }}
                             source={{
-                              uri: this.state.contents[postid].thumbnail
+                              uri: this.state.contents[postid].thumbnail,
                             }}
                           />
-                          <View style={{ margin: 10, alignSelf: "center" }}>
-                            <Text style={{ color: "white", fontSize: 20 }}>
+                          <View
+                            style={{
+                              padding: 5,
+                              width: "100%",
+                              backgroundColor: "white",
+                              alignSelf: "center",
+                            }}
+                          >
+                            <Text style={{ color: "#6da9c9", fontSize: 20 }}>
                               {this.state.contents[postid].title}
                             </Text>
                           </View>
@@ -291,7 +311,7 @@ class SearchScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
@@ -299,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
     borderRightWidth: 1,
-    borderColor: "#0b5c87"
+    borderColor: "#0b5c87",
   },
   square: {
     margin: 10,
@@ -308,36 +328,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: "black",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
     elevation: 10,
-    backgroundColor: "white"
+    backgroundColor: "black",
   },
   text: {
     textAlign: "center",
-    color: "#0b5c87",
-    fontSize: 15
+    color: "white",
+    fontSize: 15,
   },
   heading: {
     fontSize: 22,
     color: "white",
     fontWeight: "bold",
     padding: 2,
-    alignSelf: "center"
+    alignSelf: "center",
   },
   line: {
     borderBottomColor: "white",
     borderBottomWidth: 1,
     alignSelf: "center",
-    width: "100%"
-  }
+    width: "100%",
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(SearchScreen);

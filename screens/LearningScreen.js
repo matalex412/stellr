@@ -7,12 +7,19 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
-  Alert
+  Alert,
+  TouchableOpacity,
+  Dimensions,
+  Switch,
 } from "react-native";
 import { Video } from "expo-av";
 import { connect } from "react-redux";
 import { AdMobBanner } from "expo-ads-admob";
 import { LinearGradient } from "expo-linear-gradient";
+import Firebase from "firebase";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Modal from "react-native-modal";
+import { AirbnbRating } from "react-native-ratings";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -22,7 +29,10 @@ class LearningScreen extends React.Component {
   state = {
     isLoading: true,
     posts: {},
-    added: false
+    added: false,
+    rating: 3,
+    isModalVisible: false,
+    learnt: false,
   };
 
   componentDidMount = () => {
@@ -36,82 +46,159 @@ class LearningScreen extends React.Component {
     const postInfo = this.props.tutorials.added;
 
     // get tutorial
-    var post = await firebase
-      .database()
-      .ref("posts" + postInfo.topic + "/" + postInfo.postid)
-      .once("value");
-    post = post.toJSON();
+    var doc = await firebase
+      .firestore()
+      .collection(`${postInfo.topic}/posts`)
+      .doc(this.props.tutorials.learn_key)
+      .get();
+
+    if (!currentUser.isAnonymous) {
+      // check if user has bookmarked tutorial
+      var ids;
+      var doc2 = await firebase
+        .firestore()
+        .collection("users/" + currentUser.uid + "/data")
+        .doc("learning")
+        .get();
+
+      if (doc2.exists) {
+        ids = Object.keys(doc2.data());
+        if (ids.includes(this.props.tutorials.learn_key)) {
+          this.setState({ added: true });
+        }
+      }
+    }
+    this.setState({ currentUser });
 
     // check if post exists
-    if (post == null) {
+    if (!doc.exists) {
       Alert.alert(
         "Error",
         "Sorry, this tutorial has either been deleted or its topic has been changed"
       );
-      var ref = await firebase
-        .database()
-        .ref(
-          `users/${currentUser.uid}/learning/${this.props.tutorials.learn_key}`
-        );
-      ref.remove();
+
+      if (this.state.added) {
+        // remove post from learning object for user
+        var postRef = firebase
+          .firestore()
+          .collection(`users/${currentUser.uid}/data`)
+          .doc("learning");
+        postRef.update({
+          [this.props.tutorials
+            .learn_key]: Firebase.firestore.FieldValue.delete(),
+        });
+      }
+
       this.props.navigation.navigate("Home");
     } else {
+      var post = doc.data();
       this.setState({ currentUser });
       this.setState({ post });
       this.setState({ isLoading: false });
 
-      // update thumbnail if changed
-      if (post.thumbnail != postInfo.thumbnail) {
-        firebase
-          .database()
-          .ref(
-            `users/${currentUser.uid}/learning/${this.props.tutorials.learn_key}`
-          )
-          .update({
-            thumbnail: post.thumbnail
-          });
+      if (this.state.added) {
+        // TEST THIS
+        const update = {};
+        update[`${this.props.tutorials.learn_key}.thumbnail`] = post.thumbnail;
+
+        // update thumbnail if changed
+        if (post.thumbnail != postInfo.thumbnail) {
+          firebase
+            .firestore()
+            .collection(`users/${currentUser.uid}/data`)
+            .doc("learning")
+            .update(update);
+        }
       }
     }
   };
 
   learnt = async () => {
     const { currentUser } = firebase.auth();
+    // remove post from learning object for user
+    var postRef = firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("learning");
+    postRef.update({
+      [this.props.tutorials.learn_key]: Firebase.firestore.FieldValue.delete(),
+    });
 
-    // get tutorials user has added
-    var posts = await firebase
-      .database()
-      .ref("users/" + currentUser.uid + "/learning")
-      .once("value");
-    posts = posts.toJSON();
-    var postkeys = Object.keys(posts);
+    var alreadyLearnt = false;
+    var historyRef = firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("history");
 
-    // get key of postrefs
-    var postkey;
-    var refKey;
-    for (postkey of postkeys) {
-      if (postkey == this.props.tutorials.learn_key) {
-        refKey = postkey;
+    // get users history
+    var doc = historyRef.get();
+    // check if tutorial has previously been learnt by user
+    if (doc.exists) {
+      var learnt = doc.data();
+      var keys = Object.keys(learnt);
+      for (key of keys) {
+        if (key == this.props.tutorials.learn_key) {
+          var alreadyLearnt = true;
+          var data = learnt[key];
+        }
       }
     }
 
-    var postRef = await firebase
-      .database()
-      .ref("users/" + currentUser.uid + "/learning/" + refKey);
-    postRef.remove();
+    if (alreadyLearnt == true) {
+      data.time = Date.now();
+      historyRef.update({
+        [this.props.tutorials.learn_key]: data,
+      });
+    } else {
+      // add to learning history
+      historyRef.set(
+        {
+          [this.props.tutorials.learn_key]: {
+            topic: this.props.tutorials.added.topic,
+            title: this.state.post.title,
+            time: Date.now(),
+          },
+        },
+        { merge: true }
+      );
+    }
 
-    // add to learning history
-    await firebase
-      .database()
-      .ref("users/" + currentUser.uid + "/history")
-      .push({
-        title: this.state.post.title
+    // update tutorial stats
+    firebase
+      .firestore()
+      .collection(`${this.props.tutorials.added.topic}/posts`)
+      .doc(this.props.tutorials.learn_key)
+      .update({
+        stars: Firebase.firestore.FieldValue.increment(this.state.rating),
+        learns: Firebase.firestore.FieldValue.increment(1),
+        active: Firebase.firestore.FieldValue.increment(-1),
       });
 
+    this.setState({ isModalVisible: false });
     this.props.navigation.navigate("Home");
   };
 
-  bannerError = () => {
-    console.log("banner ad not loading");
+  addHome = async () => {
+    const { currentUser } = await firebase.auth();
+
+    // add tutorial to user's learning section
+    await firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("learning")
+      .set(
+        {
+          [this.props.tutorials.learn_key]: {
+            topic: this.props.tutorials.added.topic,
+            title: this.state.post.title,
+            thumbnail: this.props.tutorials.added.thumbnail,
+          },
+        },
+        { merge: true }
+      );
+
+    Alert.alert("Added", "This tutorial has been added to your home");
+    this.setState({ added: true });
   };
 
   _onPlaybackStatusUpdate = (playbackStatus, index) => {
@@ -120,32 +207,31 @@ class LearningScreen extends React.Component {
     }
   };
 
-  addRef = (component, index) => {
-    this.vids[index] = component;
-  };
-
   render() {
+    var width = Dimensions.get("window").width;
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
           {this.state.isLoading ? (
-            <ActivityIndicator size="large" />
+            <ActivityIndicator color="#fff" size="large" />
           ) : (
             <View>
               <View style={{ flex: 1, flexDirection: "column" }}>
                 <AdMobBanner
                   adUnitID="ca-app-pub-3262091936426324/2933794374"
-                  onDidFailToReceiveAdWithError={this.bannerError}
+                  onDidFailToReceiveAdWithError={() =>
+                    console.log("banner ad not loading")
+                  }
                 />
               </View>
               <View style={{ flex: 1, alignItems: "center", padding: 10 }}>
@@ -156,7 +242,7 @@ class LearningScreen extends React.Component {
                     style={{
                       color: "white",
                       fontSize: 20,
-                      fontStyle: "italic"
+                      fontStyle: "italic",
                     }}
                   >
                     {this.state.post.title}
@@ -167,7 +253,15 @@ class LearningScreen extends React.Component {
                 </View>
                 {Object.values(this.state.post.steps).map((step, index) => (
                   <View
-                    style={{ alignItems: "center", padding: 10 }}
+                    style={{
+                      borderRadius: 5,
+                      backgroundColor: "#6da9c9",
+                      width: width - 100,
+                      marginTop: 25,
+                      marginBottom: 25,
+                      alignItems: "center",
+                      padding: 5,
+                    }}
                     key={index}
                   >
                     <Text style={styles.heading}>Step {index + 1}</Text>
@@ -179,10 +273,10 @@ class LearningScreen extends React.Component {
                     )}
                     {step.Videos && (
                       <Video
-                        onPlaybackStatusUpdate={playbackStatus =>
+                        onPlaybackStatusUpdate={(playbackStatus) =>
                           this._onPlaybackStatusUpdate(playbackStatus, index)
                         }
-                        ref={component => this.addRef(component, index)}
+                        ref={(component) => (this.vids[index] = component)}
                         source={{ uri: step.Videos }}
                         rate={1.0}
                         volume={1.0}
@@ -192,21 +286,147 @@ class LearningScreen extends React.Component {
                         style={{ margin: 10, width: 200, height: 200 }}
                       />
                     )}
-                    <Text style={{ color: "white", fontSize: 16 }}>
+                    <Text style={{ padding: 20, color: "white", fontSize: 16 }}>
                       {step.step}
                     </Text>
                   </View>
                 ))}
-                {this.state.currentUser.isAnonymous ? null : (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                    <View style={{ margin: 5 }}>
-                      <Button
-                        color="coral"
-                        title="Learnt"
-                        onPress={() => this.learnt()}
-                      />
-                    </View>
+                <View style={{ padding: 20, alignItems: "center" }}>
+                  <Text color="#6da9c9">Learns: {this.state.post.learns}</Text>
+                  <AirbnbRating
+                    isDisabled
+                    defaultRating={
+                      this.state.post.stars / this.state.post.learns
+                    }
+                    selectedColor="#ffb52b"
+                    showRating={false}
+                    type="custom"
+                    size={20}
+                  />
+                </View>
+                {this.state.currentUser.isAnonymous ? null : this.state
+                    .added ? (
+                  <View>
+                    <TouchableOpacity
+                      style={{ marginBottom: 30 }}
+                      onPress={() => this.setState({ isModalVisible: true })}
+                    >
+                      <View
+                        style={{
+                          justifyContent: "center",
+                          alignItems: "center",
+                          borderRadius: 2,
+                          padding: 7,
+                          backgroundColor: "black",
+                          flexDirection: "row",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Ionicons name="md-school" size={25} color="#ffb52b" />
+                        <Text style={{ marginLeft: 5, color: "#ffb52b" }}>
+                          Learnt
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <Modal isVisible={this.state.isModalVisible}>
+                      <TouchableOpacity
+                        style={[styles.button, styles.corner]}
+                        onPress={() => this.setState({ isModalVisible: false })}
+                      >
+                        <Ionicons name="md-close" size={20} color="white" />
+                      </TouchableOpacity>
+                      <View
+                        style={{
+                          justifyContent: "center",
+                          alignItems: "center",
+                          flex: 1,
+                        }}
+                      >
+                        <View
+                          style={{ alignItems: "center", flexDirection: "row" }}
+                        >
+                          <Text
+                            style={{
+                              paddingTop: 5,
+                              color: "white",
+                              paddingBottom: 5,
+                            }}
+                          >
+                            Rating:{" "}
+                          </Text>
+                          <AirbnbRating
+                            onFinishRating={(rating) =>
+                              this.setState({ rating })
+                            }
+                            selectedColor="#ffb52b"
+                            showRating={false}
+                            type="custom"
+                            size={20}
+                          />
+                        </View>
+                        <View
+                          style={{ alignItems: "center", flexDirection: "row" }}
+                        >
+                          <Text style={{ color: "white" }}>
+                            Were you able to learn the skill?
+                          </Text>
+                          <Switch
+                            trackColor={{ false: "#767577", true: "#ffb52b" }}
+                            thumbColor="#ffb52b"
+                            onValueChange={(status) =>
+                              this.setState({ learnt: status })
+                            }
+                            value={this.state.learnt}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={{ marginBottom: 30 }}
+                          onPress={this.learnt}
+                        >
+                          <View
+                            style={{
+                              justifyContent: "center",
+                              alignItems: "center",
+                              flexDirection: "row",
+                              backgroundColor: "black",
+                              padding: 7,
+                              borderRadius: 2,
+                            }}
+                          >
+                            <Ionicons
+                              name="md-checkmark"
+                              size={25}
+                              color="#ffb52b"
+                            />
+                            <Text style={{ marginLeft: 5, color: "#ffb52b" }}>
+                              Finish
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    </Modal>
                   </View>
+                ) : (
+                  <TouchableOpacity
+                    style={{ marginBottom: 30 }}
+                    onPress={this.addHome}
+                  >
+                    <View
+                      style={{
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flexDirection: "row",
+                        backgroundColor: "black",
+                        padding: 7,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <Ionicons name="md-bookmark" size={25} color="#ffb52b" />
+                      <Text style={{ marginLeft: 5, color: "#ffb52b" }}>
+                        Add to Home
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -220,22 +440,41 @@ class LearningScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   heading: {
     fontSize: 16,
-    color: "white"
-  }
+    color: "white",
+  },
+  corner: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 30,
+    height: 30,
+    margin: 10,
+  },
+  button: {
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 40,
+    height: 40,
+    backgroundColor: "#000",
+    borderRadius: 40,
+    margin: 5,
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(LearningScreen);

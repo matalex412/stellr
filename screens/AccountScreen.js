@@ -8,15 +8,12 @@ import {
   ActivityIndicator,
   Alert
 } from "react-native";
-import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
 
-class AccountScreen extends React.Component {
+export default class AccountScreen extends React.Component {
   state = {
     errorMessage: null,
     isLoading: true
@@ -27,13 +24,18 @@ class AccountScreen extends React.Component {
   };
 
   setup = async () => {
+    // store current user data
     const { currentUser } = await firebase.auth();
     this.setState({ currentUser });
     this.setState({ isLoading: false });
   };
 
-  logout = async () => {
-    await firebase.auth().signOut();
+  verifyEmail = () => {
+    this.state.currentUser.sendEmailVerification();
+    Alert.alert(
+      "Verification Email Sent",
+      `An email has been sent to ${this.state.currentUser.email} to verify your account`
+    );
   };
 
   delete = () => {
@@ -44,16 +46,18 @@ class AccountScreen extends React.Component {
         {
           text: "Yes",
           onPress: async () => {
-            var currentUser = firebase.auth().currentUser;
+            var currentUser = this.state.currentUser;
 
             try {
+              // delete user data
               await currentUser.delete();
-              var userRef = await firebase
-                .database()
-                .ref("users/" + currentUser.uid);
-              userRef.remove();
-              this.props.navigation.navigate("Auth");
+              await firebase
+                .firestore()
+                .collection("users")
+                .doc(currentUser.uid)
+                .delete();
             } catch (error) {
+              // display any error
               this.setState({ errorMessage: error.message });
             }
           }
@@ -68,20 +72,17 @@ class AccountScreen extends React.Component {
   };
 
   share = async () => {
-    try {
-      await Share.share({
-        message: "http://matthewalex.com/skoach"
-      });
-    } catch (err) {
-      console.log(err.message);
-    }
+    // let user share app website
+    await Share.share({
+      message: "http://matthewalex.com/skoach"
+    });
   };
 
   render() {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#0b5c87", "#6da9c9"]}
+          colors={["#6da9c9", "#fff"]}
           style={{
             position: "absolute",
             left: 0,
@@ -92,101 +93,104 @@ class AccountScreen extends React.Component {
         />
         {this.state.isLoading ? (
           <ActivityIndicator size="large" />
-        ) : this.state.currentUser.isAnonymous ? (
-          <View>
-            <TouchableOpacity onPress={this.logout}>
-              <Text style={{ color: "white", padding: 10 }}>
-                Sign up or Create an Account
-              </Text>
-            </TouchableOpacity>
-          </View>
         ) : (
-          <View style={{ justifyContent: "center", alignItems: "flex-start" }}>
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
-              <MaterialCommunityIcons
-                name="account"
-                size={30}
-                style={{ margin: 10 }}
-                color="white"
-              />
-              <View style={{ alignItems: "center" }}>
-                <Text>
-                  <Text style={{ fontWeight: "bold" }}>
-                    {this.state.currentUser.displayName}
+          <View style={{ alignItems: "center" }}>
+            <View
+              style={{ justifyContent: "center", alignItems: "flex-start" }}
+            >
+              <View style={{ alignItems: "center", flexDirection: "row" }}>
+                <MaterialCommunityIcons
+                  name="account"
+                  size={30}
+                  style={{ margin: 10 }}
+                  color="white"
+                />
+                <View style={{ alignItems: "center" }}>
+                  <Text>
+                    <Text style={{ fontWeight: "bold" }}>
+                      {this.state.currentUser.displayName}
+                    </Text>
+                    's Account
                   </Text>
-                  's Account
-                </Text>
-                <Text style={{ fontWeight: "bold" }}>
-                  {this.state.currentUser.email}
-                </Text>
+                  <View style={{ alignItems: "center", flexDirection: "row" }}>
+                    <Text style={{ fontWeight: "bold" }}>
+                      {this.state.currentUser.email}
+                    </Text>
+                    {!this.state.currentUser.emailVerified && (
+                      <TouchableOpacity onPress={this.verifyEmail}>
+                        <Text>(unverified)</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </View>
+              <View style={{ alignItems: "center", flexDirection: "row" }}>
+                <MaterialCommunityIcons
+                  name="pencil"
+                  size={30}
+                  style={{ margin: 10 }}
+                  color="white"
+                />
+                <TouchableOpacity
+                  onPress={() => this.props.navigation.navigate("UserPosts")}
+                >
+                  <Text style={{ color: "white" }}>Your Posts</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ alignItems: "center", flexDirection: "row" }}>
+                <MaterialCommunityIcons
+                  name="history"
+                  size={30}
+                  style={{ margin: 10 }}
+                  color="white"
+                />
+                <TouchableOpacity
+                  onPress={() => this.props.navigation.navigate("History")}
+                >
+                  <Text style={{ color: "white" }}>Learning History</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ alignItems: "center", flexDirection: "row" }}>
+                <MaterialCommunityIcons
+                  name="logout"
+                  size={30}
+                  style={{ margin: 10 }}
+                  color="white"
+                />
+                <TouchableOpacity onPress={() => firebase.auth().signOut()}>
+                  <Text style={{ color: "white" }}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ alignItems: "center", flexDirection: "row" }}>
+                <MaterialCommunityIcons
+                  name="share"
+                  size={30}
+                  style={{ margin: 10 }}
+                  color="white"
+                />
+                <TouchableOpacity onPress={this.share}>
+                  <Text style={{ color: "white" }}>Share Skoach</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ alignItems: "center", flexDirection: "row" }}>
+                <MaterialCommunityIcons
+                  name="delete"
+                  size={30}
+                  style={{ margin: 10 }}
+                  color="white"
+                />
+                <TouchableOpacity onPress={this.delete}>
+                  <Text style={{ color: "coral", fontWeight: "bold" }}>
+                    Delete Account
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
-              <MaterialCommunityIcons
-                name="pencil"
-                size={30}
-                style={{ margin: 10 }}
-                color="white"
-              />
-              <TouchableOpacity
-                onPress={() => this.props.navigation.navigate("UserPosts")}
-              >
-                <Text style={{ color: "white" }}>Your Posts</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
-              <MaterialCommunityIcons
-                name="history"
-                size={30}
-                style={{ margin: 10 }}
-                color="white"
-              />
-              <TouchableOpacity
-                onPress={() => this.props.navigation.navigate("History")}
-              >
-                <Text style={{ color: "white" }}>Learning History</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
-              <MaterialCommunityIcons
-                name="logout"
-                size={30}
-                style={{ margin: 10 }}
-                color="white"
-              />
-              <TouchableOpacity onPress={this.logout}>
-                <Text style={{ color: "white" }}>Logout</Text>
-              </TouchableOpacity>
-            </View>
             {this.state.errorMessage && (
-              <Text style={{ margin: 10, color: "white" }}>
+              <Text style={{ marginLeft: 50, marginRight: 50, color: "white" }}>
                 {this.state.errorMessage}
               </Text>
             )}
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
-              <MaterialCommunityIcons
-                name="share"
-                size={30}
-                style={{ margin: 10 }}
-                color="white"
-              />
-              <TouchableOpacity onPress={this.share}>
-                <Text style={{ color: "white" }}>Share Skoach</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
-              <MaterialCommunityIcons
-                name="delete"
-                size={30}
-                style={{ margin: 10 }}
-                color="white"
-              />
-              <TouchableOpacity onPress={this.delete}>
-                <Text style={{ color: "coral", fontWeight: "bold" }}>
-                  Delete Account
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
         )}
       </View>
@@ -202,9 +206,3 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   }
 });
-
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
-});
-
-export default connect(mapStateToProps)(AccountScreen);

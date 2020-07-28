@@ -73,29 +73,6 @@ class SearchScreen extends React.Component {
     this.setState({ isLoading: false });
   };
 
-  addFolder = async () => {
-    // get current topic route
-    var topic_route = this.state.current_topic;
-    var route;
-    var topic = "";
-    for (route of topic_route) {
-      topic = topic + "/" + route;
-    }
-
-    // format new topic
-    var new_topic = this.state.new[0].toUpperCase() + this.state.new.slice(1);
-
-    // add new topic to firebase
-    await firebase
-      .database()
-      .ref("categories/" + topic)
-      .update({
-        [new_topic]: ""
-      });
-    this.setState({ new: "" });
-    this.setup();
-  };
-
   handlePress = async topic => {
     var old_topics = this.state.topics;
     var new_topics = old_topics[topic];
@@ -110,10 +87,21 @@ class SearchScreen extends React.Component {
         var route;
         var topicstring = "";
         for (route of topic) {
-          topicstring = topicstring + "/" + route;
+          topicstring = topicstring + "/topics/" + route;
         }
         post.topic = topicstring;
         await store.dispatch(updateTutorials({ userpost: post }));
+
+        var subtopics = post.topic.split("/topics/");
+        var topic_string = subtopics[1];
+        var i;
+        for (i = 2; i < subtopics.length; i++) {
+          topic_string = topic_string + " > " + subtopics[i];
+        }
+        await store.dispatch(
+          updateTutorials({ usertopic_string: topic_string })
+        );
+
         this.props.navigation.navigate("UserTutorial");
       } else {
         await store.dispatch(
@@ -131,6 +119,7 @@ class SearchScreen extends React.Component {
     }
   };
 
+  // CHECK FOR WHEN EDITING USERS POSTS
   pickTopic = async () => {
     await store.dispatch(
       updateTutorials({ create_topic: [...this.state.current_topic] })
@@ -141,6 +130,7 @@ class SearchScreen extends React.Component {
   goBack = async () => {
     var current_topic = this.state.current_topic;
 
+    // go back one topic layer
     if (current_topic.length < 1) {
       this.props.navigation.navigate("Create");
     } else {
@@ -155,7 +145,7 @@ class SearchScreen extends React.Component {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
@@ -166,7 +156,7 @@ class SearchScreen extends React.Component {
           />
           <Text style={styles.heading}>Topics</Text>
           {this.state.isLoading ? (
-            <ActivityIndicator size="large" />
+            <ActivityIndicator color="#fff" size="large" />
           ) : (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
               {this.state.keys.map((topic, index) => {
@@ -184,7 +174,7 @@ class SearchScreen extends React.Component {
                 {this.state.current_topic.length < 1 ? null : (
                   <TouchableOpacity onPress={() => this.pickTopic()}>
                     <View>
-                      <Text style={{ color: "coral" }}>
+                      <Text style={{ color: "#ffb52b" }}>
                         Select Current Topic
                       </Text>
                     </View>

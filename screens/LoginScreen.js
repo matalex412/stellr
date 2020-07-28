@@ -4,9 +4,7 @@ import {
   Text,
   TextInput,
   View,
-  Button,
-  TouchableOpacity,
-  StatusBar
+  TouchableOpacity
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,33 +18,35 @@ class LoginScreen extends React.Component {
   state = {
     email: "",
     password: "",
-    errorMessage: null
+    errorMessage: null,
+    selection: {start: 1, end: 1}
   };
 
   handleLogin = async () => {
-    try {
-      await firebase
-        .auth()
-        .signInWithEmailAndPassword(this.state.email, this.state.password);
-    } catch (error) {
-      this.setState({ errorMessage: error.message });
+    if ((this.state.email.length > 1) && (this.state.password.length > 1)) {
+      try {
+        // sign user in
+        await firebase
+          .auth()
+          .signInWithEmailAndPassword(this.state.email, this.state.password);
+      } catch (error) {
+        // display errors
+        this.setState({ errorMessage: error.message });
+      }
+    } else {
+      this.setState({ errorMessage: "Please fill in the email and password fields"})
     }
   };
 
-  forgot = () => {
-    if (this.state.email.length > 1) {
-      firebase.auth().sendPasswordResetEmail(this.state.email);
-      alert(`An password reset email has been sent to ${this.state.email}`);
-    } else {
-      alert("Please enter a valid email address");
-    }
-  };
+  handleSelectionChange = async ({ nativeEvent: { selection } }) => {
+    await this.setState({ selection })
+  }
 
   render() {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#0b5c87", "#6da9c9"]}
+          colors={["#6da9c9", "#fff"]}
           style={{
             position: "absolute",
             left: 0,
@@ -57,81 +57,95 @@ class LoginScreen extends React.Component {
         />
         <Text style={{ fontSize: 19, color: "white" }}>Login</Text>
         {this.state.errorMessage && (
-          <Text style={{ margin: 10, color: "red" }}>
+          <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
             {this.state.errorMessage}
           </Text>
         )}
         <View
           style={{
-            justifyContent: "center",
-            flexDirection: "row",
-            flexWrap: "wrap"
-          }}
-        >
-          <View
-            style={{
-              paddingTop: 2,
-              alignItems: "center",
-              width: 25,
-              height: 25
-            }}
-          >
-            <Ionicons name="md-mail" size={25} color="white" />
-          </View>
-          <TextInput
-            style={styles.textInput}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="Email"
-            onChangeText={email => this.setState({ email })}
-            value={this.state.email}
-          />
-        </View>
-        <View
-          style={{
             alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            flexWrap: "wrap"
+            backgroundColor: "white",
+            padding: 20,
+            margin: 40,
+            marginTop: 10,
+            marginBottom: 20,
+            borderRadius: 5
           }}
         >
           <View
             style={{
               justifyContent: "center",
-              alignItems: "center",
-              width: 25,
-              height: 25
+              flexDirection: "row",
+              flexWrap: "wrap"
             }}
           >
-            <Ionicons name="md-lock" size={25} color="white" />
-          </View>
-          <TextInput
-            secureTextEntry
-            style={styles.textInput}
-            autoCapitalize="none"
-            placeholder="Password"
-            onChangeText={password => this.setState({ password })}
-            value={this.state.password}
-          />
-          <View style={{ alignSelf: "flex-end" }}>
-            <TouchableOpacity
-              style={{ margin: 10, alignSelf: "flex-end" }}
-              onPress={() => {
-                this.props.navigation.navigate("Forgot");
+            <View
+              style={{
+                paddingTop: 2,
+                alignItems: "center",
+                width: 25,
+                height: 25
               }}
             >
-              <Text style={{ color: "white" }}>Forgot Password</Text>
-            </TouchableOpacity>
+              <Ionicons name="md-mail" size={25} color="#6da9c9" />
+            </View>
+            <TextInput
+              selection={this.state.selection}
+              style={styles.textInput}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="Email"
+              onChangeText={email => this.setState({ email })}
+              value={this.state.email}
+              onSelectionChange={this.handleSelectionChange}
+              onEndEditing={() => this.setState({ selection: {start: 1, end: 1}})}
+            />
           </View>
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              flexWrap: "wrap"
+            }}
+          >
+            <View
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+                width: 25,
+                height: 25
+              }}
+            >
+              <Ionicons name="md-lock" size={25} color="#6da9c9" />
+            </View>
+            <TextInput
+              secureTextEntry
+              style={styles.textInput}
+              autoCapitalize="none"
+              placeholder="Password"
+              onChangeText={password => this.setState({ password })}
+              value={this.state.password}
+            />
+            <View style={{ alignSelf: "flex-end" }}>
+              <TouchableOpacity
+                style={{ margin: 10, alignSelf: "flex-end" }}
+                onPress={() => {
+                  this.props.navigation.navigate("Forgot");
+                }}
+              >
+                <Text style={{ color: "#6da9c9" }}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.submitButton}
+            activeOpacity={0.5}
+            onPress={this.handleLogin}
+          >
+            <Text style={{ color: "white", fontSize: 20 }}>Login</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.submitButton}
-          activeOpacity={0.5}
-          onPress={this.handleLogin}
-        >
-          <Text style={{ color: "white", fontSize: 20 }}> Login </Text>
-        </TouchableOpacity>
-        <View style={styles.line} />
         <View
           style={{
             alignItems: "center",
@@ -143,14 +157,14 @@ class LoginScreen extends React.Component {
             style={{ margin: 5 }}
             onPress={() => this.props.navigation.navigate("SignUp")}
           >
-            <Text style={{ color: "white" }}>Sign Up</Text>
+            <Text style={{ color: "#6da9c9" }}>Sign Up</Text>
           </TouchableOpacity>
-          <Text style={{ margin: 5, color: "white" }}>|</Text>
+          <Text style={{ margin: 5, color: "#6da9c9" }}>|</Text>
           <TouchableOpacity
             style={{ margin: 5 }}
             onPress={() => this.props.navigation.navigate("App")}
           >
-            <Text style={{ color: "white" }}>Continue Anonymously</Text>
+            <Text style={{ color: "#6da9c9" }}>Continue Anonymously</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -169,18 +183,18 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 2,
     paddingBottom: 3,
-    paddingLeft: 30,
-    paddingRight: 30,
-    backgroundColor: "coral",
-    borderRadius: 20
+    paddingLeft: 70,
+    paddingRight: 70,
+    backgroundColor: "#ffb52b",
+    borderRadius: 2
   },
   textInput: {
     fontSize: 18,
-    width: "60%",
+    width: "80%",
     marginLeft: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "white",
-    color: "white"
+    borderBottomColor: "#6da9c9",
+    color: "#6da9c9"
   },
   line: {
     borderBottomColor: "white",

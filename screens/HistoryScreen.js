@@ -17,40 +17,67 @@ import { firebase } from "./../src/config";
 class UserPosts extends React.Component {
   state = {
     isLoading: true,
-    posts: []
+    posts: {},
+    postids: []
   };
 
   componentDidMount = () => {
     this.setup();
   };
 
-  // no posts case
   setup = async () => {
     const { currentUser } = firebase.auth();
-    var posts = await firebase
-      .database()
-      .ref("users/" + currentUser.uid + "/history")
-      .once("value");
-    posts = posts.toJSON();
-    if (posts == null) {
-      posts = [];
-    } else {
-      posts = Object.values(posts);
+
+    // get users history
+    var doc = await firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("history")
+      .get();
+    if (doc.exists) {
+      var postids = Object.keys(doc.data());
+      var posts = doc.data();
+      postids.sort((a, b) => {
+        const timeA = Number(posts[a].time);
+        const timeB = Number(posts[b].time);
+
+        let comparison = 0;
+        if (timeA > timeB) {
+          comparison = 1;
+        } else if (timeA < timeB) {
+          comparison = -1;
+        }
+        return comparison;
+      });
+      this.setState({ postids });
+      this.setState({ posts });
     }
 
-    this.setState({ posts });
     this.setState({ isLoading: false });
   };
 
-  handlePress = () => {
-    this.props.navigation.navigate("Search");
+  handlePress = async key => {
+    var postref = this.state.posts[key];
+    // get post data
+    var doc = await firebase
+      .firestore()
+      .collection(`${postref.topic}/posts`)
+      .doc(key)
+      .get();
+
+    // send user to tutorial screen
+    await store.dispatch(updateTutorials({ tutorial_topic: postref.topic }));
+    await store.dispatch(updateTutorials({ current: doc.data() }));
+    await store.dispatch(updateTutorials({ current_key: key }));
+
+    this.props.navigation.navigate("Tutorial");
   };
 
   render() {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#0b5c87", "#6da9c9"]}
+          colors={["#6da9c9", "#fff"]}
           style={{
             position: "absolute",
             left: 0,
@@ -60,7 +87,7 @@ class UserPosts extends React.Component {
           }}
         />
         {this.state.isLoading ? (
-          <ActivityIndicator size="large" />
+          <ActivityIndicator color="#fff" size="large" />
         ) : this.state.posts.length < 1 ? (
           <View style={{ alignItems: "center" }}>
             <Text style={{ color: "white" }}>
@@ -77,13 +104,16 @@ class UserPosts extends React.Component {
             <Text style={{ fontWeight: "bold", fontSize: 20, color: "white" }}>
               Skills you've learnt
             </Text>
-            {this.state.posts.map((post, index) => {
+            {this.state.postids.map((postid, index) => {
               return (
-                <View key={index}>
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => this.handlePress(postid)}
+                >
                   <Text style={{ color: "white", fontSize: 17 }}>
-                    {post.title}
+                    {this.state.posts[postid].title}
                   </Text>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

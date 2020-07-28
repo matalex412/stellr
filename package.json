@@ -5,10 +5,13 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "eject": "expo eject"
+    "eject": "expo eject",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-native-community/masked-view": "0.1.6",
+    "@react-navigation/material-top-tabs": "^5.2.13",
+    "deprecated-react-native-listview": "^0.0.6",
     "expo": "~37.0.3",
     "expo-ads-admob": "~8.1.0",
     "expo-av": "^8.1.0",
@@ -22,21 +25,28 @@
     "react-native-dialogs": "^1.1.0",
     "react-native-elements": "^1.2.7",
     "react-native-gesture-handler": "^1.6.1",
+    "react-native-masonry": "^0.5.0-alpha.5",
+    "react-native-modal": "^11.5.6",
+    "react-native-ratings": "^7.2.0",
     "react-native-reanimated": "~1.7.0",
+    "react-native-responsive-grid": "^0.41.993",
     "react-native-safe-area-context": "^0.7.3",
     "react-native-screens": "~2.2.0",
+    "react-native-vector-icons": "^7.0.0",
     "react-native-web": "~0.11.7",
     "react-navigation": "^4.3.7",
     "react-navigation-animated-switch": "^0.5.12",
     "react-navigation-stack": "^2.3.11",
-    "react-navigation-tabs": "^2.8.13",
+    "react-navigation-tabs": "^2.9.0",
     "react-redux": "^7.2.0",
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.8.6",
-    "babel-preset-expo": "~8.1.0"
+    "babel-preset-expo": "~8.1.0",
+    "patch-package": "^6.2.2",
+    "postinstall-postinstall": "^2.1.0"
   },
   "private": true
 }

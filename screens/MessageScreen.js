@@ -1,7 +1,14 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator
+} from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
+import Firebase from "firebase";
 
 import { updateTutorials } from "./../redux/actions";
 import { store } from "./../redux/store";
@@ -9,7 +16,8 @@ import { firebase } from "./../src/config";
 
 class MessageScreen extends React.Component {
   state = {
-    messages: {}
+    messages: {},
+    isLoading: true
   };
 
   componentDidMount = () => {
@@ -20,46 +28,62 @@ class MessageScreen extends React.Component {
     this.read();
 
     // remove firebase listener
-    messageRef = this.state.messageRef;
-
+    var messageRef = this.state.messageRef;
     if (messageRef) {
-      messageRef.off("value");
+      messageRef();
     }
   };
 
   read = async () => {
     // change status of all messages to "read"
-    var messages = this.state.messages;
-    for (message in messages) {
-      if (messages[message] != "read") {
-        messages[message] = "read";
+    var time;
+    var data = this.state.data;
+    for (time of Object.keys(data)) {
+      if (data[time].status != "read") {
+        data[time].status = "read";
       }
     }
 
     // update database
     const { currentUser } = firebase.auth();
-    await firebase
-      .database()
-      .ref("users/" + currentUser.uid)
-      .update({
-        messages: messages
-      });
+    firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("messages")
+      .update(data);
   };
 
   getMessages = async () => {
     const { currentUser } = firebase.auth();
 
-    // get current users messages
+    // get user's messages
     var messageRef = await firebase
-      .database()
-      .ref(`users/${currentUser.uid}/messages`);
-    messageRef.on("value", async snapshot => {
-      var messages = snapshot.val();
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("messages")
+      .onSnapshot(async doc => {
+        this.setState({ isLoading: true });
+        // check if user has messages
+        if (doc.exists) {
+          // store messages in state
+          this.setState({ data: doc.data() });
+          var keys = Object.keys(doc.data());
+          var d;
+          var time,
+            times = [];
+          for (time of keys) {
+            time = Number(time);
+            d = new Date(time);
+            var mins = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+            times.push(
+              `${d.getDate()}/${d.getMonth()}  ${d.getHours()}:${mins}`
+            );
+          }
+          this.setState({ times });
+        }
 
-      if (messages != null) {
-        this.setState({ messages });
-      }
-    });
+        this.setState({ isLoading: false });
+      });
 
     // update messagebox status
     await store.dispatch(updateTutorials({ unread: false }));
@@ -71,7 +95,7 @@ class MessageScreen extends React.Component {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
@@ -80,24 +104,42 @@ class MessageScreen extends React.Component {
               height: "100%"
             }}
           />
-          {Object.keys(this.state.messages).length == 0 ? (
+          {this.state.isLoading ? (
+            <ActivityIndicator color="#fff" size="large" />
+          ) : this.state.times.length == 0 ? (
             <Text style={{ color: "white" }}>No Messages</Text>
           ) : (
-            Object.keys(this.state.messages).map((message, index) => {
+            Object.keys(this.state.data).map((time, index) => {
               return (
                 <View style={styles.message} key={index}>
                   <Text
-                    key={index}
                     style={{
-                      textAlign: "center",
-                      fontSize: 15,
+                      fontWeight: "bold",
+                      marginLeft: 10,
+                      textAlign: "left",
+                      fontSize: 20,
                       color:
-                        this.state.messages[message] == "unread"
-                          ? "coral"
+                        this.state.data[time].status == "unread"
+                          ? "#ffb52b"
                           : "white"
                     }}
                   >
-                    {message}
+                    {this.state.times[index]} -
+                  </Text>
+                  <Text
+                    style={{
+                      flex: 1,
+                      flexWrap: "wrap",
+                      fontSize: 20,
+                      marginLeft: 10,
+                      marginRight: 10,
+                      color:
+                        this.state.data[time].status == "unread"
+                          ? "#ffb52b"
+                          : "white"
+                    }}
+                  >
+                    {this.state.data[time].message}
                   </Text>
                 </View>
               );
@@ -122,7 +164,9 @@ const styles = StyleSheet.create({
   },
   message: {
     marginLeft: 10,
-    marginRight: 10
+    marginRight: 10,
+    flexDirection: "row",
+    width: "100%"
   },
   line: {
     borderBottomColor: "black",

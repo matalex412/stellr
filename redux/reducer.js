@@ -2,7 +2,7 @@ import { combineReducers } from "redux";
 import { UPDATE_TUTORIALS } from "./actions";
 
 const tutorialsReducer = (
-  state = { color: "coral", current_topic: [], steps: [{ step: "" }], title: "", create_topic: [], unread: false, vids: [""], uservids: [""] },
+  state = { headerShown: true, color: "coral", current_topic: [], steps: [{ step: "" }], title: "", create_topic: [], unread: false, vids: [""], uservids: [""] },
   action
 ) => {
   switch (action.type) {

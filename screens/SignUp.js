@@ -28,6 +28,7 @@ class SignUp extends React.Component {
   };
 
   setup = async () => {
+    // get array of taken usernames
     var names = await firebase
       .database()
       .ref("names")
@@ -47,15 +48,14 @@ class SignUp extends React.Component {
       var names = this.state.names;
       var unique = true;
       var name;
+
       // check display name is unique
-      for (name of names) {
-        if (name == this.state.username) {
-          unique = false;
-          break;
-        }
+      if (names.includes(this.state.username)) {
+        unique = false;
       }
 
       if (unique) {
+        // create user
         await firebase
           .auth()
           .createUserWithEmailAndPassword(
@@ -64,47 +64,65 @@ class SignUp extends React.Component {
           );
         var user = firebase.auth().currentUser;
 
-        firebase
-          .database()
-          .ref("users/" + user.uid + "/learning")
-          .push({
-            postid: "-M9sLloRcBSCZhf9QQjT",
-            thumbnail:
-              "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9sLloRcBSCZhf9QQjT%2FThumbnail?alt=media&token=8588020f-a02a-467c-8da5-26462b77b061",
-            title: "Using Skoach",
-            topic: "/Meta"
-          });
-        firebase
-          .database()
-          .ref("users/" + user.uid + "/learning")
-          .push({
-            postid: "-M9Ehcn1WiABy_0wDMKN",
-            thumbnail:
-              "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9Ehcn1WiABy_0wDMKN%2FThumbnail?alt=media&token=e206b115-cb63-4098-abfe-c7f4b63bcd84",
-            title: "Creating a Tutorial",
-            topic: "/Meta"
-          });
-
+        // update username
         await user.updateProfile({
           displayName: this.state.username
         });
 
-        firebase
-          .database()
-          .ref("users/" + user.uid)
-          .update({
-            messages: { "Please verify your email": "unread" },
+        var interests = {}
+        interests.topics = ["/topics/Meta"]
+        
+        // create base user data in firestore database
+        await firebase
+          .firestore()
+          .collection("users/")
+          .doc(user.uid)
+          .set({
             username: this.state.username,
-            verified: "pending"
+            interests: interests
+          });
+
+        // add help tutorials to user screen
+        await firebase
+          .firestore()
+          .collection("users/" + user.uid + "/data")
+          .doc("learning")
+          .set({
+            "2fJyrGMwyU8bKKImOtb2": {
+              title: "Using Skoach",
+              thumbnail:
+                "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9sLloRcBSCZhf9QQjT%2FThumbnail?alt=media&token=8588020f-a02a-467c-8da5-26462b77b061",
+              topic: "topics/Meta"
+            },
+            iuyEJIBF63QJRhcBNNQ6: {
+              title: "Creating a Tutorial",
+              thumbnail:
+                "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9Ehcn1WiABy_0wDMKN%2FThumbnail?alt=media&token=e206b115-cb63-4098-abfe-c7f4b63bcd84",
+              topic: "topics/Meta"
+            }
+          });
+
+        // send user message to verify email
+        await firebase
+          .firestore()
+          .collection("users/" + user.uid + "/data")
+          .doc("messages")
+          .set({
+            [Date.now()]: {
+              message: "Please verify your email",
+              status: "unread"
+            }
           });
         await store.dispatch(updateTutorials({ unread: true }));
 
+        // update list of taken usernames
         names.push(this.state.username);
         firebase
           .database()
           .ref("/")
           .update({ names: names });
 
+        // send user email verification
         user.sendEmailVerification();
       } else {
         this.setState({ errorMessage: "Sorry, that username has been taken" });
@@ -118,7 +136,7 @@ class SignUp extends React.Component {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#0b5c87", "#6da9c9"]}
+          colors={["#6da9c9", "#fff"]}
           style={{
             position: "absolute",
             left: 0,
@@ -129,84 +147,93 @@ class SignUp extends React.Component {
         />
         <Text style={{ fontSize: 19, color: "white" }}>Sign Up</Text>
         {this.state.errorMessage && (
-          <Text style={{ margin: 10, color: "red" }}>
+          <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
             {this.state.errorMessage}
           </Text>
         )}
         <View
           style={{
             alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            flexWrap: "wrap"
+            backgroundColor: "white",
+            padding: 30,
+            marginTop: 10,
+            marginBottom: 20,
+            borderRadius: 5
           }}
         >
           <View
             style={{
-              paddingTop: 2,
               alignItems: "center",
-              width: 25,
-              height: 25
+              justifyContent: "center",
+              flexDirection: "row"
             }}
           >
-            <Ionicons name="md-person" size={25} color="white" />
+            <View
+              style={{
+                paddingTop: 2,
+                alignItems: "center",
+                width: 25,
+                height: 25
+              }}
+            >
+              <Ionicons name="md-person" size={25} color="#6da9c9" />
+            </View>
+            <TextInput
+              placeholder="Username"
+              autoCapitalize="none"
+              style={styles.textInput}
+              onChangeText={username => this.setState({ username })}
+              value={this.state.username}
+            />
           </View>
-          <TextInput
-            placeholder="Username"
-            autoCapitalize="none"
-            style={styles.textInput}
-            onChangeText={username => this.setState({ username })}
-            value={this.state.username}
-          />
-        </View>
-        <View
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            flexWrap: "wrap"
-          }}
-        >
-          <View style={{ alignItems: "center", width: 25, height: 25 }}>
-            <Ionicons name="md-mail" size={25} color="white" />
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              flexWrap: "wrap"
+            }}
+          >
+            <View style={{ alignItems: "center", width: 25, height: 25 }}>
+              <Ionicons name="md-mail" size={25} color="#6da9c9" />
+            </View>
+            <TextInput
+              keyboardType="email-address"
+              placeholder="Email"
+              autoCapitalize="none"
+              style={styles.textInput}
+              onChangeText={email => this.setState({ email })}
+              value={this.state.email}
+            />
           </View>
-          <TextInput
-            keyboardType="email-address"
-            placeholder="Email"
-            autoCapitalize="none"
-            style={styles.textInput}
-            onChangeText={email => this.setState({ email })}
-            value={this.state.email}
-          />
-        </View>
-        <View
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            flexWrap: "wrap"
-          }}
-        >
-          <View style={{ alignItems: "center", width: 25, height: 25 }}>
-            <Ionicons name="md-lock" size={25} color="white" />
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              flexWrap: "wrap"
+            }}
+          >
+            <View style={{ alignItems: "center", width: 25, height: 25 }}>
+              <Ionicons name="md-lock" size={25} color="#6da9c9" />
+            </View>
+            <TextInput
+              secureTextEntry
+              placeholder="Password"
+              autoCapitalize="none"
+              style={styles.textInput}
+              onChangeText={password => this.setState({ password })}
+              value={this.state.password}
+            />
           </View>
-          <TextInput
-            secureTextEntry
-            placeholder="Password"
-            autoCapitalize="none"
-            style={styles.textInput}
-            onChangeText={password => this.setState({ password })}
-            value={this.state.password}
-          />
+          <TouchableOpacity
+            style={styles.submitButton}
+            activeOpacity={0.5}
+            onPress={this.handleSignUp}
+          >
+            <Text style={{ color: "white", fontSize: 20 }}>Sign Up</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.submitButton}
-          activeOpacity={0.5}
-          onPress={this.handleSignUp}
-        >
-          <Text style={{ color: "white", fontSize: 20 }}> Sign Up </Text>
-        </TouchableOpacity>
-        <View style={styles.line} />
         <View
           style={{
             alignItems: "center",
@@ -218,14 +245,14 @@ class SignUp extends React.Component {
             style={{ margin: 5 }}
             onPress={() => this.props.navigation.navigate("Login")}
           >
-            <Text style={{ color: "white" }}>Login</Text>
+            <Text style={{ color: "#6da9c9" }}>Login</Text>
           </TouchableOpacity>
-          <Text style={{ margin: 5, color: "white" }}>|</Text>
+          <Text style={{ margin: 5, color: "#6da9c9" }}>|</Text>
           <TouchableOpacity
             style={{ margin: 5 }}
             onPress={() => this.props.navigation.navigate("App")}
           >
-            <Text style={{ color: "white" }}>Continue Anonymously</Text>
+            <Text style={{ color: "#6da9c9" }}>Continue Anonymously</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -236,26 +263,26 @@ class SignUp extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     justifyContent: "center",
-    alignItems: "center"
-  },
-  textInput: {
-    fontSize: 18,
-    width: "60%",
-    marginLeft: 3,
-    borderBottomWidth: 1,
-    borderBottomColor: "white",
-    color: "white"
+    alignItems: "center",
+    backgroundColor: "#fff"
   },
   submitButton: {
     marginTop: 10,
     paddingTop: 2,
     paddingBottom: 3,
-    paddingLeft: 30,
-    paddingRight: 30,
-    backgroundColor: "coral",
-    borderRadius: 20
+    paddingLeft: 70,
+    paddingRight: 70,
+    backgroundColor: "#ffb52b",
+    borderRadius: 2
+  },
+  textInput: {
+    fontSize: 18,
+    width: "60%",
+    marginLeft: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#6da9c9",
+    color: "#6da9c9"
   },
   line: {
     borderBottomColor: "white",

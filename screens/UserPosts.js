@@ -16,7 +16,9 @@ import { firebase } from "./../src/config";
 
 class UserPosts extends React.Component {
   state = {
-    isLoading: true
+    isLoading: true,
+    postrefs: {},
+    keys: []
   };
 
   componentDidMount = () => {
@@ -25,49 +27,43 @@ class UserPosts extends React.Component {
 
   setup = async () => {
     const { currentUser } = firebase.auth();
-    var madeRef = await firebase
-      .database()
-      .ref("users/" + currentUser.uid + "/made");
-    await madeRef.on("value", async snapshot => {
-      this.setState({ isLoading: true });
-      var data = snapshot.val();
 
-      if (data == null) {
-        postrefs = [];
-      } else {
-        var postrefs = Object.values(data);
-      }
-
-      var postref;
-      var posts = [];
-      for (postref of postrefs) {
-        var post = await firebase
-          .database()
-          .ref("posts" + postref.topic + "/" + postref.postid)
-          .once("value");
-        post = post.toJSON();
-        if (post != null) {
-          post.postid = postref.postid;
-          post.topic = postref.topic;
-          post.old_topic = postref.topic;
-          posts.push(post);
+    // get reference data to user's posts
+    var madeRef = firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("made")
+      .onSnapshot(async doc => {
+        this.setState({ isLoading: true });
+        if (doc.exists) {
+          var postrefs = doc.data();
+          this.setState({ keys: Object.keys(postrefs) });
+          await this.setState({ postrefs });
         }
-      }
-      await this.setState({ posts });
-      this.setState({ madeRef });
-      this.setState({ isLoading: false });
-    });
+        this.setState({ isLoading: false });
+      });
+    this.setState({ madeRef });
   };
 
-  handlePress = async post => {
+  handlePress = async key => {
+    // get post and redirect to editing page
+    var doc = await firebase
+      .firestore()
+      .collection(`${this.state.postrefs[key].topic}/posts`)
+      .doc(key)
+      .get();
+
+    var post = doc.data();
+    post.topic = this.state.postrefs[key].topic;
+    post.postid = key;
     await store.dispatch(updateTutorials({ userpost: post }));
     this.props.navigation.navigate("UserTutorial");
   };
 
   componentWillUnmount = () => {
-    madeRef = this.state.madeRef;
+    var madeRef = this.state.madeRef;
     if (madeRef) {
-      madeRef.off("value");
+      madeRef();
     }
   };
 
@@ -75,7 +71,7 @@ class UserPosts extends React.Component {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#0b5c87", "#6da9c9"]}
+          colors={["#6da9c9", "#fff"]}
           style={{
             position: "absolute",
             left: 0,
@@ -86,7 +82,7 @@ class UserPosts extends React.Component {
         />
         {this.state.isLoading ? (
           <ActivityIndicator color="#fff" size="large" />
-        ) : this.state.posts.length < 1 ? (
+        ) : this.state.postrefs.length < 1 ? (
           <View style={{ alignItems: "center" }}>
             <Text style={{ color: "white" }}>You haven't made any yet</Text>
             <TouchableOpacity
@@ -96,15 +92,15 @@ class UserPosts extends React.Component {
             </TouchableOpacity>
           </View>
         ) : (
-          this.state.posts.map((post, index) => {
+          this.state.keys.map((key, index) => {
             return (
               <TouchableOpacity
                 key={index}
-                onPress={() => this.handlePress(post)}
+                onPress={() => this.handlePress(key)}
               >
                 <View>
                   <Text style={{ color: "white", fontSize: 20 }}>
-                    {post.title}
+                    {this.state.postrefs[key].title}
                   </Text>
                 </View>
               </TouchableOpacity>

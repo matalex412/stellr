@@ -7,176 +7,211 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
-  ScrollView
+  RefreshControl,
+  ScrollView,
+  Dimensions,
 } from "react-native";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
+import ListView from "deprecated-react-native-listview";
+import Masonry from "react-native-masonry";
+import Firebase from "firebase";
 
-import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
+import { store } from "./../redux/store";
 import { firebase } from "./../src/config";
 
 class HomeScreen extends React.Component {
   state = {
     currentUser: null,
-    isLoading: true
+    isLoading: true,
+    posts: {},
+    keys: [],
   };
 
-
   componentDidMount = () => {
-    this.getPosts();
+    this.setup();
   };
 
   componentWillUnmount = () => {
-    // turn off tutorial listener if user isn't anonymous
+    // turn off tutorial listener
     var learnRef = this.state.learnRef;
     if (learnRef) {
-      learnRef.off("value");
+      learnRef();
     }
   };
 
-  addCollection = async () => {
-    var tutorial = await firebase.database().ref("Art/-MAVkJxm9CTEgAc3tS97").once("value")
-    tutorial.steps = Object.values(tutorial.steps)
+  setup = async () => {
+    this.setState({ isLoading: true });
+    var { currentUser } = await firebase.auth();
 
-    console.log(tutorial)
-/*    firebase.firestore().collection("posts").doc("Art").add({
-      name: "Los Angeles",
-      state: "CA",
-      country: "USA"
-    })*/
-  }
+    if (!currentUser) {
+      // sign user in
+      await firebase
+        .auth()
+        .signInAnonymously()
+        .catch((err) => {
+          console.log(err.message);
+        });
+
+      // get new currentUser info
+      currentUser = await firebase.auth().currentUser;
+    }
+
+    this.getPosts();
+    var is = currentUser.isVerified;
+    // check user is verified
+    if (currentUser.isVerified) {
+      // get user's messages
+      var doc = await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("messages")
+        .get();
+      if (doc.exists) {
+        var messages = doc.data();
+        for (message of messages) {
+          if (message.message == "Please verify your email") {
+            break;
+          }
+        }
+
+        if (messages["Please verify your email"]) {
+          firebase
+            .firestore()
+            .collection(`users/${currentUser.uid}/data`)
+            .doc("messages")
+            .update({
+              "Please verify your email": Firebase.firestore.FieldValue.delete(),
+            });
+        }
+      }
+    }
+  };
 
   getPosts = async () => {
     this.setState({ isLoading: true });
     var { currentUser } = await firebase.auth();
-    if (!currentUser) {
-      await firebase
-        .auth()
-        .signInAnonymously()
-        .catch(err => {
-          console.log(err.message);
-        });
-      currentUser = await firebase.auth().currentUser;
-      await this.setState({ currentUser });
-      await this.setState({ isLoading: false });
-    } else if (!currentUser.isAnonymous) {
-      // get user's added tutorials
-      var learnRef = await firebase
-        .database()
-        .ref("users/" + currentUser.uid + "/learning");
-      await learnRef.on("value", async snapshot => {
-        this.setState({ isLoading: true });
-        var posts = snapshot.val();
-        if (posts == null) {
-          var keys = [];
-        } else {
-          var keys = Object.keys(posts);
-        }
 
-        await this.setState({ posts });
-        await this.setState({ keys });
-        await this.setState({ currentUser });
-        await this.setState({ isLoading: false });
-      });
-      await this.setState({ learnRef });
-
-      // check user is verified
-      var user = await firebase
-        .database()
-        .ref("users/" + currentUser.uid)
-        .once("value");
-      if (user.verified == "false") {
-        currentUser.sendEmailVerification();
-        alert(
-          "Your account hasn't been verified yet so we've sent you an email verification link"
-        );
-        firebase
-          .database()
-          .ref("users/" + currentUser.uid)
-          .update({ verified: "pending" });
+    // get user's interests
+    if (!currentUser.isAnonymous) {
+      var doc = await firebase
+        .firestore()
+        .collection("users")
+        .doc(currentUser.uid)
+        .get();
+      if (doc.exists) {
+        var data = doc.data();
+        var interests = data.interests;
       }
-    } else {
-      await this.setState({ currentUser });
-      this.setState({ isLoading: false });
+    } else if (currentUser.isAnonymous) {
+      var interests = { creators: [], topics: ["/topics/Meta", "/topics/Art"] };
     }
+
+    // fetch tutorials related to user's interests
+    var doc,
+      docs,
+      post,
+      jpost,
+      posts = [];
+    for (var creator of interests.creators) {
+      docs = await firebase
+        .firestore()
+        .collectionGroup("posts")
+        .where("uid", "==", creator)
+        .limit(5)
+        .get();
+      docs.forEach((doc) => {
+        post = doc.data();
+        post.key = doc.id;
+        posts.push(post);
+      });
+    }
+    for (var topic of interests.topics) {
+      docs = await firebase
+        .firestore()
+        .collectionGroup("posts")
+        .where("topic", "==", topic)
+        .limit(5)
+        .get();
+      docs.forEach((doc) => {
+        post = doc.data();
+        post.key = doc.id;
+
+        if (!posts.some((p) => p.key == post.key)) {
+          posts.push(post);
+        }
+      });
+    }
+
+    // split list of tutorials into rows for display
+    var rows = [];
+    var i,
+      j,
+      temparray,
+      chunk = 2;
+    for (i = 0, j = posts.length; i < j; i += chunk) {
+      temparray = posts.slice(i, i + chunk);
+      rows.push(temparray);
+    }
+    this.setState({ rows });
+    this.setState({ isLoading: false });
   };
 
-  handlePress = async key => {
-    await store.dispatch(updateTutorials({ learn_key: key }));
-    await store.dispatch(updateTutorials({ added: this.state.posts[key] }));
-    this.props.navigation.navigate("Added");
-  };
-
-  remove = async key => {
-    const { currentUser } = firebase.auth();
-
-    var postRef = await firebase
-      .database()
-      .ref("users/" + currentUser.uid + "/learning/" + key);
-    postRef.remove();
+  handlePress = async (post) => {
+    // redirect user to learning page with post info
+    await store.dispatch(updateTutorials({ learn_key: post.key }));
+    await store.dispatch(updateTutorials({ added: post }));
+    this.props.navigation.navigate("Learning");
   };
 
   render() {
+    var width = Dimensions.get("window").width;
     return (
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.contentContainer}>
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={this.getPosts} />
+          }
+        >
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
-          <TouchableOpacity onPress={this.addCollection}><Text>Add</Text></TouchableOpacity>
-          <Text
-            style={{
-              fontFamily: "serif",
-              margin: 10,
-              fontSize: 25,
-              fontStyle: "italic",
-              color: "white"
-            }}
-          >
-            'an expert in anything was once a beginner'
-          </Text>
           {this.state.isLoading ? (
             <ActivityIndicator color="#fff" size="large" />
-          ) : this.state.currentUser.isAnonymous ? null : this.state.posts ==
-            null ? null : (
+          ) : (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-              {this.state.keys.map((key, index) => {
+              {this.state.rows.map((row, index) => {
                 return (
-                  <View key={index} style={{ marginBottom: 5 }}>
-                    <TouchableOpacity onPress={() => this.handlePress(key)}>
-                      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                        <Image
-                          resizeMode={"cover"}
-                          style={{ width: "100%", height: 200 }}
-                          source={{ uri: this.state.posts[key].thumbnail }}
-                        />
+                  <View key={index} style={{ flexDirection: "row" }}>
+                    {row.map((image, i) => {
+                      return (
                         <TouchableOpacity
-                          style={styles.button}
-                          onPress={() => this.remove(key)}
+                          key={i}
+                          onPress={() => this.handlePress(image)}
                         >
-                          <Ionicons name="md-close" size={35} color="#0b5c87" />
+                          <Image
+                            resizeMode={"cover"}
+                            style={{
+                              width: width / 2 - 28,
+                              height: 200,
+                              margin: 7,
+                              borderRadius: 5,
+                            }}
+                            source={{ uri: image.thumbnail }}
+                          />
                         </TouchableOpacity>
-                        <Text
-                          style={{
-                            marginLeft: 10,
-                            color: "white",
-                            fontSize: 20,
-                            margin: 5
-                          }}
-                        >
-                          {this.state.posts[key].title}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 );
               })}
@@ -191,15 +226,13 @@ class HomeScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
-    borderRightWidth: 1,
-    borderColor: "#0b5c87"
   },
   button: {
     position: "absolute",
@@ -213,12 +246,12 @@ const styles = StyleSheet.create({
     height: 35,
     backgroundColor: "white",
     borderRadius: 35,
-    margin: 5
-  }
+    margin: 5,
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(HomeScreen);

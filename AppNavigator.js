@@ -2,22 +2,23 @@ import { createAppContainer, createSwitchNavigator } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import {
   createBottomTabNavigator,
-  createMaterialTopTabNavigator
+  createMaterialTopTabNavigator,
 } from "react-navigation-tabs";
 import createAnimatedSwitchNavigator from "react-navigation-animated-switch";
 import { Transition } from "react-native-reanimated";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { Text, TouchableOpacity, View } from "react-native";
 import React from "react";
-import { connect } from "react-redux";
 
 import AppHeader from "./screens/components/AppHeader";
 import HomeScreen from "./screens/HomeScreen";
+import AddedScreen from "./screens/AddedScreen";
 import CreateScreen from "./screens/CreateScreen";
 import SearchScreen from "./screens/SearchScreen";
 import LoginScreen from "./screens/LoginScreen";
 import LoadingScreen from "./screens/LoadingScreen";
-import Signup from "./screens/SignUp";
+import SignUp from "./screens/SignUp";
 import TutorialScreen from "./screens/TutorialScreen";
 import LearningScreen from "./screens/LearningScreen";
 import AccountScreen from "./screens/AccountScreen";
@@ -28,96 +29,104 @@ import HistoryScreen from "./screens/HistoryScreen";
 import AskScreen from "./screens/AskScreen";
 import ForgotScreen from "./screens/ForgotScreen";
 import MessageScreen from "./screens/MessageScreen";
-
-const SearchStack = createStackNavigator(
-  {
-    Search: SearchScreen,
-    Tutorial: TutorialScreen
-  },
-  {
-    headerMode: "none",
-    navigationOptions: {
-      headerShown: false
-    }
-  }
-);
+import PeopleScreen from "./screens/PeopleScreen";
+import ProfileScreen from "./screens/ProfileScreen";
 
 const CreateStack = createSwitchNavigator(
   {
     Create: CreateScreen,
-    Topic: TopicScreen
+    Topic: TopicScreen,
   },
   {
-    initialRouteName: "Create"
+    initialRouteName: "Create",
   }
 );
 
-const HomeStack = createStackNavigator(
+const HomeTabs = createMaterialTopTabNavigator(
   {
     Home: HomeScreen,
-    Added: LearningScreen
+    Added: AddedScreen,
   },
   {
-    headerMode: "none",
-    navigationOptions: {
-      headerShown: false
+    tabBarOptions: {
+      activeTintColor: "#ffb52b",
+      inactiveTintColor: "white",
+      style: {
+        backgroundColor: "#6da9c9",
+      },
+      indicatorStyle: {
+        backgroundColor: "#ffb52b",
+      },
     },
-    initialRouteName: "Home"
   }
 );
 
 const LoginStack = createStackNavigator(
   {
-    Login: LoginScreen,
-    Forgot: ForgotScreen
+    Login: {
+      screen: LoginScreen,
+      navigationOptions: {
+        headerShown: false,
+      },
+    },
+    Forgot: {
+      screen: ForgotScreen,
+      navigationOptions: { title: "Forgot Password" },
+    },
   },
   {
+    defaultNavigationOptions: {
+      headerStyle: { backgroundColor: "#6da9c9" },
+      headerTitleStyle: {
+        color: "white",
+      },
+      headerBackImage: () => (
+        <Ionicons
+          color="white"
+          style={{ margin: 10 }}
+          name="md-arrow-back"
+          size={25}
+        />
+      ),
+    },
     initialRouteName: "Login",
-    headerMode: "none"
   }
 );
 
 const AppTabs = createBottomTabNavigator(
   {
-    Home: HomeStack,
+    Home: HomeTabs,
     Create: CreateStack,
-    Search: SearchStack,
-    Ask: AskScreen
+    Search: SearchScreen,
+    Ask: AskScreen,
+    Users: PeopleScreen,
   },
   {
     tabBarOptions: {
-      activeTintColor: "#0b5c87",
-      inactiveTintColor: "white",
+      showLabel: false,
+      activeTintColor: "#ffb52b",
       style: {
-        backgroundColor: "#6da9c9",
-        borderTopColor: "transparent"
-      }
-    }
+        backgroundColor: "#fff",
+        borderTopColor: "transparent",
+        elevation: 6,
+      },
+    },
   }
 );
 
-const AuthStack = createAnimatedSwitchNavigator(
+const AuthStack = createSwitchNavigator(
   {
     Loading: LoadingScreen,
     Login: LoginStack,
     SignUp: {
-      screen: Signup,
+      screen: SignUp,
       navigationOptions: {
-        title: "Create Your Account"
-      }
-    }
+        title: "Create Your Account",
+      },
+    },
   },
   {
     initialRouteName: "Loading",
-    defaultNavigationOptions: {
-      headerLeft: () => null,
-      headerStyle: {
-        backgroundColor: "cornflowerblue"
-      },
-      headerTitleStyle: {
-        color: "white"
-      }
-    }
   }
 );
 
@@ -125,12 +134,10 @@ const AppStack = createStackNavigator(
   {
     Tabs: {
       screen: AppTabs,
-      navigationOptions: ({ navigation, goBack }) => ({
+      navigationOptions: ({ navigation, goBack, tutorials }) => ({
         title: "Skoach",
-        headerRight: () => (
-          <AppHeader navigation={navigation} />
-        )
-      })
+        headerRight: () => <AppHeader navigation={navigation} />,
+      }),
     },
     Account: {
       screen: AccountScreen,
@@ -142,8 +149,8 @@ const AppStack = createStackNavigator(
             name="md-close"
             size={25}
           />
-        )
-      }
+        ),
+      },
     },
     Messages: {
       screen: MessageScreen,
@@ -155,22 +162,25 @@ const AppStack = createStackNavigator(
             name="md-close"
             size={25}
           />
-        )
-      }
+        ),
+      },
     },
     UserPosts: {
       screen: UserPosts,
-      navigationOptions: { title: "Your Posts" }
+      navigationOptions: { title: "Your Posts" },
     },
+    Profile: ProfileScreen,
+    Learning: LearningScreen,
+    Tutorial: TutorialScreen,
     UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
     UserTutorial: { screen: UserPostScreen, navigationOptions: { title: "" } },
-    History: HistoryScreen
+    History: HistoryScreen,
   },
   {
     defaultNavigationOptions: {
-      headerStyle: { backgroundColor: "#0b5c87" },
+      headerStyle: { backgroundColor: "#6da9c9" },
       headerTitleStyle: {
-        color: "white"
+        color: "white",
       },
       headerBackImage: () => (
         <Ionicons
@@ -179,16 +189,16 @@ const AppStack = createStackNavigator(
           name="md-arrow-back"
           size={25}
         />
-      )
+      ),
     },
-    initialRouteName: "Tabs"
+    initialRouteName: "Tabs",
   }
 );
 
 const AppNavigator = createAnimatedSwitchNavigator(
   {
     App: AppStack,
-    Auth: AuthStack
+    Auth: AuthStack,
   },
   {
     initialRouteName: "Auth",
@@ -201,58 +211,65 @@ const AppNavigator = createAnimatedSwitchNavigator(
         />
         <Transition.In type="fade" durationMs={500} />
       </Transition.Together>
-    )
+    ),
   }
 );
 
-AskScreen.navigationOptions = {
+HomeTabs.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <Ionicons
-      style={{ alignSelf: "center" }}
-      name="ios-list-box"
-      size={25}
+    <MaterialCommunityIcons
+      style={{ alignSelf: "center", padding: 10 }}
+      name="home"
+      size={35}
       color={tintColor}
     />
-  )
-};
-
-HomeStack.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
-    <Ionicons
-      style={{ alignSelf: "center" }}
-      name="md-home"
-      size={25}
-      color={tintColor}
-    />
-  )
+  ),
 };
 
 CreateStack.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <Ionicons
-      style={{ alignSelf: "center" }}
-      name="md-create"
-      size={25}
+    <MaterialCommunityIcons
+      style={{ alignSelf: "center", padding: 10 }}
+      name="pencil"
+      size={35}
       color={tintColor}
     />
-  )
+  ),
 };
 
-SearchStack.navigationOptions = {
+SearchScreen.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <Ionicons
-      style={{ alignSelf: "center" }}
-      name="ios-search"
-      size={25}
+    <MaterialCommunityIcons
+      style={{ alignSelf: "center", padding: 10 }}
+      name="compass"
+      size={35}
       color={tintColor}
     />
-  )
+  ),
+};
+
+PeopleScreen.navigationOptions = {
+  tabBarIcon: ({ tintColor }) => (
+    <MaterialCommunityIcons
+      style={{ alignSelf: "center", padding: 10 }}
+      name="account-group"
+      size={40}
+      color={tintColor}
+    />
+  ),
+};
+
+AskScreen.navigationOptions = {
+  tabBarIcon: ({ tintColor }) => (
+    <MaterialCommunityIcons
+      style={{ alignSelf: "center", padding: 10 }}
+      name="android-messages"
+      size={35}
+      color={tintColor}
+    />
+  ),
 };
 
 const AppContainer = createAppContainer(AppNavigator);
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
-});
-
-export default connect(mapStateToProps)(AppContainer);
+export default AppContainer;

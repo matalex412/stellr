@@ -4,7 +4,8 @@ import {
   Text,
   TextInput,
   View,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -16,13 +17,17 @@ export default class ForgotScreen extends React.Component {
     email: ""
   };
 
-  forgot = () => {
-    if (this.state.email.length > 1) {
-      firebase.auth().sendPasswordResetEmail(this.state.email);
-      alert(`A password reset email has been sent to ${this.state.email}`);
+  forgot = async () => {
+    try {
+      await firebase.auth().sendPasswordResetEmail(this.state.email);
+      Alert.alert(
+        "Reset Password",
+        `A password reset email has been sent to ${this.state.email}`
+      );
       this.props.navigation.navigate("Login");
-    } else {
-      alert("Please enter a valid email address");
+    } catch (error) {
+      // display errors
+      this.setState({ errorMessage: error.message });
     }
   };
 
@@ -30,7 +35,7 @@ export default class ForgotScreen extends React.Component {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#0b5c87", "#6da9c9"]}
+          colors={["#6da9c9", "#fff"]}
           style={{
             position: "absolute",
             left: 0,
@@ -39,26 +44,63 @@ export default class ForgotScreen extends React.Component {
             height: "100%"
           }}
         />
-        <View
+        <Text
           style={{
-            justifyContent: "center",
-            flexDirection: "row",
-            flexWrap: "wrap"
+            textAlign: "center",
+            fontSize: 15,
+            margin: 20,
+            color: "white"
           }}
         >
-          <Ionicons name="md-mail" size={25} color="white" />
-          <TextInput
-            style={styles.textInput}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholder="Email"
-            onChangeText={email => this.setState({ email })}
-            value={this.state.email}
-          />
+          Enter your email address below and we'll send you a link to reset your
+          password
+        </Text>
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: "white",
+            padding: 20,
+            margin: 40,
+            marginTop: 5,
+            marginBottom: 10,
+            borderRadius: 5
+          }}
+        >
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              flexWrap: "wrap"
+            }}
+          >
+            <Ionicons name="md-mail" size={25} color="#6da9c9" />
+            <TextInput
+              style={styles.textInput}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="Email"
+              onChangeText={email => this.setState({ email })}
+              value={this.state.email}
+            />
+          </View>
+          <TouchableOpacity style={styles.submitButton} onPress={this.forgot}>
+            <Text style={{ color: "white", fontSize: 18 }}>
+              Change Password
+            </Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={{ margin: 10 }} onPress={this.forgot}>
-          <Text style={{ color: "white" }}>Forgot Password</Text>
+        <TouchableOpacity
+            style={{ margin: 5 }}
+            onPress={() => this.props.navigation.navigate("Login")}
+          >
+            <Text style={{ color: "#6da9c9" }}>Back to Login</Text>
         </TouchableOpacity>
+        {this.state.errorMessage && (
+          <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
+            {this.state.errorMessage}
+          </Text>
+        )}
       </View>
     );
   }
@@ -71,12 +113,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff"
   },
+  submitButton: {
+    marginTop: 10,
+    paddingTop: 2,
+    paddingBottom: 3,
+    paddingLeft: 30,
+    paddingRight: 30,
+    backgroundColor: "#ffb52b",
+    borderRadius: 2
+  },
   textInput: {
     fontSize: 18,
     width: "60%",
-    marginLeft: 10,
+    marginLeft: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "white",
-    color: "white"
+    borderBottomColor: "#6da9c9",
+    color: "#6da9c9"
   }
 });

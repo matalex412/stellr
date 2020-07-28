@@ -9,7 +9,8 @@ import MessageBox from "./MessageBox";
 export default class AppHeader extends React.Component {
 
   render() {
-    var currentUser = firebase.auth().currentUser
+    // check if currentUser is anonymous
+    var { currentUser } = firebase.auth()
     if (currentUser != null) {
       var { isAnonymous } = currentUser
     } else {
@@ -22,6 +23,7 @@ export default class AppHeader extends React.Component {
           <TouchableOpacity
             style={{ paddingRight: 10 }}
             onPress={() => {
+              this.props.navigation.navigate("SignUp")
               firebase.auth().signOut()
             }}
           >
@@ -46,11 +48,11 @@ export default class AppHeader extends React.Component {
               }}
             >
               <View style={{ flexDirection: "row" }}>
-                <Text style={{ color: "white", paddingRight: 10 }}>
+                <Text style={{ color: "white", paddingRight: 5 }}>
                   Account
                 </Text>
                 <Ionicons
-                  style={{ color: "white" }}
+                  style={{ color: "white", paddingRight: 5 }}
                   name="md-person"
                   size={20}
                 />

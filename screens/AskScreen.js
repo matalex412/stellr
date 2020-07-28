@@ -5,10 +5,12 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView
+  ScrollView,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { AdMobBanner } from "expo-ads-admob";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -17,7 +19,7 @@ import { firebase } from "./../src/config";
 class AskScreen extends React.Component {
   state = {
     requests: {},
-    request: ""
+    request: "",
   };
 
   componentDidMount = () => {
@@ -25,18 +27,21 @@ class AskScreen extends React.Component {
   };
 
   componentWillUnmount = () => {
-    // turn off request listener if user isn't anonymous
-    var askRef  = this.state.askRef;
-    if (askRef) {
+    // turn off request listener
+    var askRef = this.state.askRef;
+    try {
       askRef.off("value");
+    } catch (err) {
+      console.log(err);
     }
   };
 
   setup = async () => {
+    // get requests for tutorials
     var askRef = await firebase
       .database()
       .ref("requests")
-    await askRef.on("value", async snapshot => {
+      .on("value", async (snapshot) => {
         var requests = snapshot.val();
 
         if (requests != null) {
@@ -44,7 +49,8 @@ class AskScreen extends React.Component {
         }
       });
 
-    this.setState({ askRef })
+    // store request listener
+    await this.setState({ askRef });
   };
 
   addRequest = async () => {
@@ -53,35 +59,38 @@ class AskScreen extends React.Component {
     if (request.length == 0) {
       this.setState({ errorMessage: "Invalid Request" });
     } else if (Object.keys(this.state.requests).includes(request)) {
-      this.setState({ errorMessage: "Someone's already asked for this tutorial" });
+      this.setState({
+        errorMessage: "Someone's already asked for this tutorial",
+      });
     } else {
       await firebase
         .database()
         .ref("requests")
         .update({
-          [request]: "unmade"
+          [request]: "unmade",
         });
 
       this.setState({ request: "" });
-      this.setup();
+      this.setState({ errorMessage: null });
     }
   };
 
-  tutorial = async request => {
-    var post = await firebase
-      .database()
-      .ref(`posts${request.topic}/${request.postid}`)
-      .once("value");
-    post = post.toJSON();
+  tutorial = async (request) => {
+    // get post data
+    var doc = await firebase
+      .firestore()
+      .collection(`${request.topic}/posts`)
+      .doc(request.postid)
+      .get();
 
-    await store.dispatch(updateTutorials({ tutorial_topic: request.topic }))
-    await store.dispatch(updateTutorials({ current: post }));
+    // send user to tutorial screen
+    await store.dispatch(updateTutorials({ tutorial_topic: request.topic }));
+    await store.dispatch(updateTutorials({ current: doc.data() }));
     await store.dispatch(updateTutorials({ current_key: request.postid }));
-
     this.props.navigation.navigate("Tutorial");
   };
 
-  makePost = async title => {
+  makePost = async (title) => {
     // create new tutorial with current topic
     await store.dispatch(updateTutorials({ title: title }));
     await store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
@@ -96,59 +105,94 @@ class AskScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
+          <AdMobBanner
+            adUnitID="ca-app-pub-3262091936426324/7558442816"
+            onDidFailToReceiveAdWithError={() =>
+              console.log("banner ad not loading")
+            }
+            servePersonalizedAds
+          />
           <LinearGradient
-            colors={["#0b5c87", "#6da9c9"]}
+            colors={["#6da9c9", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
           <Text style={styles.heading}>Requested Tutorials</Text>
-          {Object.keys(this.state.requests).map((request, index) => (
-            <View key={index}>
-              {this.state.requests[request] == "unmade" ? (
-                <TouchableOpacity
-                  onPress={() => this.makePost(request)}
-                  style={{ alignItems: "center" }}
-                >
-                  <Text style={{ fontSize: 18, color: "white" }}>
-                    {request}
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                  <Text style={{ fontSize: 18, color: "white" }}>
-                    {request} -{" "}
-                  </Text>
+          <View
+            style={{
+              backgroundColor: "#6da9c9",
+              margin: 5,
+              padding: 5,
+              borderRadius: 5,
+              alignItems: "flex-start",
+            }}
+          >
+            {Object.keys(this.state.requests).map((request, index) => (
+              <View key={index}>
+                {this.state.requests[request] == "unmade" ? (
                   <TouchableOpacity
-                    onPress={() => this.tutorial(this.state.requests[request])}
+                    onPress={() => this.makePost(request)}
+                    style={{ alignItems: "center" }}
                   >
-                    <Text style={{ color: "coral", fontSize: 18 }}>
-                      Tutorial made
+                    <Text style={{ fontSize: 18, color: "white" }}>
+                      {request}
                     </Text>
                   </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          ))}
-          <View style={styles.line} />
+                ) : (
+                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                    <Text style={{ fontSize: 18, color: "white" }}>
+                      {request} -{" "}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        this.tutorial(this.state.requests[request])
+                      }
+                    >
+                      <Text style={{ color: "#ffb52b", fontSize: 18 }}>
+                        Tutorial made
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
           {this.state.errorMessage && (
-            <Text style={{ color: "coral" }}>{this.state.errorMessage}</Text>
+            <Text style={{ color: "#6da9c9" }}>{this.state.errorMessage}</Text>
           )}
-          <TextInput
-            value={this.state.request}
-            placeholder="Tutorial Request"
-            onChangeText={value => this.setState({ request: value })}
-            style={{ color: "white", padding: 5, fontSize: 15 }}
-          />
-          <TouchableOpacity onPress={this.addRequest}>
-            <View>
-              <Text style={{ color: "white" }}>Ask for tutorial</Text>
-            </View>
-          </TouchableOpacity>
+          <View
+            style={{
+              backgroundColor: "black",
+              borderRadius: 2,
+              padding: 3,
+              margin: 10,
+              alignItems: "center",
+              flexDirection: "row",
+              flexWrap: "wrap",
+            }}
+          >
+            <TextInput
+              value={this.state.request}
+              placeholder="Ask for a tutorial"
+              onChangeText={(value) => this.setState({ request: value })}
+              style={{
+                borderWidth: 1,
+                padding: 5,
+                borderColor: "white",
+                color: "white",
+                fontSize: 15,
+                margin: 5,
+              }}
+            />
+            <TouchableOpacity style={{ margin: 5 }} onPress={this.addRequest}>
+              <Ionicons name="md-send" size={20} color="#ffb52b" />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
     );
@@ -158,30 +202,23 @@ class AskScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   heading: {
     fontSize: 18,
     color: "white",
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
-  line: {
-    borderBottomColor: "white",
-    borderBottomWidth: 1,
-    alignSelf: "center",
-    margin: 10,
-    width: "70%"
-  }
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(AskScreen);
