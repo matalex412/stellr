@@ -5,11 +5,14 @@ import {
   StyleSheet,
   Button,
   TouchableOpacity,
-  ActivityIndicator
+  ScrollView,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 
+import CustomLoading from "./components/CustomLoading";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -18,7 +21,7 @@ class UserPosts extends React.Component {
   state = {
     isLoading: true,
     posts: {},
-    postids: []
+    postids: [],
   };
 
   componentDidMount = () => {
@@ -49,6 +52,18 @@ class UserPosts extends React.Component {
         }
         return comparison;
       });
+
+      var d,
+        time,
+        times = [];
+      for (var postid of postids) {
+        time = posts[postid].time;
+        d = new Date(time);
+        var mins = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+        times.push(`${d.getDate()}/${d.getMonth()}  ${d.getHours()}:${mins}`);
+      }
+
+      this.setState({ times });
       this.setState({ postids });
       this.setState({ posts });
     }
@@ -56,7 +71,7 @@ class UserPosts extends React.Component {
     this.setState({ isLoading: false });
   };
 
-  handlePress = async key => {
+  handlePress = async (key) => {
     var postref = this.state.posts[key];
     // get post data
     var doc = await firebase
@@ -75,7 +90,7 @@ class UserPosts extends React.Component {
 
   render() {
     return (
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
         <LinearGradient
           colors={["#6da9c9", "#fff"]}
           style={{
@@ -83,57 +98,82 @@ class UserPosts extends React.Component {
             left: 0,
             right: 0,
             top: 0,
-            height: "100%"
+            height: "100%",
           }}
         />
         {this.state.isLoading ? (
-          <ActivityIndicator color="#fff" size="large" />
-        ) : this.state.posts.length < 1 ? (
+          <CustomLoading verse="Trust in the Lord with all your heart, and do not lean on your own understanding" />
+        ) : this.state.postids.length < 1 ? (
           <View style={{ alignItems: "center" }}>
-            <Text style={{ color: "white" }}>
-              You haven't learnt any tutorials yet
+            <Text style={{ fontSize: 20, color: "white" }}>
+              You're history is empty
             </Text>
             <TouchableOpacity
               onPress={() => this.props.navigation.navigate("Search")}
             >
-              <Text style={{ color: "coral" }}>Explore Tutorials</Text>
+              <Text style={{ fontSize: 16, color: "#6da9c9" }}>
+                Explore Tutorials
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={{ justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ fontWeight: "bold", fontSize: 20, color: "white" }}>
-              Skills you've learnt
-            </Text>
+          <View>
             {this.state.postids.map((postid, index) => {
               return (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => this.handlePress(postid)}
-                >
-                  <Text style={{ color: "white", fontSize: 17 }}>
-                    {this.state.posts[postid].title}
-                  </Text>
-                </TouchableOpacity>
+                <View key={index} style={{ paddingTop: 5 }}>
+                  <TutorialCover
+                    tutorial={this.state.posts[postid]}
+                    onPress={() => this.handlePress(postid)}
+                  />
+                  <View
+                    style={{ justifyContent: "center", flexDirection: "row" }}
+                  >
+                    <Text style={styles.text}>
+                      Time: {this.state.times[index]}{" "}
+                    </Text>
+                    <Text style={styles.text}>Learnt?</Text>
+                    {this.state.posts[postid].complete ? (
+                      <Ionicons
+                        style={{ padding: 5 }}
+                        name="md-checkmark"
+                        size={25}
+                        color="#ffb52b"
+                      />
+                    ) : (
+                      <Ionicons
+                        style={{ padding: 5 }}
+                        name="md-close"
+                        size={25}
+                        color="#ffb52b"
+                      />
+                    )}
+                  </View>
+                </View>
               );
             })}
           </View>
         )}
-      </View>
+      </ScrollView>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
+  contentContainer: {
+    flexGrow: 1,
     alignItems: "center",
-    justifyContent: "center"
-  }
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  text: {
+    fontFamily: "Roboto",
+    padding: 5,
+    fontSize: 17,
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(UserPosts);

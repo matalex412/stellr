@@ -3,8 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
   ScrollView,
@@ -14,6 +12,8 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 
+import CustomLoading from "./components/CustomLoading";
+import TutorialCover from "./components/TutorialCover";
 import { updateTutorials } from "./../redux/actions";
 import { store } from "./../redux/store";
 import { firebase } from "./../src/config";
@@ -118,70 +118,39 @@ class HomeScreen extends React.Component {
               height: "100%",
             }}
           />
-          {this.state.keys ? null : (
-            <Text
-              style={{
-                fontFamily: "serif",
-                margin: 10,
-                fontSize: 25,
-                fontStyle: "italic",
-                color: "white",
-              }}
-            >
-              'Do you see a man skillful in his work? He will stand before
-              kings'
-            </Text>
-          )}
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
-          ) : this.state.currentUser.isAnonymous ? null : this.state.posts ==
-            null ? null : (
+            <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
+          ) : this.state.currentUser.isAnonymous ? (
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <Text style={{ fontSize: 18, color: "#fff" }}>
+                Hi, you need an account to be able to bookmark tutorials
+              </Text>
+            </View>
+          ) : (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-              {this.state.keys.map((key, index) => {
-                return (
+              {this.state.keys.length < 1 ? (
+                <View style={{ padding: 20, alignItems: "center" }}>
                   <TouchableOpacity
-                    key={index}
-                    onPress={() => this.handlePress(key)}
+                    onPress={() => this.props.navigation.navigate("Search")}
                   >
-                    <View
-                      style={{
-                        padding: 5,
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Image
-                        resizeMode={"cover"}
-                        style={{
-                          width: "100%",
-                          height: 200,
-                          marginBottom: -10,
-                        }}
-                        source={{ uri: this.state.posts[key].thumbnail }}
-                      />
-                      <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => this.remove(key)}
-                      >
-                        <Ionicons name="md-close" size={35} color="#0b5c87" />
-                      </TouchableOpacity>
-                      <View
-                        style={{
-                          padding: 5,
-                          width: "100%",
-                          backgroundColor: "white",
-                          alignSelf: "center",
-                        }}
-                      >
-                        <Text style={{ color: "#6da9c9", fontSize: 20 }}>
-                          {this.state.posts[key].title}
-                        </Text>
-                      </View>
-                    </View>
+                    <Text style={{ fontSize: 18, color: "#fff" }}>
+                      You haven't added any tutorials yet
+                    </Text>
                   </TouchableOpacity>
-                );
-              })}
+                </View>
+              ) : (
+                <View style={{ alignItems: "center" }}>
+                  {this.state.keys.map((key, index) => {
+                    return (
+                      <TutorialCover
+                        key={index}
+                        tutorial={this.state.posts[key]}
+                        onPress={() => this.handlePress(key)}
+                      />
+                    );
+                  })}
+                </View>
+              )}
             </View>
           )}
         </ScrollView>

@@ -3,25 +3,22 @@ import {
   View,
   Text,
   StyleSheet,
-  Button,
   Image,
   ScrollView,
-  ActivityIndicator,
   Alert,
-  BackHandler,
   TouchableOpacity,
   Dimensions,
-  Switch,
 } from "react-native";
 import { Video } from "expo-av";
 import { connect } from "react-redux";
-import { AdMobBanner } from "expo-ads-admob";
+import { AdMobBanner, AdMobInterstitial } from "expo-ads-admob";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Firebase from "firebase";
-import Modal from "react-native-modal";
 import { AirbnbRating } from "react-native-ratings";
 
+import CustomLoading from "./components/CustomLoading";
+import LearnModal from "./components/LearnModal";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -31,9 +28,6 @@ class TutorialScreen extends React.Component {
     isLoading: true,
     posts: {},
     added: false,
-    rating: 3,
-    isModalVisible: false,
-    learnt: false,
   };
 
   componentDidMount = () => {
@@ -108,7 +102,7 @@ class TutorialScreen extends React.Component {
       .set(
         {
           [this.props.tutorials.current_key]: {
-            topic: this.props.tutorials.tutorial_topic,
+            topic: this.props.tutorials.current.topic,
             title: this.props.tutorials.current.title,
             thumbnail: this.props.tutorials.current.thumbnail,
           },
@@ -120,57 +114,88 @@ class TutorialScreen extends React.Component {
     this.setState({ added: true });
   };
 
-  learnt = async () => {
+  learnt = async (rating, complete, added) => {
+    // Display an interstitial
+    await AdMobInterstitial.setAdUnitID(
+      "ca-app-pub-3262091936426324/1869093284"
+    );
+
+    await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
+    await AdMobInterstitial.showAdAsync();
+
     const { currentUser } = firebase.auth();
 
-    // remove post from learning object for user
-    var postRef = firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc("learning");
-    postRef.update({
-      [this.props.tutorials
-        .current_key]: Firebase.firestore.FieldValue.delete(),
-    });
+    if (added) {
+      // remove post from learning object for user
+      var postRef = firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("learning");
+      postRef.update({
+        [this.props.tutorials
+          .current_key]: Firebase.firestore.FieldValue.delete(),
+      });
+    }
 
-    var alreadyLearnt = false;
-    var historyRef = firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc("history");
+    if (!currentUser.isAnonymous) {
+      var alreadyLearnt = false;
+      var historyRef = firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("history");
 
-    // get users history
-    var doc = historyRef.get();
-    // check if tutorial has previously been learnt by user
-    if (doc.exists) {
-      var learnt = doc.data();
-      var keys = Object.keys(learnt);
-      for (key of keys) {
-        if (key == this.props.tutorials.current_key) {
-          var alreadyLearnt = true;
-          var data = learnt[key];
+      // get users history
+      var doc = historyRef.get();
+      // check if tutorial has previously been learnt by user
+      if (doc.exists) {
+        var learnt = doc.data();
+        var keys = Object.keys(learnt);
+        for (key of keys) {
+          if (key == this.props.tutorials.current_key) {
+            var alreadyLearnt = true;
+            var data = learnt[key];
+          }
         }
+      }
+
+      if (alreadyLearnt == true) {
+        data.time = Date.now();
+        data.complete = complete;
+        historyRef.update({
+          [this.props.tutorials.current_key]: data,
+        });
+      } else {
+        // add to learning history
+        historyRef.set(
+          {
+            [this.props.tutorials.current_key]: {
+              topic: this.props.tutorials.current.topic,
+              title: this.props.tutorials.current.title,
+              thumbnail: this.props.tutorials.current.thumbnail,
+              time: Date.now(),
+              complete: complete,
+            },
+          },
+          { merge: true }
+        );
       }
     }
 
-    if (alreadyLearnt == true) {
-      data.time = Date.now();
-      historyRef.update({
-        [this.props.tutorials.current_key]: data,
-      });
+    if (complete) {
+      var field = "learns";
     } else {
-      // add to learning history
-      historyRef.set(
-        {
-          [this.props.tutorials.current_key]: {
-            topic: this.props.tutorials.tutorial_topic,
-            title: this.props.tutorials.current.title,
-            time: Date.now(),
-          },
-        },
-        { merge: true }
-      );
+      var field = "incomplete";
     }
+
+    // update tutorial stats
+    await firebase
+      .firestore()
+      .collection(`${this.props.tutorials.current.topic}/posts`)
+      .doc(this.props.tutorials.current_key)
+      .update({
+        stars: Firebase.firestore.FieldValue.increment(rating),
+        [field]: Firebase.firestore.FieldValue.increment(1),
+      });
 
     this.props.navigation.navigate("Search");
   };
@@ -198,7 +223,7 @@ class TutorialScreen extends React.Component {
             }}
           />
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : !this.props.tutorials.current ? (
             <Text>
               Sorry, this tutorial doesn't seem to exist. It may have been moved
@@ -235,6 +260,27 @@ class TutorialScreen extends React.Component {
                   <Text style={{ color: "white" }}>
                     by {this.props.tutorials.current.username}
                   </Text>
+                </View>
+                <View style={{ padding: 5, alignItems: "center" }}>
+                  <Text
+                    style={{ marginBottom: 5, fontSize: 18, color: "#fff" }}
+                  >
+                    Learns:{" "}
+                    {this.props.tutorials.current.learns -
+                      this.props.tutorials.current.incomplete}
+                  </Text>
+                  <AirbnbRating
+                    isDisabled
+                    defaultRating={
+                      this.props.tutorials.current.stars /
+                      (this.props.tutorials.current.learns +
+                        this.props.tutorials.current.incomplete)
+                    }
+                    selectedColor="#ffb52b"
+                    showRating={false}
+                    type="custom"
+                    size={20}
+                  />
                 </View>
                 {Object.values(this.props.tutorials.current.steps).map(
                   (step, index) => (
@@ -284,145 +330,23 @@ class TutorialScreen extends React.Component {
                     </View>
                   )
                 )}
-                {this.state.currentUser.isAnonymous ? null : this.state
-                    .added ? (
-                  <View>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  {this.state.currentUser.isAnonymous ? null : this.state
+                      .added ? null : (
                     <TouchableOpacity
                       style={{ marginBottom: 30 }}
-                      onPress={() => this.setState({ isModalVisible: true })}
+                      onPress={this.addHome}
                     >
-                      <View
-                        style={{
-                          justifyContent: "center",
-                          alignItems: "center",
-                          borderRadius: 2,
-                          padding: 7,
-                          backgroundColor: "black",
-                          flexDirection: "row",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <Ionicons name="md-school" size={25} color="#ffb52b" />
-                        <Text style={{ marginLeft: 5, color: "#ffb52b" }}>
-                          Learnt
-                        </Text>
+                      <View style={[styles.bookmark, { marginRight: 10 }]}>
+                        <Ionicons
+                          name="md-bookmark"
+                          size={25}
+                          color="#ffb52b"
+                        />
                       </View>
                     </TouchableOpacity>
-                    <Modal isVisible={this.state.isModalVisible}>
-                      <TouchableOpacity
-                        style={[styles.button, styles.corner]}
-                        onPress={() => this.setState({ isModalVisible: false })}
-                      >
-                        <Ionicons name="md-close" size={20} color="white" />
-                      </TouchableOpacity>
-                      <View
-                        style={{
-                          justifyContent: "center",
-                          alignItems: "center",
-                          flex: 1,
-                        }}
-                      >
-                        <View
-                          style={{ alignItems: "center", flexDirection: "row" }}
-                        >
-                          <Text
-                            style={{
-                              paddingTop: 5,
-                              color: "white",
-                              paddingBottom: 5,
-                            }}
-                          >
-                            Rating:{" "}
-                          </Text>
-                          <AirbnbRating
-                            onFinishRating={(rating) =>
-                              this.setState({ rating })
-                            }
-                            selectedColor="#ffb52b"
-                            showRating={false}
-                            type="custom"
-                            size={20}
-                          />
-                        </View>
-                        <View
-                          style={{ alignItems: "center", flexDirection: "row" }}
-                        >
-                          <Text style={{ color: "white" }}>
-                            Were you able to learn the skill?
-                          </Text>
-                          <Switch
-                            trackColor={{ false: "#767577", true: "#ffb52b" }}
-                            thumbColor="#ffb52b"
-                            onValueChange={(status) =>
-                              this.setState({ learnt: status })
-                            }
-                            value={this.state.learnt}
-                          />
-                        </View>
-                        <TouchableOpacity
-                          style={{ marginBottom: 30 }}
-                          onPress={this.learnt}
-                        >
-                          <View
-                            style={{
-                              justifyContent: "center",
-                              alignItems: "center",
-                              flexDirection: "row",
-                              backgroundColor: "black",
-                              padding: 7,
-                              borderRadius: 2,
-                            }}
-                          >
-                            <Ionicons
-                              name="md-checkmark"
-                              size={25}
-                              color="#ffb52b"
-                            />
-                            <Text style={{ marginLeft: 5, color: "#ffb52b" }}>
-                              Finish
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      </View>
-                    </Modal>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={{ marginBottom: 30 }}
-                    onPress={this.addHome}
-                  >
-                    <View
-                      style={{
-                        justifyContent: "center",
-                        alignItems: "center",
-                        flexDirection: "row",
-                        backgroundColor: "black",
-                        padding: 7,
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Ionicons name="md-bookmark" size={25} color="#ffb52b" />
-                      <Text style={{ marginLeft: 5, color: "#ffb52b" }}>
-                        Add to Home
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-                <View style={{ padding: 20, alignItems: "center" }}>
-                  <Text color="#6da9c9">
-                    Learns: {this.props.tutorials.current.learns}
-                  </Text>
-                  <AirbnbRating
-                    isDisabled
-                    defaultRating={
-                      this.props.tutorials.current.stars /
-                      this.props.tutorials.current.learns
-                    }
-                    selectedColor="#ffb52b"
-                    showRating={false}
-                    type="custom"
-                    size={20}
-                  />
+                  )}
+                  <LearnModal added={this.state.added} learnt={this.learnt} />
                 </View>
               </View>
             </View>
@@ -466,6 +390,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     borderRadius: 40,
     margin: 5,
+  },
+  bookmark: {
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    backgroundColor: "black",
+    padding: 7,
+    borderRadius: 2,
   },
 });
 

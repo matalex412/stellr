@@ -4,13 +4,11 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  Button,
   TouchableOpacity,
   Image,
   ScrollView,
   Alert,
-  ActivityIndicator,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { Video } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
@@ -20,6 +18,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 
+import CustomLoading from "./components/CustomLoading";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -27,7 +26,7 @@ import { firebase } from "./../src/config";
 class UserPostScreen extends React.Component {
   state = {
     isLoading: true,
-    topic: null
+    topic: null,
   };
 
   componentDidMount = () => {
@@ -81,14 +80,14 @@ class UserPostScreen extends React.Component {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
           quality: 0.8,
-          allowsEditing: true
+          allowsEditing: true,
         };
       } else {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
           quality: 0.8,
           aspect: [1, 1],
-          allowsEditing: true
+          allowsEditing: true,
         };
       }
       try {
@@ -137,7 +136,7 @@ class UserPostScreen extends React.Component {
     var post = this.props.tutorials.userpost;
     var steps = post.steps;
     if (steps.length >= 1) {
-      var checkquery = steps.every(query => {
+      var checkquery = steps.every((query) => {
         return query.step.length > 3;
       });
     }
@@ -150,7 +149,7 @@ class UserPostScreen extends React.Component {
     }
   };
 
-  handleTitleChange = async title => {
+  handleTitleChange = async (title) => {
     // change title
     var post = this.props.tutorials.userpost;
     post.title = title;
@@ -184,7 +183,7 @@ class UserPostScreen extends React.Component {
           .collection(`${topic}/posts`)
           .doc(id)
           .update({
-            title: this.props.tutorials.userpost.title
+            title: this.props.tutorials.userpost.title,
           });
       } else {
         // remove old version of user's tutorial
@@ -198,7 +197,7 @@ class UserPostScreen extends React.Component {
           .collection(`users/${currentUser.uid}/data`)
           .doc("made")
           .update({
-            [id]: Firebase.firestore.FieldValue.delete()
+            [id]: Firebase.firestore.FieldValue.delete(),
           });
 
         // remove media from firebase storage
@@ -227,7 +226,7 @@ class UserPostScreen extends React.Component {
             title: this.props.tutorials.userpost.title,
             username: this.props.tutorials.userpost.username,
             uid: currentUser.uid,
-            topic: topic
+            topic: topic,
           });
 
         id = doc.id;
@@ -290,7 +289,7 @@ class UserPostScreen extends React.Component {
           .update({
             thumbnail: thumbnail,
             steps: steps,
-            time: Date.now()
+            time: Date.now(),
           });
       } else {
         await firebase
@@ -299,7 +298,7 @@ class UserPostScreen extends React.Component {
           .doc(id)
           .update({
             steps: steps,
-            time: Date.now()
+            time: Date.now(),
           });
       }
 
@@ -313,8 +312,8 @@ class UserPostScreen extends React.Component {
             [id]: {
               topic: topic,
               thumbnail: thumbnail,
-              title: this.props.tutorials.userpost.title
-            }
+              title: this.props.tutorials.userpost.title,
+            },
           },
           { merge: true }
         );
@@ -343,7 +342,7 @@ class UserPostScreen extends React.Component {
     this.vids.push("");
   };
 
-  removeStep = async index => {
+  removeStep = async (index) => {
     // remove step
     var post = this.props.tutorials.userpost;
     post.steps.splice(index, 1);
@@ -373,7 +372,7 @@ class UserPostScreen extends React.Component {
             .collection(`users/${currentUser.uid}/data`)
             .doc("made")
             .update({
-              [post.postid]: Firebase.firestore.FieldValue.delete()
+              [post.postid]: Firebase.firestore.FieldValue.delete(),
             });
 
           // remove media from firebase storage
@@ -401,8 +400,8 @@ class UserPostScreen extends React.Component {
               {
                 [Date.now()]: {
                   message: message,
-                  status: "unread"
-                }
+                  status: "unread",
+                },
               },
               { merge: true }
             );
@@ -410,15 +409,15 @@ class UserPostScreen extends React.Component {
 
           await store.dispatch(updateTutorials({ userpost: null }));
           this.props.navigation.navigate("UserPosts");
-        }
+        },
       },
       {
         text: "Cancel",
         onPress: () => {
           this.setState({ isLoading: false });
         },
-        style: "cancel"
-      }
+        style: "cancel",
+      },
     ]);
   };
 
@@ -463,22 +462,22 @@ class UserPostScreen extends React.Component {
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <CustomLoading verse="For everything there is a season, and a time for every matter" />
           ) : (
             <View style={{ alignItems: "center" }}>
               <TextInput
                 value={post.title}
                 placeholder="Enter Title"
-                onChangeText={title => this.handleTitleChange(title)}
+                onChangeText={(title) => this.handleTitleChange(title)}
                 style={{
                   color: "white",
                   padding: 10,
                   fontSize: 23,
-                  fontStyle: "italic"
+                  fontStyle: "italic",
                 }}
               />
               <View>
@@ -525,7 +524,20 @@ class UserPostScreen extends React.Component {
                 <View style={styles.line} />
               </View>
               {Object.values(post.steps).map((step, index) => (
-                <View style={{ alignItems: "center" }} key={index}>
+                <View
+                  style={{
+                    alignItems: "center",
+                    backgroundColor: "#6da9c9",
+                    width: width - 100,
+                    padding: 10,
+                    margin: 10,
+                    borderRadius: 5,
+                    shadowOffset: { width: 10, height: 10 },
+                    shadowColor: "black",
+                    shadowOpacity: 1.0,
+                  }}
+                  key={index}
+                >
                   <Text style={styles.heading}>Step {index + 1}</Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                     <TouchableOpacity
@@ -550,10 +562,10 @@ class UserPostScreen extends React.Component {
                   {step.Videos && (
                     <View>
                       <Video
-                        onPlaybackStatusUpdate={playbackStatus =>
+                        onPlaybackStatusUpdate={(playbackStatus) =>
                           this._onPlaybackStatusUpdate(playbackStatus, index)
                         }
-                        ref={component => this.addRef(component, index)}
+                        ref={(component) => this.addRef(component, index)}
                         source={{ uri: step.Videos }}
                         rate={1.0}
                         volume={1.0}
@@ -589,7 +601,7 @@ class UserPostScreen extends React.Component {
                       style={{
                         fontWeight: "bold",
                         fontSize: 17,
-                        color: "#ffb52b"
+                        color: "#ffb52b",
                       }}
                     >
                       {step.error}
@@ -599,13 +611,22 @@ class UserPostScreen extends React.Component {
                     multiline={true}
                     value={step.step}
                     placeholder="Enter Step"
-                    onChangeText={value => this.handleFieldChange(value, index)}
+                    onChangeText={(value) =>
+                      this.handleFieldChange(value, index)
+                    }
                     style={{
-                      color: "white",
+                      borderColor: "#ffb52b",
+                      color: this.state.checked
+                        ? step.step.length < 4
+                          ? "#ffb52b"
+                          : "black"
+                        : "black",
                       width: width,
-                      padding: 10,
+                      paddingLeft: 60,
+                      paddingRight: 60,
+                      margin: 10,
                       fontSize: 15,
-                      textAlign: "center"
+                      textAlign: "center",
                     }}
                   />
                 </View>
@@ -616,9 +637,9 @@ class UserPostScreen extends React.Component {
                     name="md-add-circle"
                     size={20}
                     style={{ margin: 3 }}
-                    color="#ffb52b"
+                    color="#6da9c9"
                   />
-                  <Text style={{ color: "white", margin: 3 }}>
+                  <Text style={{ color: "#6da9c9", margin: 3 }}>
                     Add New Step
                   </Text>
                 </View>
@@ -632,7 +653,7 @@ class UserPostScreen extends React.Component {
                     flexWrap: "wrap",
                     backgroundColor: "#6da9c9",
                     paddingRight: 5,
-                    paddingLeft: 5
+                    paddingLeft: 5,
                   }}
                 >
                   <Ionicons
@@ -666,17 +687,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     margin: 10,
-    color: "white"
+    color: "white",
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   corner: {
     position: "absolute",
@@ -684,7 +705,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: 30,
     height: 30,
-    margin: 10
+    margin: 10,
   },
   button: {
     borderWidth: 1,
@@ -694,19 +715,19 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: "black",
     borderRadius: 40,
-    margin: 5
+    margin: 5,
   },
   line: {
     borderBottomColor: "white",
     borderBottomWidth: 1,
     alignSelf: "stretch",
     margin: 10,
-    width: 200
-  }
+    width: 200,
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(UserPostScreen);

@@ -1,145 +1,92 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Image,
-} from "react-native";
+import { View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { connect } from "react-redux";
+import { createMaterialTopTabNavigator } from "react-navigation-tabs";
+import { createAppContainer } from "react-navigation";
 
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
+import ProfileHome from "./ProfileHome";
+import ProfileMade from "./ProfileMade";
+import ProfileBanner from "./components/ProfileBanner";
 import { firebase } from "./../src/config";
 
-class ProfileScreen extends React.Component {
-  state = {
-    isLoading: true,
-  };
+const ProfileTabs = createMaterialTopTabNavigator(
+  {
+    Home: ProfileHome,
+    Tutorials: ProfileMade,
+  },
+  {
+    tabBarOptions: {
+      activeTintColor: "#ffb52b",
+      inactiveTintColor: "white",
+      style: {
+        backgroundColor: "#6da9c9",
+      },
+      indicatorStyle: {
+        backgroundColor: "#ffb52b",
+      },
+    },
+  }
+);
 
+const ProfileNav = createAppContainer(ProfileTabs);
+
+class ProfileScreen extends React.Component {
   componentDidMount = () => {
     this.setup();
   };
 
   setup = async () => {
-    var id = this.props.tutorials.profileId;
+    // get friends data from firestore
+    var { currentUser } = await firebase.auth();
     var doc = await firebase
       .firestore()
-      .collection(`users/${id}/data`)
-      .doc("made")
+      .collection("users")
+      .doc(this.props.tutorials.profile.uid)
       .get();
+    var data = doc.data();
 
-    if (doc.exists) {
-      var postrefs = doc.data();
-      this.setState({ keys: Object.keys(postrefs) });
-      this.setState({ postrefs });
+    // check if friends data has changed
+    if (data.profilePic != this.props.tutorials.profile.profilePic) {
+      var update = { ...this.props.tutorials.profile };
+      update.profilePic = data.profilePic;
+
+      delete update["uid"];
+      await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("people")
+        .update({
+          [this.props.tutorials.profile.uid]: update,
+        });
+
+      update.uid = this.props.tutorials.profile.uid;
+      await store.dispatch(updateTutorials({ profile: update }));
     }
-    this.setState({ isLoading: false });
-  };
-
-  handlePress = async (key) => {
-    // get post data
-    var doc = await firebase
-      .firestore()
-      .collection(`${this.state.postrefs[key].topic}/posts`)
-      .doc(key)
-      .get();
-
-    // send user to tutorial screen
-    await store.dispatch(
-      updateTutorials({ tutorial_topic: this.state.postrefs[key].topic })
-    );
-    await store.dispatch(updateTutorials({ current: doc.data() }));
-    await store.dispatch(updateTutorials({ current_key: key }));
-    this.props.navigation.navigate("Tutorial");
   };
 
   render() {
     return (
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
-          {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
-          ) : (
-            this.state.keys.map((key, index) => {
-              return (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => this.handlePress(key)}
-                >
-                  <View
-                    style={{
-                      padding: 5,
-                      flexDirection: "row",
-                      flexWrap: "wrap",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Image
-                      resizeMode={"cover"}
-                      style={{
-                        width: "100%",
-                        height: 200,
-                        marginBottom: -10,
-                      }}
-                      source={{
-                        uri: this.state.postrefs[key].thumbnail,
-                      }}
-                    />
-                    <View
-                      style={{
-                        padding: 5,
-                        width: "100%",
-                        backgroundColor: "white",
-                        alignSelf: "center",
-                      }}
-                    >
-                      <Text style={{ color: "#6da9c9", fontSize: 20 }}>
-                        {this.state.postrefs[key].title}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </ScrollView>
+      <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={["#6da9c9", "#fff"]}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: "100%",
+          }}
+        />
+        <ProfileBanner
+          style={{ alignSelf: "center", margin: 10 }}
+          user={this.props.tutorials.profile}
+        />
+        <ProfileNav />
       </View>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  contentContainer: {
-    padding: 10,
-    flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  heading: {
-    fontSize: 18,
-    color: "white",
-    fontWeight: "bold",
-  },
-});
 
 const mapStateToProps = (state) => ({
   tutorials: state.tutorials,

@@ -5,7 +5,7 @@ import {
   TextInput,
   View,
   TouchableOpacity,
-  Alert
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -14,7 +14,7 @@ import { firebase } from "./../src/config";
 
 export default class ForgotScreen extends React.Component {
   state = {
-    email: ""
+    email: "",
   };
 
   forgot = async () => {
@@ -41,7 +41,7 @@ export default class ForgotScreen extends React.Component {
             left: 0,
             right: 0,
             top: 0,
-            height: "100%"
+            height: "100%",
           }}
         />
         <Text
@@ -49,7 +49,7 @@ export default class ForgotScreen extends React.Component {
             textAlign: "center",
             fontSize: 15,
             margin: 20,
-            color: "white"
+            color: "white",
           }}
         >
           Enter your email address below and we'll send you a link to reset your
@@ -63,7 +63,7 @@ export default class ForgotScreen extends React.Component {
             margin: 40,
             marginTop: 5,
             marginBottom: 10,
-            borderRadius: 5
+            borderRadius: 5,
           }}
         >
           <View
@@ -71,7 +71,7 @@ export default class ForgotScreen extends React.Component {
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
-              flexWrap: "wrap"
+              flexWrap: "wrap",
             }}
           >
             <Ionicons name="md-mail" size={25} color="#6da9c9" />
@@ -80,7 +80,7 @@ export default class ForgotScreen extends React.Component {
               keyboardType="email-address"
               autoCapitalize="none"
               placeholder="Email"
-              onChangeText={email => this.setState({ email })}
+              onChangeText={(email) => this.setState({ email })}
               value={this.state.email}
             />
           </View>
@@ -91,10 +91,10 @@ export default class ForgotScreen extends React.Component {
           </TouchableOpacity>
         </View>
         <TouchableOpacity
-            style={{ margin: 5 }}
-            onPress={() => this.props.navigation.navigate("Login")}
-          >
-            <Text style={{ color: "#6da9c9" }}>Back to Login</Text>
+          style={{ margin: 5 }}
+          onPress={() => this.props.navigation.navigate("Login")}
+        >
+          <Text style={{ color: "#6da9c9" }}>Back to Login</Text>
         </TouchableOpacity>
         {this.state.errorMessage && (
           <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   submitButton: {
     marginTop: 10,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     paddingLeft: 30,
     paddingRight: 30,
     backgroundColor: "#ffb52b",
-    borderRadius: 2
+    borderRadius: 2,
   },
   textInput: {
     fontSize: 18,
@@ -128,6 +128,6 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#6da9c9",
-    color: "#6da9c9"
-  }
+    color: "#6da9c9",
+  },
 });

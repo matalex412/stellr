@@ -10,7 +10,6 @@ import {
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { AdMobBanner } from "expo-ads-admob";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -105,13 +104,6 @@ class AskScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <AdMobBanner
-            adUnitID="ca-app-pub-3262091936426324/7558442816"
-            onDidFailToReceiveAdWithError={() =>
-              console.log("banner ad not loading")
-            }
-            servePersonalizedAds
-          />
           <LinearGradient
             colors={["#6da9c9", "#fff"]}
             style={{

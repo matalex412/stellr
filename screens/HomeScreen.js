@@ -3,8 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  StatusBar,
-  ActivityIndicator,
   TouchableOpacity,
   Image,
   RefreshControl,
@@ -14,10 +12,9 @@ import {
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
-import ListView from "deprecated-react-native-listview";
-import Masonry from "react-native-masonry";
 import Firebase from "firebase";
 
+import CustomLoading from "./components/CustomLoading";
 import { updateTutorials } from "./../redux/actions";
 import { store } from "./../redux/store";
 import { firebase } from "./../src/config";
@@ -108,14 +105,15 @@ class HomeScreen extends React.Component {
     } else if (currentUser.isAnonymous) {
       var interests = { creators: [], topics: ["/topics/Meta", "/topics/Art"] };
     }
-
     // fetch tutorials related to user's interests
-    var doc,
+    var creator,
+      doc,
       docs,
       post,
       jpost,
       posts = [];
-    for (var creator of interests.creators) {
+
+    for (creator of interests.creators) {
       docs = await firebase
         .firestore()
         .collectionGroup("posts")
@@ -128,6 +126,7 @@ class HomeScreen extends React.Component {
         posts.push(post);
       });
     }
+
     for (var topic of interests.topics) {
       docs = await firebase
         .firestore()
@@ -187,7 +186,7 @@ class HomeScreen extends React.Component {
             }}
           />
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
               {this.state.rows.map((row, index) => {

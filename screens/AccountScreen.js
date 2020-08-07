@@ -6,17 +6,22 @@ import {
   Share,
   TouchableOpacity,
   ActivityIndicator,
-  Alert
+  Alert,
+  Image,
+  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import * as ImagePicker from "expo-image-picker";
+import * as Permissions from "expo-permissions";
+import LinkSection from "./components/LinkSection";
 
 import { firebase } from "./../src/config";
 
 export default class AccountScreen extends React.Component {
   state = {
     errorMessage: null,
-    isLoading: true
+    isLoading: true,
   };
 
   componentDidMount = () => {
@@ -28,6 +33,21 @@ export default class AccountScreen extends React.Component {
     const { currentUser } = await firebase.auth();
     this.setState({ currentUser });
     this.setState({ isLoading: false });
+  };
+
+  editBio = async () => {
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(this.state.currentUser.uid)
+      .update({
+        bio: this.state.bio,
+      });
+
+    this.setState({ bio: "" });
+    alert(
+      "Your bio has been updated successfully. It can now been seen on your profile page"
+    );
   };
 
   verifyEmail = () => {
@@ -60,13 +80,13 @@ export default class AccountScreen extends React.Component {
               // display any error
               this.setState({ errorMessage: error.message });
             }
-          }
+          },
         },
         {
           text: "Cancel",
           onPress: () => {},
-          style: "cancel"
-        }
+          style: "cancel",
+        },
       ]
     );
   };
@@ -74,8 +94,71 @@ export default class AccountScreen extends React.Component {
   share = async () => {
     // let user share app website
     await Share.share({
-      message: "http://matthewalex.com/skoach"
+      message: "http://matthewalex.com/skoach",
     });
+  };
+
+  getPermissionAsync = async () => {
+    // ask for permission to access camera roll
+    const permission1 = Permissions.getAsync(Permissions.CAMERA_ROLL);
+    if (permission1.status !== "granted") {
+      const permission = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+      const status = permission.status;
+      if (status !== "granted") {
+        alert("Sorry, we need camera roll permissions to make this work!");
+      }
+      await this.setState({ permission: status === "granted" });
+    } else {
+      await this.setState({ permission: true });
+    }
+  };
+
+  changeProfilePic = async () => {
+    // get permissions
+    if (this.state.permission != true) {
+      await this.getPermissionAsync();
+    }
+    if (this.state.permission == true) {
+      try {
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions["Images"],
+          quality: 1,
+          aspect: [1, 1],
+          allowsEditing: true,
+        });
+
+        if (!result.cancelled) {
+          var { currentUser } = firebase.auth();
+
+          // store thumbnail and get route
+          const response = await fetch(result.uri);
+          const blob = await response.blob();
+          var ref = await firebase
+            .storage()
+            .ref()
+            .child(`users/${currentUser.uid}/profilePic`);
+          await ref.put(blob);
+          var picture = await ref.getDownloadURL();
+
+          await firebase
+            .firestore()
+            .collection("users")
+            .doc(currentUser.uid)
+            .update({
+              profilePic: picture,
+            });
+
+          // update firebase auth profilePic
+          await currentUser.updateProfile({
+            photoURL: picture,
+          });
+
+          this.setState({ currentUser });
+        }
+      } catch (E) {
+        console.log(E);
+      }
+    }
   };
 
   render() {
@@ -88,106 +171,110 @@ export default class AccountScreen extends React.Component {
             left: 0,
             right: 0,
             top: 0,
-            height: "100%"
+            height: "100%",
           }}
         />
         {this.state.isLoading ? (
           <ActivityIndicator size="large" />
         ) : (
           <View style={{ alignItems: "center" }}>
+            <View style={{ alignItems: "center", flexDirection: "row" }}>
+              <TouchableOpacity
+                style={{ marginRight: 5 }}
+                onPress={this.changeProfilePic}
+              >
+                {this.state.currentUser.photoURL ? (
+                  <Image
+                    style={[styles.profilePic, styles.image]}
+                    source={{ uri: this.state.currentUser.photoURL }}
+                  />
+                ) : (
+                  <View style={styles.profilePic}>
+                    <MaterialCommunityIcons
+                      name="account"
+                      size={30}
+                      color="#ffb52b"
+                    />
+                  </View>
+                )}
+                <Text style={{ textAlign: "center", fontSize: 12 }}>Edit</Text>
+              </TouchableOpacity>
+              <View style={{ alignItems: "center" }}>
+                <Text>
+                  <Text style={{ fontWeight: "bold" }}>
+                    {this.state.currentUser.displayName}
+                  </Text>
+                  's Account
+                </Text>
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ fontWeight: "bold" }}>
+                    {this.state.currentUser.email}
+                  </Text>
+                  {!this.state.currentUser.emailVerified && (
+                    <TouchableOpacity onPress={this.verifyEmail}>
+                      <Text style={{ color: "white", fontWeight: "bold" }}>
+                        (unverified email)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+            <View
+              style={{
+                padding: 10,
+                alignItems: "center",
+                flexDirection: "row",
+              }}
+            >
+              <TextInput
+                value={this.state.bio}
+                placeholder="Update Your Profile Bio"
+                onChangeText={(query) => this.setState({ bio: query })}
+                style={{
+                  borderRadius: 5,
+                  color: "black",
+                  padding: 5,
+                  backgroundColor: "white",
+                  width: 200,
+                }}
+              />
+              <TouchableOpacity style={{ padding: 5 }} onPress={this.editBio}>
+                <MaterialCommunityIcons name="send" size={30} color="#ffb52b" />
+              </TouchableOpacity>
+            </View>
             <View
               style={{ justifyContent: "center", alignItems: "flex-start" }}
             >
-              <View style={{ alignItems: "center", flexDirection: "row" }}>
-                <MaterialCommunityIcons
-                  name="account"
-                  size={30}
-                  style={{ margin: 10 }}
-                  color="white"
-                />
-                <View style={{ alignItems: "center" }}>
-                  <Text>
-                    <Text style={{ fontWeight: "bold" }}>
-                      {this.state.currentUser.displayName}
-                    </Text>
-                    's Account
-                  </Text>
-                  <View style={{ alignItems: "center", flexDirection: "row" }}>
-                    <Text style={{ fontWeight: "bold" }}>
-                      {this.state.currentUser.email}
-                    </Text>
-                    {!this.state.currentUser.emailVerified && (
-                      <TouchableOpacity onPress={this.verifyEmail}>
-                        <Text>(unverified)</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </View>
-              <View style={{ alignItems: "center", flexDirection: "row" }}>
-                <MaterialCommunityIcons
-                  name="pencil"
-                  size={30}
-                  style={{ margin: 10 }}
-                  color="white"
-                />
-                <TouchableOpacity
-                  onPress={() => this.props.navigation.navigate("UserPosts")}
-                >
-                  <Text style={{ color: "white" }}>Your Posts</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={{ alignItems: "center", flexDirection: "row" }}>
-                <MaterialCommunityIcons
-                  name="history"
-                  size={30}
-                  style={{ margin: 10 }}
-                  color="white"
-                />
-                <TouchableOpacity
-                  onPress={() => this.props.navigation.navigate("History")}
-                >
-                  <Text style={{ color: "white" }}>Learning History</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={{ alignItems: "center", flexDirection: "row" }}>
-                <MaterialCommunityIcons
-                  name="logout"
-                  size={30}
-                  style={{ margin: 10 }}
-                  color="white"
-                />
-                <TouchableOpacity onPress={() => firebase.auth().signOut()}>
-                  <Text style={{ color: "white" }}>Logout</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={{ alignItems: "center", flexDirection: "row" }}>
-                <MaterialCommunityIcons
-                  name="share"
-                  size={30}
-                  style={{ margin: 10 }}
-                  color="white"
-                />
-                <TouchableOpacity onPress={this.share}>
-                  <Text style={{ color: "white" }}>Share Skoach</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={{ alignItems: "center", flexDirection: "row" }}>
-                <MaterialCommunityIcons
-                  name="delete"
-                  size={30}
-                  style={{ margin: 10 }}
-                  color="white"
-                />
-                <TouchableOpacity onPress={this.delete}>
-                  <Text style={{ color: "coral", fontWeight: "bold" }}>
-                    Delete Account
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <LinkSection
+                onPress={() => this.props.navigation.navigate("UserPosts")}
+                text="Your Posts"
+                icon="pencil"
+              />
+              <LinkSection
+                onPress={() => this.props.navigation.navigate("History")}
+                text="Learning History"
+                icon="history"
+              />
+              <LinkSection
+                onPress={() => firebase.auth().signOut()}
+                text="Logout"
+                icon="logout"
+              />
+              <LinkSection
+                onPress={this.share}
+                text="Share Skoach"
+                icon="share"
+              />
+              <LinkSection
+                onPress={this.delete}
+                text="Delete Account"
+                icon="delete"
+                color="coral"
+              />
             </View>
             {this.state.errorMessage && (
-              <Text style={{ marginLeft: 50, marginRight: 50, color: "white" }}>
+              <Text style={{ marginLeft: 50, marginRight: 50, color: "black" }}>
                 {this.state.errorMessage}
               </Text>
             )}
@@ -203,6 +290,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     alignItems: "center",
-    justifyContent: "center"
-  }
+    justifyContent: "center",
+  },
+  image: {
+    width: 30,
+    height: 30,
+  },
+  profilePic: {
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "black",
+  },
 });

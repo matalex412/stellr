@@ -4,7 +4,7 @@ import {
   Text,
   TextInput,
   View,
-  TouchableOpacity
+  TouchableOpacity,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,11 +19,11 @@ class LoginScreen extends React.Component {
     email: "",
     password: "",
     errorMessage: null,
-    selection: {start: 1, end: 1}
   };
 
   handleLogin = async () => {
-    if ((this.state.email.length > 1) && (this.state.password.length > 1)) {
+    this.setState({ errorMessage: null });
+    if (this.state.email.length > 1 && this.state.password.length > 1) {
       try {
         // sign user in
         await firebase
@@ -34,13 +34,11 @@ class LoginScreen extends React.Component {
         this.setState({ errorMessage: error.message });
       }
     } else {
-      this.setState({ errorMessage: "Please fill in the email and password fields"})
+      this.setState({
+        errorMessage: "Please fill in the email and password fields",
+      });
     }
   };
-
-  handleSelectionChange = async ({ nativeEvent: { selection } }) => {
-    await this.setState({ selection })
-  }
 
   render() {
     return (
@@ -52,12 +50,19 @@ class LoginScreen extends React.Component {
             left: 0,
             right: 0,
             top: 0,
-            height: "100%"
+            height: "100%",
           }}
         />
         <Text style={{ fontSize: 19, color: "white" }}>Login</Text>
         {this.state.errorMessage && (
-          <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
+          <Text
+            style={{
+              textAlign: "center",
+              margin: 10,
+              color: "#ffb52b",
+              fontWeight: "bold",
+            }}
+          >
             {this.state.errorMessage}
           </Text>
         )}
@@ -66,17 +71,17 @@ class LoginScreen extends React.Component {
             alignItems: "center",
             backgroundColor: "white",
             padding: 20,
-            margin: 40,
+            width: "80%",
             marginTop: 10,
             marginBottom: 20,
-            borderRadius: 5
+            borderRadius: 5,
           }}
         >
           <View
             style={{
               justifyContent: "center",
               flexDirection: "row",
-              flexWrap: "wrap"
+              flexWrap: "wrap",
             }}
           >
             <View
@@ -84,21 +89,18 @@ class LoginScreen extends React.Component {
                 paddingTop: 2,
                 alignItems: "center",
                 width: 25,
-                height: 25
+                height: 25,
               }}
             >
               <Ionicons name="md-mail" size={25} color="#6da9c9" />
             </View>
             <TextInput
-              selection={this.state.selection}
               style={styles.textInput}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholder="Email"
-              onChangeText={email => this.setState({ email })}
+              onChangeText={(email) => this.setState({ email })}
               value={this.state.email}
-              onSelectionChange={this.handleSelectionChange}
-              onEndEditing={() => this.setState({ selection: {start: 1, end: 1}})}
             />
           </View>
           <View
@@ -106,7 +108,7 @@ class LoginScreen extends React.Component {
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
-              flexWrap: "wrap"
+              flexWrap: "wrap",
             }}
           >
             <View
@@ -114,7 +116,7 @@ class LoginScreen extends React.Component {
                 justifyContent: "center",
                 alignItems: "center",
                 width: 25,
-                height: 25
+                height: 25,
               }}
             >
               <Ionicons name="md-lock" size={25} color="#6da9c9" />
@@ -124,7 +126,7 @@ class LoginScreen extends React.Component {
               style={styles.textInput}
               autoCapitalize="none"
               placeholder="Password"
-              onChangeText={password => this.setState({ password })}
+              onChangeText={(password) => this.setState({ password })}
               value={this.state.password}
             />
             <View style={{ alignSelf: "flex-end" }}>
@@ -150,7 +152,7 @@ class LoginScreen extends React.Component {
           style={{
             alignItems: "center",
             flexDirection: "row",
-            flexWrap: "wrap"
+            flexWrap: "wrap",
           }}
         >
           <TouchableOpacity
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   submitButton: {
     marginTop: 10,
@@ -186,7 +188,7 @@ const styles = StyleSheet.create({
     paddingLeft: 70,
     paddingRight: 70,
     backgroundColor: "#ffb52b",
-    borderRadius: 2
+    borderRadius: 2,
   },
   textInput: {
     fontSize: 18,
@@ -194,19 +196,19 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#6da9c9",
-    color: "#6da9c9"
+    color: "#6da9c9",
   },
   line: {
     borderBottomColor: "white",
     borderBottomWidth: 1,
     alignSelf: "center",
     margin: 10,
-    width: "70%"
-  }
+    width: "70%",
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(LoginScreen);

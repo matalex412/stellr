@@ -8,7 +8,6 @@ import {
   Image,
   ScrollView,
   Alert,
-  ActivityIndicator,
   Dimensions,
 } from "react-native";
 import { Video } from "expo-av";
@@ -19,6 +18,7 @@ import { connect } from "react-redux";
 import { AdMobBanner } from "expo-ads-admob";
 import Ionicons from "react-native-vector-icons/Ionicons";
 
+import CustomLoading from "./components/CustomLoading";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -221,7 +221,7 @@ class CreateScreen extends React.Component {
             uid: currentUser.uid,
             topic: topic,
             stars: 0,
-            active: 0,
+            incomplete: 0,
             learns: 0,
           });
 
@@ -421,13 +421,7 @@ class CreateScreen extends React.Component {
             }}
           />
           {this.state.isLoading ? (
-            <View>
-              <Text>
-                'Do you see a man skillful in his work? He will stand before
-                kings'
-              </Text>
-              <ActivityIndicator color="#fff" size="large" />
-            </View>
+            <CustomLoading verse="Do you see a man skillful in his work? He will stand before kings" />
           ) : (
             <View>
               <View style={{ margin: 10, flex: 1, flexDirection: "column" }}>
@@ -686,9 +680,9 @@ class CreateScreen extends React.Component {
                       name="md-add-circle"
                       size={20}
                       style={{ margin: 3 }}
-                      color="#ffb52b"
+                      color="#6da9c9"
                     />
-                    <Text style={{ margin: 3, color: "#ffb52b" }}>
+                    <Text style={{ margin: 3, color: "#6da9c9" }}>
                       Add New Step
                     </Text>
                   </View>

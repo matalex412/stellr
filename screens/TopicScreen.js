@@ -7,10 +7,12 @@ import {
   TextInput,
   ActivityIndicator,
   BackHandler,
-  ScrollView
+  ScrollView,
+  Dimensions
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -159,27 +161,42 @@ class SearchScreen extends React.Component {
             <ActivityIndicator color="#fff" size="large" />
           ) : (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-              {this.state.keys.map((topic, index) => {
-                return (
-                  <View style={{ padding: 10 }} key={index}>
-                    <TouchableOpacity onPress={() => this.handlePress(topic)}>
+              <View
+                style={{
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                }}
+              >
+                {this.state.keys.map((topic, index) => {
+                  return (
+                    <TouchableOpacity
+                      style={styles.square}
+                      key={index}
+                      onPress={() => this.handlePress(topic)}
+                    >
+                      <MaterialCommunityIcons
+                        name={this.state.topics[topic].icon}
+                        size={40}
+                        color="#ffb52b"
+                      />
                       <View>
                         <Text style={styles.text}>{topic}</Text>
                       </View>
                     </TouchableOpacity>
-                  </View>
-                );
-              })}
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                {this.state.current_topic.length < 1 ? null : (
-                  <TouchableOpacity onPress={() => this.pickTopic()}>
-                    <View>
-                      <Text style={{ color: "#ffb52b" }}>
-                        Select Current Topic
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                  );
+                })}
+                <View style={{ justifyContent: "center", alignItems: "center" }}>
+                  {this.state.current_topic.length < 1 ? null : (
+                    <TouchableOpacity onPress={() => this.pickTopic()}>
+                      <View>
+                        <Text style={{ fontSize: 16 }}>
+                          Select Current Topic
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
           )}
@@ -195,6 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff"
   },
   text: {
+    textAlign: "center",
     color: "white",
     fontSize: 16
   },
@@ -203,6 +221,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff"
+  },
+  square: {
+    margin: 10,
+    width: Dimensions.get("window").width / 3 - 30,
+    height: Dimensions.get("window").width / 3 - 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "black",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 10,
+    backgroundColor: "black",
   },
   line: {
     borderBottomColor: "black",

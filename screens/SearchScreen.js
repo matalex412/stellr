@@ -5,11 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   ScrollView,
   Image,
   BackHandler,
-  Alert,
   Dimensions,
 } from "react-native";
 import { connect } from "react-redux";
@@ -17,6 +15,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
+import CustomLoading from "./components/CustomLoading";
+import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -55,7 +55,6 @@ class SearchScreen extends React.Component {
   }
 
   setup = async () => {
-    await store.dispatch(updateTutorials({ headerShown: false }));
     // page items loading
     this.setState({ isLoading: true });
 
@@ -190,7 +189,7 @@ class SearchScreen extends React.Component {
             }}
           />
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <CustomLoading verse="Ask and it will be given to you; seek and you will find" />
           ) : (
             <View>
               {this.props.tutorials.current_topic.length < 1 ? null : (
@@ -259,43 +258,11 @@ class SearchScreen extends React.Component {
                 <View style={styles.centerview}>
                   {postids.map((postid, index) => {
                     return (
-                      <TouchableOpacity
+                      <TutorialCover
                         key={index}
+                        tutorial={this.state.contents[postid]}
                         onPress={() => this.handlePress(postid)}
-                      >
-                        <View
-                          style={{
-                            padding: 5,
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Image
-                            resizeMode={"cover"}
-                            style={{
-                              width: "100%",
-                              height: 200,
-                              marginBottom: -10,
-                            }}
-                            source={{
-                              uri: this.state.contents[postid].thumbnail,
-                            }}
-                          />
-                          <View
-                            style={{
-                              padding: 5,
-                              width: "100%",
-                              backgroundColor: "white",
-                              alignSelf: "center",
-                            }}
-                          >
-                            <Text style={{ color: "#6da9c9", fontSize: 20 }}>
-                              {this.state.contents[postid].title}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
+                      />
                     );
                   })}
                 </View>

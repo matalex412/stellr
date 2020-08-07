@@ -4,8 +4,7 @@ import {
   Text,
   TextInput,
   View,
-  Button,
-  TouchableOpacity
+  TouchableOpacity,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,7 +19,7 @@ class SignUp extends React.Component {
     email: "",
     password: "",
     username: "",
-    errorMessage: null
+    errorMessage: null,
   };
 
   componentDidMount = () => {
@@ -44,6 +43,7 @@ class SignUp extends React.Component {
   };
 
   handleSignUp = async () => {
+    this.setState({ errorMessage: null });
     try {
       var names = this.state.names;
       var unique = true;
@@ -66,20 +66,24 @@ class SignUp extends React.Component {
 
         // update username
         await user.updateProfile({
-          displayName: this.state.username
+          displayName: this.state.username,
         });
 
-        var interests = {}
-        interests.topics = ["/topics/Meta"]
-        
+        var interests = {};
+        interests.creators = [];
+        interests.topics = ["/topics/Meta", "/topics/Art"];
+
         // create base user data in firestore database
+        var lower = this.state.username.toLowerCase();
+        lower = lower.trim();
         await firebase
           .firestore()
           .collection("users/")
           .doc(user.uid)
           .set({
+            lowercaseName: lower,
             username: this.state.username,
-            interests: interests
+            interests: interests,
           });
 
         // add help tutorials to user screen
@@ -92,14 +96,14 @@ class SignUp extends React.Component {
               title: "Using Skoach",
               thumbnail:
                 "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9sLloRcBSCZhf9QQjT%2FThumbnail?alt=media&token=8588020f-a02a-467c-8da5-26462b77b061",
-              topic: "topics/Meta"
+              topic: "topics/Meta",
             },
             iuyEJIBF63QJRhcBNNQ6: {
               title: "Creating a Tutorial",
               thumbnail:
                 "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9Ehcn1WiABy_0wDMKN%2FThumbnail?alt=media&token=e206b115-cb63-4098-abfe-c7f4b63bcd84",
-              topic: "topics/Meta"
-            }
+              topic: "topics/Meta",
+            },
           });
 
         // send user message to verify email
@@ -110,8 +114,8 @@ class SignUp extends React.Component {
           .set({
             [Date.now()]: {
               message: "Please verify your email",
-              status: "unread"
-            }
+              status: "unread",
+            },
           });
         await store.dispatch(updateTutorials({ unread: true }));
 
@@ -142,12 +146,19 @@ class SignUp extends React.Component {
             left: 0,
             right: 0,
             top: 0,
-            height: "100%"
+            height: "100%",
           }}
         />
         <Text style={{ fontSize: 19, color: "white" }}>Sign Up</Text>
         {this.state.errorMessage && (
-          <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
+          <Text
+            style={{
+              textAlign: "center",
+              margin: 10,
+              color: "#ffb52b",
+              fontWeight: "bold",
+            }}
+          >
             {this.state.errorMessage}
           </Text>
         )}
@@ -155,17 +166,18 @@ class SignUp extends React.Component {
           style={{
             alignItems: "center",
             backgroundColor: "white",
-            padding: 30,
+            padding: 20,
+            width: "80%",
             marginTop: 10,
             marginBottom: 20,
-            borderRadius: 5
+            borderRadius: 5,
           }}
         >
           <View
             style={{
               alignItems: "center",
               justifyContent: "center",
-              flexDirection: "row"
+              flexDirection: "row",
             }}
           >
             <View
@@ -173,7 +185,7 @@ class SignUp extends React.Component {
                 paddingTop: 2,
                 alignItems: "center",
                 width: 25,
-                height: 25
+                height: 25,
               }}
             >
               <Ionicons name="md-person" size={25} color="#6da9c9" />
@@ -182,7 +194,7 @@ class SignUp extends React.Component {
               placeholder="Username"
               autoCapitalize="none"
               style={styles.textInput}
-              onChangeText={username => this.setState({ username })}
+              onChangeText={(username) => this.setState({ username })}
               value={this.state.username}
             />
           </View>
@@ -191,7 +203,7 @@ class SignUp extends React.Component {
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
-              flexWrap: "wrap"
+              flexWrap: "wrap",
             }}
           >
             <View style={{ alignItems: "center", width: 25, height: 25 }}>
@@ -202,7 +214,7 @@ class SignUp extends React.Component {
               placeholder="Email"
               autoCapitalize="none"
               style={styles.textInput}
-              onChangeText={email => this.setState({ email })}
+              onChangeText={(email) => this.setState({ email })}
               value={this.state.email}
             />
           </View>
@@ -211,7 +223,7 @@ class SignUp extends React.Component {
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
-              flexWrap: "wrap"
+              flexWrap: "wrap",
             }}
           >
             <View style={{ alignItems: "center", width: 25, height: 25 }}>
@@ -222,7 +234,7 @@ class SignUp extends React.Component {
               placeholder="Password"
               autoCapitalize="none"
               style={styles.textInput}
-              onChangeText={password => this.setState({ password })}
+              onChangeText={(password) => this.setState({ password })}
               value={this.state.password}
             />
           </View>
@@ -238,7 +250,7 @@ class SignUp extends React.Component {
           style={{
             alignItems: "center",
             flexDirection: "row",
-            flexWrap: "wrap"
+            flexWrap: "wrap",
           }}
         >
           <TouchableOpacity
@@ -265,7 +277,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   submitButton: {
     marginTop: 10,
@@ -274,27 +286,27 @@ const styles = StyleSheet.create({
     paddingLeft: 70,
     paddingRight: 70,
     backgroundColor: "#ffb52b",
-    borderRadius: 2
+    borderRadius: 2,
   },
   textInput: {
     fontSize: 18,
-    width: "60%",
+    width: "80%",
     marginLeft: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#6da9c9",
-    color: "#6da9c9"
+    color: "#6da9c9",
   },
   line: {
     borderBottomColor: "white",
     borderBottomWidth: 1,
     alignSelf: "center",
     margin: 10,
-    width: "70%"
-  }
+    width: "70%",
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(SignUp);

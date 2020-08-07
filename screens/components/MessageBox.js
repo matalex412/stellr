@@ -27,8 +27,8 @@ class MessageBox extends React.Component {
   }
 }
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(MessageBox);
