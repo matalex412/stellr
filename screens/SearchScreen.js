@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
+import AskScreen from "./AskScreen";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -192,6 +193,7 @@ class SearchScreen extends React.Component {
             <CustomLoading verse="Ask and it will be given to you; seek and you will find" />
           ) : (
             <View>
+              <AskScreen />
               {this.props.tutorials.current_topic.length < 1 ? null : (
                 <TouchableOpacity onPress={this.goBack}>
                   <View

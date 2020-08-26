@@ -51,37 +51,38 @@ class MessageScreen extends React.Component {
     const { currentUser } = firebase.auth();
 
     // get user's messages
-    var messageRef = await firebase
+    var doc = await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
       .doc("messages")
-      .onSnapshot(async (doc) => {
-        this.setState({ isLoading: true });
-        // check if user has messages
-        if (doc.exists) {
-          // store messages in state
-          this.setState({ data: doc.data() });
-          var keys = Object.keys(doc.data());
-          var d;
-          var time,
-            times = [];
-          for (time of keys) {
-            time = Number(time);
-            d = new Date(time);
-            var mins = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-            times.push(
-              `${d.getDate()}/${d.getMonth()}  ${d.getHours()}:${mins}`
-            );
-          }
-          this.setState({ times });
-        }
+      .get();
 
-        this.setState({ isLoading: false });
-      });
+    this.setState({ isLoading: true });
+    // check if user has messages
+    if (doc.exists) {
+      // store messages in state
+      if (doc.data()) {
+        this.setState({ data: doc.data() });
+        var keys = Object.keys(doc.data());
+        var d;
+        var time,
+          times = [];
+        for (time of keys) {
+          time = Number(time);
+          d = new Date(time);
+          var mins = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+          times.push(`${d.getDate()}/${d.getMonth()}  ${d.getHours()}:${mins}`);
+        }
+        this.setState({ times });
+      } else {
+        alert("Sorry, you aren't connected to internet. Don't Panic");
+      }
+    }
+
+    this.setState({ isLoading: false });
 
     // update messagebox status
     await store.dispatch(updateTutorials({ unread: false }));
-    this.setState({ messageRef });
   };
 
   render() {

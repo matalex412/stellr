@@ -2,19 +2,19 @@ import React from "react";
 import { TouchableOpacity, View, Text } from "react-native";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { human } from "react-native-typography";
 
 import { firebase } from "./../../src/config";
 import MessageBox from "./MessageBox";
 
 export default class AppHeader extends React.Component {
-
   render() {
     // check if currentUser is anonymous
-    var { currentUser } = firebase.auth()
+    var { currentUser } = firebase.auth();
     if (currentUser != null) {
-      var { isAnonymous } = currentUser
+      var { isAnonymous } = currentUser;
     } else {
-      var isAnonymous = true
+      var isAnonymous = true;
     }
 
     return (
@@ -23,14 +23,12 @@ export default class AppHeader extends React.Component {
           <TouchableOpacity
             style={{ paddingRight: 10 }}
             onPress={() => {
-              this.props.navigation.navigate("SignUp")
-              firebase.auth().signOut()
+              this.props.navigation.navigate("SignUp");
+              firebase.auth().signOut();
             }}
           >
-            <Text style={{ color: "white", paddingRight: 10 }}>
-              Sign Up
-            </Text>
-          </TouchableOpacity>          
+            <Text style={{ color: "white", paddingRight: 10 }}>Sign Up</Text>
+          </TouchableOpacity>
         ) : (
           <View style={{ flexDirection: "row" }}>
             <TouchableOpacity
@@ -48,7 +46,7 @@ export default class AppHeader extends React.Component {
               }}
             >
               <View style={{ flexDirection: "row" }}>
-                <Text style={{ color: "white", paddingRight: 5 }}>
+                <Text style={[human.subheadWhite, { paddingRight: 5 }]}>
                   Account
                 </Text>
                 <Ionicons

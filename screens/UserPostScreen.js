@@ -227,6 +227,9 @@ class UserPostScreen extends React.Component {
             username: this.props.tutorials.userpost.username,
             uid: currentUser.uid,
             topic: topic,
+            stars: this.props.tutorials.userpost.stars,
+            incomplete: this.props.tutorials.userpost.stars,
+            learns: this.props.tutorials.userpost.stars,
           });
 
         id = doc.id;

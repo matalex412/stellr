@@ -185,13 +185,22 @@ class LearningScreen extends React.Component {
     }
 
     // update tutorial stats
-    firebase
+    await firebase
       .firestore()
       .collection(`${this.props.tutorials.added.topic}/posts`)
       .doc(this.props.tutorials.learn_key)
       .update({
         stars: Firebase.firestore.FieldValue.increment(rating),
         [field]: Firebase.firestore.FieldValue.increment(1),
+      });
+
+    // update creator's weekly stars
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(this.props.tutorials.added.uid)
+      .update({
+        weeklyStars: Firebase.firestore.FieldValue.increment(rating),
       });
 
     this.setState({ isModalVisible: false });

@@ -5,6 +5,7 @@ import {
   TextInput,
   View,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,6 +21,7 @@ class SignUp extends React.Component {
     password: "",
     username: "",
     errorMessage: null,
+    isLoading: false,
   };
 
   componentDidMount = () => {
@@ -43,6 +45,7 @@ class SignUp extends React.Component {
   };
 
   handleSignUp = async () => {
+    this.setState({ isLoading: true });
     this.setState({ errorMessage: null });
     try {
       var names = this.state.names;
@@ -134,6 +137,7 @@ class SignUp extends React.Component {
     } catch (error) {
       this.setState({ errorMessage: error.message });
     }
+    this.setState({ isLoading: false });
   };
 
   render() {
@@ -238,13 +242,15 @@ class SignUp extends React.Component {
               value={this.state.password}
             />
           </View>
-          <TouchableOpacity
-            style={styles.submitButton}
-            activeOpacity={0.5}
-            onPress={this.handleSignUp}
-          >
-            <Text style={{ color: "white", fontSize: 20 }}>Sign Up</Text>
-          </TouchableOpacity>
+          <View style={styles.submitButton}>
+            {!this.state.isLoading ? (
+              <TouchableOpacity activeOpacity={0.5} onPress={this.handleSignUp}>
+                <Text style={{ color: "white", fontSize: 20 }}>Sign Up</Text>
+              </TouchableOpacity>
+            ) : (
+              <ActivityIndicator color="white" />
+            )}
+          </View>
         </View>
         <View
           style={{

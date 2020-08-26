@@ -12,6 +12,8 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import Carousel from "react-native-snap-carousel";
+import { human } from "react-native-typography";
 
 import CustomLoading from "./components/CustomLoading";
 import ProfileBanner from "./components/ProfileBanner";
@@ -24,7 +26,9 @@ class PeopleScreen extends React.Component {
     toAddLoading: true,
     isLoading: true,
     toAdd: [],
-    added: { following: [], friends: [] },
+    following: [],
+    friends: [],
+    carouselItems: ["toAdd", "following", "friends"],
   };
 
   componentDidMount = () => {
@@ -93,29 +97,34 @@ class PeopleScreen extends React.Component {
     // separate currentUser's added profiles into friends and following
     var i,
       person,
-      added = { friends: [], following: [] };
+      friends = [],
+      following = [];
+
     for (i in people) {
       person = people[i];
       person.uid = i;
 
       if (person.status == "friend") {
-        added.friends.push(person);
+        friends.push(person);
       } else {
-        added.following.push(person);
+        following.push(person);
       }
     }
 
-    this.setState({ added });
+    this.setState({ friends });
+    this.setState({ following });
+
     this.setState({ isLoading: false });
 
     var toAdd = this.state.toAdd.concat(users);
-    await this.setState({ toAdd: this.shuffle(toAdd) });
+    await this.setState({ toAdd });
 
     // rerun setup till 10 new users to add
     if (this.state.toAdd.length < 10) {
       await this.setState({ last: d });
       this.setup(10 - this.state.toAdd.length);
     } else {
+      await this.setState({ toAdd: this.shuffle(toAdd) });
       this.setState({ last: null });
       this.setState({ toAddLoading: false });
     }
@@ -147,6 +156,15 @@ class PeopleScreen extends React.Component {
   };
 
   follow = async (user) => {
+    var toAdd = this.state.toAdd;
+    for (var i = 0; i < toAdd.length; i++) {
+      var person = toAdd[i];
+      if (person.uid == user.uid) {
+        toAdd[i].added = true;
+        this.setState({ toAdd: toAdd });
+      }
+    }
+
     this.setState({ searched: false });
     this.setState({ result: null });
     var friend,
@@ -198,15 +216,6 @@ class PeopleScreen extends React.Component {
       added.following.push(user);
     }
     this.setState({ added });
-
-    var toAdd = this.state.toAdd;
-    for (var i = 0; i < toAdd.length; i++) {
-      var person = toAdd[i];
-      if (person.uid == user.uid) {
-        toAdd[i].added = true;
-        this.setState({ toAdd: toAdd });
-      }
-    }
   };
 
   search = async () => {
@@ -245,6 +254,71 @@ class PeopleScreen extends React.Component {
     } else {
       this.setState({ searched: false });
     }
+  };
+
+  _renderItem = ({ item, index }) => {
+    return (
+      <ScrollView style={{ marginTop: 10 }}>
+        {item == "toAdd" ? (
+          <Text style={[human.title2, styles.heading]}>Future friends?</Text>
+        ) : (
+          <Text style={styles.heading}>
+            {item.charAt(0).toUpperCase() + item.slice(1)}
+          </Text>
+        )}
+        {item == "toAdd" && this.state.toAddLoading ? (
+          <ActivityIndicator style={{ margin: 5 }} color="#000" size="large" />
+        ) : this.state[item].length > 0 ? (
+          this.state[item].map((user, i) => {
+            return (
+              <View
+                key={i}
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                }}
+              >
+                <ProfileBanner
+                  style={styles.profile}
+                  user={user}
+                  onPress={() => this.clickedUser(user)}
+                />
+                {user.added ? (
+                  <View
+                    style={{
+                      backgroundColor: "grey",
+                      borderRadius: 20,
+                      padding: 5,
+                      alignSelf: "center",
+                    }}
+                  >
+                    <Text>Added</Text>
+                  </View>
+                ) : this.state.currentUser.isAnonymous ||
+                  item != "toAdd" ? null : (
+                  <TouchableOpacity
+                    onPress={() => this.follow(user)}
+                    style={{
+                      backgroundColor: "#ffb52b",
+                      borderRadius: 20,
+                      padding: 5,
+                      alignSelf: "center",
+                    }}
+                  >
+                    <Text style={human.subhead}>Add User</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })
+        ) : (
+          <Text style={[human.body, { textAlign: "center", padding: 20 }]}>
+            None Made Yet...
+          </Text>
+        )}
+      </ScrollView>
+    );
   };
 
   render() {
@@ -336,8 +410,17 @@ class PeopleScreen extends React.Component {
                 )}
               </View>
             )}
-            <Text style={styles.heading}>New Users</Text>
-            {this.state.toAddLoading ? (
+            <Carousel
+              layout={"default"}
+              ref={(ref) => (this.carousel = ref)}
+              data={this.state.carouselItems}
+              sliderWidth={300}
+              itemWidth={300}
+              renderItem={this._renderItem}
+              onSnapToItem={(index) => this.setState({ activeIndex: index })}
+            />
+            {/*<Text style={styles.heading}>New Users</Text>*/}
+            {/*this.state.toAddLoading ? (
               <ActivityIndicator
                 style={{ margin: 5 }}
                 color="#000"
@@ -386,8 +469,8 @@ class PeopleScreen extends React.Component {
                   </View>
                 );
               })
-            )}
-            {!(this.state.added.friends.length > 0) ? null : (
+            )*/}
+            {/*!(this.state.added.friends.length > 0) ? null : (
               <View>
                 <Text style={styles.heading}>Friends</Text>
                 {this.state.added.friends.map((user, index) => {
@@ -424,7 +507,7 @@ class PeopleScreen extends React.Component {
                   );
                 })}
               </View>
-            )}
+            )*/}
           </ScrollView>
         )}
       </View>
@@ -446,7 +529,6 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 22,
-    fontWeight: "bold",
     alignSelf: "center",
     marginTop: 20,
   },

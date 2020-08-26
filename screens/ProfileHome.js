@@ -83,7 +83,9 @@ class ProfileHome extends React.Component {
     );
     await store.dispatch(updateTutorials({ current: this.state.popular }));
     await store.dispatch(updateTutorials({ current_key: this.state.key }));
-    this.props.navigation.navigate("Tutorial");
+    //   this.props.navigation.navigate("AuthStack", { screen: "Login" });
+
+    this.props.navigation.navigate("ProfileTabs", { screen: "Home" });
   };
 
   render() {

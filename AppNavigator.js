@@ -10,6 +10,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { Text, TouchableOpacity, View } from "react-native";
 import React from "react";
+import { human } from "react-native-typography";
 
 import AppHeader from "./screens/components/AppHeader";
 import HomeScreen from "./screens/HomeScreen";
@@ -31,6 +32,7 @@ import ForgotScreen from "./screens/ForgotScreen";
 import MessageScreen from "./screens/MessageScreen";
 import PeopleScreen from "./screens/PeopleScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import LeaderboardScreen from "./screens/LeaderboardScreen";
 
 const CreateStack = createSwitchNavigator(
   {
@@ -49,6 +51,9 @@ const HomeTabs = createMaterialTopTabNavigator(
   },
   {
     tabBarOptions: {
+      upperCaseLabel: false,
+      labelStyle: human.headlineWhite,
+      tabStyle: { alignItems: "flex-start" },
       activeTintColor: "#ffb52b",
       inactiveTintColor: "white",
       style: {
@@ -96,19 +101,21 @@ const LoginStack = createStackNavigator(
 const AppTabs = createBottomTabNavigator(
   {
     Home: HomeTabs,
-    Create: CreateStack,
     Search: SearchScreen,
-    Ask: AskScreen,
+    Create: CreateStack,
+    //   Ask: AskScreen,
     Users: PeopleScreen,
+    Leaderboard: LeaderboardScreen,
   },
   {
     tabBarOptions: {
       showLabel: false,
       activeTintColor: "#ffb52b",
+      inactiveTintColor: "#fff",
       style: {
-        backgroundColor: "#fff",
+        backgroundColor: "#6da9c9",
         borderTopColor: "transparent",
-        elevation: 6,
+        elevation: 10,
       },
     },
   }
@@ -171,7 +178,7 @@ const AppStack = createStackNavigator(
     },
     Profile: ProfileScreen,
     Learning: LearningScreen,
-    Tutorial: TutorialScreen,
+    Tutorial: { screen: TutorialScreen, navigationOptions: { title: "" } },
     UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
     UserTutorial: { screen: UserPostScreen, navigationOptions: { title: "" } },
     History: HistoryScreen,
@@ -219,7 +226,7 @@ HomeTabs.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
     <MaterialCommunityIcons
       style={{ alignSelf: "center", padding: 10 }}
-      name="home"
+      name="home-variant-outline"
       size={35}
       color={tintColor}
     />
@@ -228,12 +235,26 @@ HomeTabs.navigationOptions = {
 
 CreateStack.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
-      name="pencil"
-      size={35}
-      color={tintColor}
-    />
+    <View
+      style={{
+        position: "absolute",
+        bottom: 10, // space from bottombar
+        height: 58,
+        elevation: 10,
+        width: 58,
+        borderRadius: 58,
+        backgroundColor: "black",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <MaterialCommunityIcons
+        style={{ alignSelf: "center", padding: 10 }}
+        name="pencil"
+        size={35}
+        color={tintColor}
+      />
+    </View>
   ),
 };
 
@@ -241,7 +262,18 @@ SearchScreen.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
     <MaterialCommunityIcons
       style={{ alignSelf: "center", padding: 10 }}
-      name="compass"
+      name="telescope"
+      size={35}
+      color={tintColor}
+    />
+  ),
+};
+
+LeaderboardScreen.navigationOptions = {
+  tabBarIcon: ({ tintColor }) => (
+    <MaterialCommunityIcons
+      style={{ alignSelf: "center", padding: 10 }}
+      name="podium-gold"
       size={35}
       color={tintColor}
     />

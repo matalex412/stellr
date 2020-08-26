@@ -139,19 +139,11 @@ class CreateScreen extends React.Component {
   };
 
   validateForm = async () => {
-    // check enough writing for each step
-    var steps = this.props.tutorials.steps;
-    if (steps.length >= 1) {
-      var checkquery = steps.every((query) => {
-        return query.step.length > 3;
-      });
-    }
-
     // check tutorial requirements
     var checkthumbnail = this.props.tutorials.thumbnail;
     var checktitle = this.props.tutorials.title.length > 3;
     var checktopic = this.props.tutorials.create_topic.length > 0;
-    if (checkquery && checktitle && checktopic && checkthumbnail) {
+    if (checktitle && checktopic && checkthumbnail) {
       await this.setState({ isFormValid: true });
     } else {
       this.setState({ checked: true });
@@ -210,12 +202,10 @@ class CreateScreen extends React.Component {
         }
 
         // add base for tutorial
-        var docRef = {};
-        await firebase
+        var docRef = await firebase
           .firestore()
           .collection(topic + "/posts")
-          .doc(this.props.tutorials.testid)
-          .set({
+          .add({
             title: tutorial.title,
             username: currentUser.displayName,
             uid: currentUser.uid,
@@ -336,7 +326,7 @@ class CreateScreen extends React.Component {
     } else {
       Alert.alert(
         "Not Finished",
-        "Sorry, your tutorial doesn't have all requirements fulfilled"
+        "Sorry, your tutorial doesn't have all requirements fulfilled (make sure you've added a thumbnail and topic)"
       );
     }
   };
@@ -376,7 +366,7 @@ class CreateScreen extends React.Component {
   info = () => {
     Alert.alert(
       "Requirements",
-      "A valid post must have a long enough title and topic. Each step also needs a description longer than 3 characters."
+      "Please make sure you've added a thumbnail and topic to your tutorial. A valid post must have a long enough title and each step also needs a description longer than 3 characters."
     );
   };
 
@@ -687,7 +677,13 @@ class CreateScreen extends React.Component {
                     </Text>
                   </View>
                 </TouchableOpacity>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View
+                  style={{
+                    marginBottom: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
                   <TouchableOpacity onPress={this.handleSubmit}>
                     <View
                       style={{

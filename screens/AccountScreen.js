@@ -14,14 +14,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import * as Permissions from "expo-permissions";
-import LinkSection from "./components/LinkSection";
+import Modal from "react-native-modal";
 
+import LinkSection from "./components/LinkSection";
+import ProfileBanner from "./components/ProfileBanner";
 import { firebase } from "./../src/config";
 
 export default class AccountScreen extends React.Component {
   state = {
     errorMessage: null,
     isLoading: true,
+    user: {},
   };
 
   componentDidMount = () => {
@@ -44,10 +47,7 @@ export default class AccountScreen extends React.Component {
         bio: this.state.bio,
       });
 
-    this.setState({ bio: "" });
-    alert(
-      "Your bio has been updated successfully. It can now been seen on your profile page"
-    );
+    Alert.alert("Updated!", "Your bio has been updated successfully");
   };
 
   verifyEmail = () => {
@@ -178,10 +178,128 @@ export default class AccountScreen extends React.Component {
           <ActivityIndicator size="large" />
         ) : (
           <View style={{ alignItems: "center" }}>
+            <Modal isVisible={this.state.isModalVisible}>
+              <TouchableOpacity
+                onPress={() => this.setState({ isModalVisible: false })}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={30}
+                  color="#ffb52b"
+                />
+              </TouchableOpacity>
+              <View
+                style={{
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flex: 1,
+                }}
+              >
+                <View
+                  style={{
+                    borderRadius: 5,
+                    padding: 20,
+                    backgroundColor: "white",
+                  }}
+                >
+                  <ProfileBanner
+                    imageStyle={{
+                      marginRight: 0,
+                      marginBottom: 5,
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                    }}
+                    viewStyle={{ flexDirection: "column" }}
+                    user={this.state.user}
+                    size={100}
+                  />
+                  <View
+                    style={{
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View
+                      style={{
+                        alignItems: "center",
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name="sack"
+                        size={30}
+                        color="#ffb52b"
+                      />
+                      <Text
+                        style={{
+                          color: "white",
+                          top: 10,
+                          position: "absolute",
+                        }}
+                      >
+                        {this.state.user.minas}
+                      </Text>
+                    </View>
+                    <View style={styles.dot} />
+                    <MaterialCommunityIcons
+                      name="star"
+                      size={30}
+                      color="#ffb52b"
+                    />
+                    <Text>{this.state.user.stars}</Text>
+                  </View>
+                  <View
+                    style={{
+                      padding: 10,
+                      alignItems: "center",
+                      flexDirection: "row",
+                    }}
+                  >
+                    <TextInput
+                      value={this.state.bio}
+                      placeholder="Update Your Profile Bio"
+                      onChangeText={(query) => this.setState({ bio: query })}
+                      multiline={true}
+                      style={{
+                        textAlign: "center",
+                        borderRadius: 5,
+                        color: "black",
+                        padding: 5,
+                        backgroundColor: "white",
+                        width: 200,
+                      }}
+                    />
+                    <TouchableOpacity
+                      style={{ padding: 5 }}
+                      onPress={this.editBio}
+                    >
+                      <MaterialCommunityIcons
+                        name="send"
+                        size={30}
+                        color="#ffb52b"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
             <View style={{ alignItems: "center", flexDirection: "row" }}>
               <TouchableOpacity
                 style={{ marginRight: 5 }}
-                onPress={this.changeProfilePic}
+                onPress={async () => {
+                  var doc = await firebase
+                    .firestore()
+                    .collection("users")
+                    .doc(this.state.currentUser.uid)
+                    .get();
+                  var user = doc.data();
+                  this.setState({ user });
+                  if (user.bio) {
+                    this.setState({ bio: user.bio });
+                  }
+                  this.setState({ isModalVisible: true });
+                }}
               >
                 {this.state.currentUser.photoURL ? (
                   <Image
@@ -219,29 +337,6 @@ export default class AccountScreen extends React.Component {
                   )}
                 </View>
               </View>
-            </View>
-            <View
-              style={{
-                padding: 10,
-                alignItems: "center",
-                flexDirection: "row",
-              }}
-            >
-              <TextInput
-                value={this.state.bio}
-                placeholder="Update Your Profile Bio"
-                onChangeText={(query) => this.setState({ bio: query })}
-                style={{
-                  borderRadius: 5,
-                  color: "black",
-                  padding: 5,
-                  backgroundColor: "white",
-                  width: 200,
-                }}
-              />
-              <TouchableOpacity style={{ padding: 5 }} onPress={this.editBio}>
-                <MaterialCommunityIcons name="send" size={30} color="#ffb52b" />
-              </TouchableOpacity>
             </View>
             <View
               style={{ justifyContent: "center", alignItems: "flex-start" }}
@@ -295,6 +390,14 @@ const styles = StyleSheet.create({
   image: {
     width: 30,
     height: 30,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#ffb52b",
+    marginLeft: 5,
+    marginRight: 5,
   },
   profilePic: {
     borderRadius: 40,

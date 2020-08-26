@@ -2,6 +2,7 @@ import React from "react";
 import { TouchableOpacity, View, Text, Image, StyleSheet } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import PropTypes from "prop-types";
+import { human } from "react-native-typography";
 
 export default class ProfileBanner extends React.Component {
   constructor(props) {
@@ -11,7 +12,7 @@ export default class ProfileBanner extends React.Component {
   render() {
     return (
       <TouchableOpacity onPress={this.props.onPress} style={this.props.style}>
-        <View style={styles.wrapper}>
+        <View style={[styles.wrapper, this.props.viewStyle]}>
           {this.props.user.profilePic ? (
             <Image
               style={[styles.profilePic, this.props.imageStyle]}
@@ -27,8 +28,14 @@ export default class ProfileBanner extends React.Component {
             </View>
           )}
           <View style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 20 }}>{this.props.user.username}</Text>
-            {this.props.bio && <Text>"{this.props.user.bio}"</Text>}
+            <Text style={[human.body, { fontSize: 20, textAlign: "center" }]}>
+              {this.props.user.username}
+            </Text>
+            {this.props.bio && (
+              <Text style={{ width: 140, textAlign: "center" }}>
+                "{this.props.user.bio}"
+              </Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>

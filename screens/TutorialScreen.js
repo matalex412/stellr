@@ -13,9 +13,12 @@ import { Video } from "expo-av";
 import { connect } from "react-redux";
 import { AdMobBanner, AdMobInterstitial } from "expo-ads-admob";
 import { LinearGradient } from "expo-linear-gradient";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Firebase from "firebase";
 import { AirbnbRating } from "react-native-ratings";
+import Modal from "react-native-modal";
+import Carousel, { Pagination } from "react-native-snap-carousel";
 
 import CustomLoading from "./components/CustomLoading";
 import LearnModal from "./components/LearnModal";
@@ -25,9 +28,12 @@ import { firebase } from "./../src/config";
 
 class TutorialScreen extends React.Component {
   state = {
+    isModalVisible: false,
     isLoading: true,
     posts: {},
     added: false,
+    paid: false,
+    activeIndex: 0,
   };
 
   componentDidMount = () => {
@@ -42,7 +48,18 @@ class TutorialScreen extends React.Component {
     // get currentuser data
     const { currentUser } = firebase.auth();
 
+    var doc = await firebase
+      .firestore()
+      .collection("users")
+      .doc(currentUser.uid)
+      .get();
+    this.setState({ minas: doc.data().minas });
+
     if (this.props.tutorials.current) {
+      if (this.props.tutorials.current.topic == "/topics/Meta") {
+        this.setState({ paid: true });
+      }
+
       // get tutorials user has added
       var ids;
       var doc1 = await firebase
@@ -88,6 +105,13 @@ class TutorialScreen extends React.Component {
             interests: interests,
           });
       }
+
+      // Display an interstitial
+      await AdMobInterstitial.setAdUnitID(
+        "ca-app-pub-3262091936426324/1869093284"
+      );
+
+      await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
     }
   };
 
@@ -115,14 +139,6 @@ class TutorialScreen extends React.Component {
   };
 
   learnt = async (rating, complete, added) => {
-    // Display an interstitial
-    await AdMobInterstitial.setAdUnitID(
-      "ca-app-pub-3262091936426324/1869093284"
-    );
-
-    await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
-    await AdMobInterstitial.showAdAsync();
-
     const { currentUser } = firebase.auth();
 
     if (added) {
@@ -197,6 +213,16 @@ class TutorialScreen extends React.Component {
         [field]: Firebase.firestore.FieldValue.increment(1),
       });
 
+    // update creator's weekly stars
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(this.props.tutorials.current.uid)
+      .update({
+        weeklyStars: Firebase.firestore.FieldValue.increment(rating),
+        shekels: Firebase.firestore.FieldValue.increment(5),
+      });
+
     this.props.navigation.navigate("Search");
   };
 
@@ -206,6 +232,89 @@ class TutorialScreen extends React.Component {
     }
   };
 
+  buy = () => {
+    var { currentUser } = firebase.auth();
+
+    var userRef = firebase
+      .firestore()
+      .collection("users")
+      .doc(currentUser.uid);
+
+    firebase.firestore().runTransaction((transaction) => {
+      return transaction.get(userRef).then((doc) => {
+        var minas = doc.data().minas - 5;
+        if (minas >= 0) {
+          transaction.update(userRef, { minas });
+          firebase
+            .firestore()
+            .collection("users")
+            .doc(this.props.tutorials.current.uid)
+            .update({
+              minas: Firebase.firestore.FieldValue.increment(5),
+            });
+          this.setState({ paid: true });
+        } else {
+          Alert.alert(
+            "Not Enough Minas",
+            "Sorry, you don't have enough Minas right now. You can earn Minas by creating tutorials"
+          );
+        }
+      });
+    });
+  };
+
+  _renderItem = ({ item, index }) => {
+    var width = Dimensions.get("window").width;
+    return (
+      <View style={{ alignItems: "center" }}>
+        <View
+          style={{
+            borderRadius: 5,
+            backgroundColor: "#6da9c9",
+            elevation: 5,
+            width: width - 100,
+            marginTop: 25,
+            marginBottom: 25,
+            alignItems: "center",
+            padding: 20,
+          }}
+          key={index}
+        >
+          <Text style={styles.heading}>Step {index + 1}</Text>
+          {item.Images && (
+            <Image
+              source={{ uri: item.Images }}
+              style={{ margin: 10, width: 200, height: 200 }}
+            />
+          )}
+          {item.Videos && (
+            <Video
+              onPlaybackStatusUpdate={(playbackStatus) =>
+                this._onPlaybackStatusUpdate(playbackStatus, index)
+              }
+              ref={(component) => (this.vids[index] = component)}
+              source={{ uri: item.Videos }}
+              rate={1.0}
+              volume={1.0}
+              isMuted={false}
+              resizeMode={Video.RESIZE_MODE_CONTAIN}
+              useNativeControls
+              style={{ margin: 10, width: 200, height: 200 }}
+            />
+          )}
+          <Text
+            style={{
+              color: "white",
+              fontSize: 16,
+            }}
+          >
+            {item.step}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   render() {
     var width = Dimensions.get("window").width;
     this.vids = [];
@@ -213,7 +322,7 @@ class TutorialScreen extends React.Component {
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <LinearGradient
-            colors={["#6da9c9", "#fff"]}
+            colors={["#fff", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
@@ -231,7 +340,7 @@ class TutorialScreen extends React.Component {
             </Text>
           ) : (
             <View>
-              <View style={{ margin: 10, flex: 1, flexDirection: "column" }}>
+              <View>
                 <AdMobBanner
                   adUnitID="ca-app-pub-3262091936426324/2933794374"
                   onDidFailToReceiveAdWithError={() =>
@@ -240,7 +349,39 @@ class TutorialScreen extends React.Component {
                   servePersonalizedAds
                 />
               </View>
-              <View style={{ flex: 1, alignItems: "center" }}>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {this.state.paid ? null : (
+                  <View
+                    style={{
+                      alignItems: "center",
+                      top: 0,
+                      right: 20,
+                      position: "absolute",
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="sack"
+                      size={30}
+                      color="#ffb52b"
+                    />
+                    <Text
+                      style={{
+                        color: "white",
+                        top: 10,
+                        position: "absolute",
+                      }}
+                    >
+                      {this.state.minas}
+                    </Text>
+                  </View>
+                )}
+
                 <View
                   style={{
                     paddingTop: 10,
@@ -282,72 +423,157 @@ class TutorialScreen extends React.Component {
                     size={20}
                   />
                 </View>
-                {Object.values(this.props.tutorials.current.steps).map(
-                  (step, index) => (
+                {!this.state.paid ? (
+                  <View style={{ margin: 5, flexDirection: "row" }}>
+                    <TouchableOpacity
+                      onPress={this.buy}
+                      style={[
+                        styles.bookmark,
+                        { paddingTop: 0, marginRight: 5, paddingBottom: 0 },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name="cash-usd"
+                        size={40}
+                        color="#ffb52b"
+                      />
+                      <Text style={{ color: "white" }}> Use 5 Minas</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        AdMobInterstitial.showAdAsync();
+                        this.setState({ paid: true });
+                      }}
+                      style={[
+                        styles.bookmark,
+                        { paddingTop: 0, paddingBottom: 0 },
+                      ]}
+                    >
+                      <Ionicons
+                        name="md-play-circle"
+                        size={25}
+                        color="#ffb52b"
+                      />
+                      <Text style={{ color: "white" }}> Play ad </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: "center" }}>
                     <View
                       style={{
-                        borderRadius: 5,
-                        backgroundColor: "#6da9c9",
-                        width: width - 100,
-                        marginTop: 25,
-                        marginBottom: 25,
+                        height: "75%",
                         alignItems: "center",
-                        padding: 5,
                       }}
-                      key={index}
                     >
-                      <Text style={styles.heading}>Step {index + 1}</Text>
-                      {step.Images && (
-                        <Image
-                          source={{ uri: step.Images }}
-                          style={{ margin: 10, width: 200, height: 200 }}
-                        />
-                      )}
-                      {step.Videos && (
-                        <Video
-                          onPlaybackStatusUpdate={(playbackStatus) =>
-                            this._onPlaybackStatusUpdate(playbackStatus, index)
-                          }
-                          ref={(component) => (this.vids[index] = component)}
-                          source={{ uri: step.Videos }}
-                          rate={1.0}
-                          volume={1.0}
-                          isMuted={false}
-                          resizeMode={Video.RESIZE_MODE_CONTAIN}
-                          useNativeControls
-                          style={{ margin: 10, width: 200, height: 200 }}
-                        />
-                      )}
-                      <Text
-                        style={{
-                          color: "white",
-                          fontSize: 16,
-                          padding: 20,
+                      <Carousel
+                        layout={"default"}
+                        ref={(ref) => (this.carousel = ref)}
+                        data={this.props.tutorials.current.steps}
+                        sliderWidth={300}
+                        itemWidth={300}
+                        renderItem={this._renderItem}
+                        onSnapToItem={(index) =>
+                          this.setState({ activeIndex: index })
+                        }
+                      />
+                      <Pagination
+                        dotsLength={this.props.tutorials.current.steps.length}
+                        containerStyle={{
+                          margin: 0,
                         }}
-                      >
-                        {step.step}
-                      </Text>
+                        animatedDuration={50}
+                        activeDotIndex={this.state.activeIndex}
+                        dotColor="#6da9c9"
+                        inactiveDotColor="gray"
+                        dotStyle={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: 5,
+                          marginHorizontal: 8,
+                          backgroundColor: "rgba(255, 255, 255, 0.92)",
+                        }}
+                        inactiveDotOpacity={0.4}
+                        inactiveDotScale={0.6}
+                      />
                     </View>
-                  )
-                )}
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  {this.state.currentUser.isAnonymous ? null : this.state
-                      .added ? null : (
-                    <TouchableOpacity
-                      style={{ marginBottom: 30 }}
-                      onPress={this.addHome}
+                    {/*Object.values(this.props.tutorials.current.steps).map(
+                      (step, index) => (
+                        <View
+                          style={{
+                            borderRadius: 5,
+                            backgroundColor: "#6da9c9",
+                            width: width - 100,
+                            marginTop: 25,
+                            marginBottom: 25,
+                            alignItems: "center",
+                            padding: 5,
+                          }}
+                          key={index}
+                        >
+                          <Text style={styles.heading}>Step {index + 1}</Text>
+                          {step.Images && (
+                            <Image
+                              source={{ uri: step.Images }}
+                              style={{ margin: 10, width: 200, height: 200 }}
+                            />
+                          )}
+                          {step.Videos && (
+                            <Video
+                              onPlaybackStatusUpdate={(playbackStatus) =>
+                                this._onPlaybackStatusUpdate(
+                                  playbackStatus,
+                                  index
+                                )
+                              }
+                              ref={(component) =>
+                                (this.vids[index] = component)
+                              }
+                              source={{ uri: step.Videos }}
+                              rate={1.0}
+                              volume={1.0}
+                              isMuted={false}
+                              resizeMode={Video.RESIZE_MODE_CONTAIN}
+                              useNativeControls
+                              style={{ margin: 10, width: 200, height: 200 }}
+                            />
+                          )}
+                          <Text
+                            style={{
+                              color: "white",
+                              fontSize: 16,
+                              padding: 20,
+                            }}
+                          >
+                            {step.step}
+                          </Text>
+                        </View>
+                      )
+                    )*/}
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
                     >
-                      <View style={[styles.bookmark, { marginRight: 10 }]}>
-                        <Ionicons
-                          name="md-bookmark"
-                          size={25}
-                          color="#ffb52b"
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                  <LearnModal added={this.state.added} learnt={this.learnt} />
-                </View>
+                      {this.state.currentUser.isAnonymous ? null : this.state
+                          .added ? null : (
+                        <TouchableOpacity
+                          style={{ marginBottom: 30 }}
+                          onPress={this.addHome}
+                        >
+                          <View style={[styles.bookmark, { marginRight: 10 }]}>
+                            <Ionicons
+                              name="md-bookmark"
+                              size={25}
+                              color="#ffb52b"
+                            />
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                      <LearnModal
+                        added={this.state.added}
+                        learnt={this.learnt}
+                      />
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -369,6 +595,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   heading: {
+    paddingBottom: 5,
+    fontWeight: "bold",
     fontSize: 16,
     color: "white",
   },

@@ -57,6 +57,7 @@ class ProfileMade extends React.Component {
     );
     await store.dispatch(updateTutorials({ current: doc.data() }));
     await store.dispatch(updateTutorials({ current_key: key }));
+    console.log("here");
     this.props.navigation.navigate("Tutorial");
   };
 

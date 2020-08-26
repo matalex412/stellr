@@ -7,6 +7,7 @@ import { createAppContainer } from "react-navigation";
 
 import ProfileHome from "./ProfileHome";
 import ProfileMade from "./ProfileMade";
+import TutorialScreen from "./TutorialScreen";
 import ProfileBanner from "./components/ProfileBanner";
 import { firebase } from "./../src/config";
 

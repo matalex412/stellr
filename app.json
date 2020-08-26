@@ -3,12 +3,11 @@
     "name": "Skoach",
     "slug": "skoach",
     "privacy": "public",
-    "sdkVersion": "37.0.0",
     "platforms": ["ios", "android", "web"],
-    "version": "1.1.2",
+    "version": "1.1.2b",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "primaryColor": "#186c99",
+    "primaryColor": "#6da9c9",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover"
@@ -27,11 +26,11 @@
         "image": "./assets/splash.png"
       },
       "adaptiveIcon": {
-        "backgroundColor": "#186c99"
+        "backgroundColor": "#6da9c9"
       },
       "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "package": "com.iam.skoach",
-      "versionCode": 14,
+      "versionCode": 16,
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3262091936426324~4886429471"
       }
