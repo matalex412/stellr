@@ -8,10 +8,11 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { firebase } from "./../src/config";
-import ProfileBanner from "./components/ProfileBanner";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { connect } from "react-redux";
 
+import Background from "./components/Background";
+import ProfileBanner from "./components/ProfileBanner";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import CustomLoading from "./components/CustomLoading";
@@ -21,6 +22,7 @@ class LeaderboardScreen extends React.Component {
     users: [],
     isLoading: true,
     showLeaderboard: false,
+    current: {},
   };
 
   componentDidMount = () => {
@@ -56,32 +58,29 @@ class LeaderboardScreen extends React.Component {
       this.setState({ showLeaderboard: true });
     }
 
-    var doc2 = await firebase
-      .firestore()
-      .collection("users")
-      .doc(currentUser.uid)
-      .get();
+    if (!currentUser.isAnonymous) {
+      var doc2 = await firebase
+        .firestore()
+        .collection("users")
+        .doc(currentUser.uid)
+        .get();
 
-    var current = doc2.data();
-    current.uid = doc2.id;
-    this.setState({ current });
+      var current = doc2.data();
+      current.uid = doc2.id;
+      this.setState({ current });
+    } else {
+      await this.setState({ isAnonymous: true });
+      console.log(this.state.isAnonymous);
+    }
+
     this.setState({ users });
     this.setState({ isLoading: false });
   };
 
   render() {
     return (
-      <View style={{ flex: 1, width: "100%" }}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+      <View style={{ flex: 1 }}>
+        <Background />
         {this.state.isLoading ? (
           <CustomLoading verse="I can do all things through him who strengthens me" />
         ) : (
@@ -99,7 +98,7 @@ class LeaderboardScreen extends React.Component {
             <View
               style={{
                 alignItems: "flex-end",
-                padding: 20,
+                padding: 10,
                 flexDirection: "row",
               }}
             >
@@ -109,7 +108,7 @@ class LeaderboardScreen extends React.Component {
                     imageStyle={{ marginRight: 0, width: 50, height: 50 }}
                     viewStyle={{ flexDirection: "column" }}
                     user={this.state.users[2]}
-                    size={100}
+                    size={40}
                     onPress={() => this.clickedUser(this.state.users[2])}
                   />
                 ) : (
@@ -128,7 +127,7 @@ class LeaderboardScreen extends React.Component {
                     imageStyle={{ marginRight: 0, width: 50, height: 50 }}
                     viewStyle={{ flexDirection: "column" }}
                     user={this.state.users[0]}
-                    size={100}
+                    size={40}
                     onPress={() => this.clickedUser(this.state.users[0])}
                   />
                 ) : (
@@ -147,7 +146,7 @@ class LeaderboardScreen extends React.Component {
                     imageStyle={{ marginRight: 0, width: 50, height: 50 }}
                     viewStyle={{ flexDirection: "column" }}
                     user={this.state.users[1]}
-                    size={100}
+                    size={40}
                     onPress={() => this.clickedUser(this.state.users[1])}
                   />
                 ) : (
@@ -172,6 +171,7 @@ class LeaderboardScreen extends React.Component {
                     alignItems: "center",
                     flexDirection: "row",
                     width: "80%",
+                    elevation: 1,
                     backgroundColor:
                       user.uid == this.state.current.uid
                         ? "#ffb52b"
@@ -200,9 +200,8 @@ class LeaderboardScreen extends React.Component {
                 </TouchableOpacity>
               );
             })}
-            {this.state.users.some(
-              (e) => e.uid == this.state.current.uid
-            ) ? null : (
+            {this.state.users.some((e) => e.uid == this.state.current.uid) ||
+            this.state.isAnonymous ? null : (
               <View
                 style={{
                   margin: 20,
@@ -210,6 +209,7 @@ class LeaderboardScreen extends React.Component {
                   alignItems: "center",
                   flexDirection: "row",
                   width: "80%",
+                  elevation: 1,
                   backgroundColor: "#ffb52b",
                 }}
               >
@@ -224,7 +224,9 @@ class LeaderboardScreen extends React.Component {
                   color="#000"
                 />
                 <Text style={{ fontSize: 15 }}>
-                  {this.state.current.weeklyStars}
+                  {this.state.current.weeklyStars
+                    ? this.state.current.weeklyStars
+                    : 0}
                 </Text>
               </View>
             )}
@@ -244,6 +246,7 @@ const styles = StyleSheet.create({
   },
   bar: {
     backgroundColor: "white",
+    elevation: 3,
   },
   text: {
     fontSize: 13,

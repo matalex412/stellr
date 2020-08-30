@@ -13,11 +13,14 @@ import {
 import { Video } from "expo-av";
 import { connect } from "react-redux";
 import { AdMobBanner, AdMobInterstitial } from "expo-ads-admob";
-import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AirbnbRating } from "react-native-ratings";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import Carousel, { Pagination } from "react-native-snap-carousel";
+import { human, systemWeights } from "react-native-typography";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import LearnModal from "./components/LearnModal";
 import { store } from "./../redux/store";
@@ -26,11 +29,13 @@ import { firebase } from "./../src/config";
 
 class LearningScreen extends React.Component {
   state = {
+    paid: false,
     isLoading: true,
     posts: {},
+    activeIndex: 0,
     added: false,
     rating: 3,
-    isModalVisible: false,
+    isModalVisible: false, //needed?
     learnt: false,
   };
 
@@ -43,6 +48,15 @@ class LearningScreen extends React.Component {
     // get currentuser and post data
     const { currentUser } = firebase.auth();
     const postInfo = this.props.tutorials.added;
+
+    if (!currentUser.isAnonymous) {
+      var doc = await firebase
+        .firestore()
+        .collection("users")
+        .doc(currentUser.uid)
+        .get();
+      this.setState({ minas: doc.data().minas });
+    }
 
     // get tutorial
     var doc = await firebase
@@ -110,6 +124,13 @@ class LearningScreen extends React.Component {
         }
       }
     }
+
+    // Display an interstitial
+    await AdMobInterstitial.setAdUnitID(
+      "ca-app-pub-3262091936426324/1869093284"
+    );
+
+    await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
   };
 
   learnt = async (rating, complete, added) => {
@@ -236,117 +257,233 @@ class LearningScreen extends React.Component {
     }
   };
 
+  /*buy = async () => {
+    var { currentUser } = await firebase.auth();
+
+    if (!currentUser.isAnonymous) {
+      var userRef = firebase
+        .firestore()
+        .collection("users")
+        .doc(currentUser.uid);
+
+      firebase.firestore().runTransaction((transaction) => {
+        return transaction.get(userRef).then((doc) => {
+          var minas = doc.data().minas - 5;
+          if (minas >= 0) {
+            transaction.update(userRef, { minas });
+            firebase
+              .firestore()
+              .collection("users")
+              .doc(this.props.tutorials.current.uid)
+              .update({
+                minas: Firebase.firestore.FieldValue.increment(5),
+              });
+            this.setState({ paid: true });
+          } else {
+            Alert.alert(
+              "Not Enough Minas",
+              "Sorry, you don't have enough Minas right now. You can earn Minas by creating tutorials"
+            );
+          }
+        });
+      });
+    } else {
+      Alert.alert(
+        "Not Enough Minas",
+        "Sorry, you don't have enough Minas right now. You can earn Minas by creating tutorials (you need an account to do this)"
+      );
+    }
+  };*/
+
+  _renderItem = ({ item, index }) => {
+    var width = Dimensions.get("window").width;
+    return (
+      <View style={{ alignItems: "center" }}>
+        <View
+          style={{
+            borderRadius: 5,
+            backgroundColor: "#fff",
+            elevation: 3,
+            width: width - 100,
+            marginBottom: 25,
+            alignItems: "center",
+            padding: 20,
+          }}
+          key={index}
+        >
+          <Text style={styles.heading}>Step {index + 1}</Text>
+          {item.Images && (
+            <Image
+              source={{ uri: item.Images }}
+              style={{ margin: 10, width: 200, height: 200, borderRadius: 1 }}
+            />
+          )}
+          {item.Videos && (
+            <Video
+              onPlaybackStatusUpdate={(playbackStatus) =>
+                this._onPlaybackStatusUpdate(playbackStatus, index)
+              }
+              ref={(component) => (this.vids[index] = component)}
+              source={{ uri: item.Videos }}
+              rate={1.0}
+              volume={1.0}
+              isMuted={false}
+              resizeMode={Video.RESIZE_MODE_CONTAIN}
+              useNativeControls
+              style={{ margin: 10, width: 200, height: 200 }}
+            />
+          )}
+          <Text
+            style={{
+              color: "#6da9c9",
+              fontSize: 16,
+              textAlign: "center",
+            }}
+          >
+            {item.step}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   render() {
     var width = Dimensions.get("window").width;
     return (
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
-          {this.state.isLoading ? (
-            <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
-          ) : (
-            <View>
-              <View style={{ flex: 1, flexDirection: "column" }}>
-                <AdMobBanner
-                  adUnitID="ca-app-pub-3262091936426324/2933794374"
-                  onDidFailToReceiveAdWithError={() =>
-                    console.log("banner ad not loading")
-                  }
-                />
-              </View>
-              <View style={{ flex: 1, alignItems: "center", padding: 10 }}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <Background />
+        {this.state.isLoading ? (
+          <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
+        ) : (
+          <View>
+            <View style={{ alignItems: "center" }}>
+              <AdMobBanner
+                adUnitID="ca-app-pub-3262091936426324/2933794374"
+                onDidFailToReceiveAdWithError={() =>
+                  console.log("banner ad not loading")
+                }
+              />
+            </View>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10,
+              }}
+            >
+              {this.state.paid ? null : (
                 <View
-                  style={{ alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    alignItems: "center",
+                    top: 5,
+                    right: 20,
+                    position: "absolute",
+                  }}
                 >
+                  <MaterialCommunityIcons
+                    name="sack"
+                    size={30}
+                    color="#ffb52b"
+                  />
                   <Text
                     style={{
                       color: "white",
-                      fontSize: 20,
-                      fontStyle: "italic",
+                      top: 10,
+                      position: "absolute",
                     }}
                   >
-                    {this.state.post.title}
-                  </Text>
-                  <Text style={{ color: "white" }}>
-                    by {this.state.post.username}
+                    {this.state.minas}
                   </Text>
                 </View>
-                <View style={{ padding: 20, alignItems: "center" }}>
-                  <Text
-                    style={{ marginBottom: 5, fontSize: 18, color: "#fff" }}
-                  >
-                    Learns:{" "}
-                    {this.state.post.learns - this.state.post.incomplete}
-                  </Text>
-                  <AirbnbRating
-                    isDisabled
-                    defaultRating={
-                      this.state.post.stars /
-                      (this.state.post.learns + this.state.post.incomplete)
-                    }
-                    selectedColor="#ffb52b"
-                    showRating={false}
-                    type="custom"
-                    size={20}
-                  />
-                </View>
-                {Object.values(this.state.post.steps).map((step, index) => (
-                  <View
-                    style={{
-                      borderRadius: 5,
-                      backgroundColor: "#6da9c9",
-                      width: width - 100,
-                      marginTop: 25,
-                      marginBottom: 25,
-                      alignItems: "center",
-                      padding: 5,
-                    }}
-                    key={index}
-                  >
-                    <Text style={styles.heading}>Step {index + 1}</Text>
-                    {step.Images && (
-                      <Image
-                        source={{ uri: step.Images }}
-                        style={{ margin: 10, width: 200, height: 200 }}
-                      />
-                    )}
-                    {step.Videos && (
-                      <Video
-                        onPlaybackStatusUpdate={(playbackStatus) =>
-                          this._onPlaybackStatusUpdate(playbackStatus, index)
-                        }
-                        ref={(component) => (this.vids[index] = component)}
-                        source={{ uri: step.Videos }}
-                        rate={1.0}
-                        volume={1.0}
-                        isMuted={false}
-                        resizeMode={Video.RESIZE_MODE_CONTAIN}
-                        useNativeControls
-                        style={{ margin: 10, width: 200, height: 200 }}
-                      />
-                    )}
-                    <Text style={{ padding: 20, color: "white", fontSize: 16 }}>
-                      {step.step}
-                    </Text>
-                  </View>
-                ))}
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+              )}
+
+              <Text style={styles.title}>{this.state.post.title}</Text>
+              <Text style={{ color: "white" }}>
+                by {this.state.post.username}
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  padding: 5,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={[human.calloutWhite, { marginRight: 10 }]}>
+                  Learns: {this.state.post.learns - this.state.post.incomplete}
+                </Text>
+                <AirbnbRating
+                  isDisabled
+                  defaultRating={
+                    this.state.post.stars /
+                    (this.state.post.learns + this.state.post.incomplete)
+                  }
+                  selectedColor="#ffb52b"
+                  showRating={false}
+                  type="custom"
+                  size={20}
+                />
+              </View>
+              {this.state.post.info ? (
+                <Text
+                  style={[
+                    human.calloutWhite,
+                    {
+                      marginHorizontal: 40,
+                      marginVertical: 10,
+                      textAlign: "center",
+                    },
+                  ]}
+                >
+                  {this.props.tutorials.current.info}
+                </Text>
+              ) : null}
+
+              <View style={{ alignItems: "center" }}>
+                <Pagination
+                  dotsLength={this.state.post.steps.length}
+                  containerStyle={{
+                    paddingTop: 10,
+                    paddingBottom: 15,
+                  }}
+                  animatedDuration={50}
+                  activeDotIndex={this.state.activeIndex}
+                  dotColor="#fff"
+                  inactiveDotColor="dimgray"
+                  dotStyle={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    marginHorizontal: 4,
+                  }}
+                  inactiveDotOpacity={0.4}
+                  inactiveDotScale={0.6}
+                />
+                <Carousel
+                  layout={"default"}
+                  ref={(ref) => (this.carousel = ref)}
+                  data={this.state.post.steps}
+                  sliderWidth={300}
+                  itemWidth={300}
+                  renderItem={this._renderItem}
+                  onSnapToItem={(index) =>
+                    this.setState({ activeIndex: index })
+                  }
+                  containerCustomStyle={{
+                    flexGrow: 0,
+                  }}
+                />
+                <View
+                  style={{
+                    flexDirection: "row",
+                    marginBottom: 15,
+                  }}
+                >
                   {this.state.currentUser.isAnonymous ? null : this.state
                       .added ? null : (
-                    <TouchableOpacity
-                      style={{ marginBottom: 30 }}
-                      onPress={this.addHome}
-                    >
-                      <View style={[styles.bookmark, { marginRight: 10 }]}>
+                    <TouchableOpacity onPress={this.addHome}>
+                      <View style={[styles.button, { marginRight: 10 }]}>
                         <Ionicons
                           name="md-bookmark"
                           size={25}
@@ -359,52 +496,37 @@ class LearningScreen extends React.Component {
                 </View>
               </View>
             </View>
-          )}
-        </ScrollView>
-      </View>
+          </View>
+        )}
+      </ScrollView>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
   },
   heading: {
-    fontSize: 16,
-    color: "white",
+    ...human.headlineObject,
+    ...systemWeights.semibold,
+    color: "#6da9c9",
+    alignSelf: "flex-start",
+    marginLeft: 10,
+    marginBottom: 10,
   },
-  corner: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 30,
-    height: 30,
-    margin: 10,
+  title: {
+    ...human.title2WhiteObject,
+    ...systemWeights.light,
+    fontStyle: "italic",
   },
   button: {
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 40,
-    height: 40,
-    backgroundColor: "#000",
-    borderRadius: 40,
-    margin: 5,
-  },
-  bookmark: {
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    backgroundColor: "black",
+    backgroundColor: "#6da9c9",
+    elevation: 1,
     padding: 7,
     borderRadius: 2,
   },

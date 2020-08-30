@@ -122,7 +122,14 @@ class AskScreen extends React.Component {
               size={35}
               color="white"
             />
-            <Text style={{ marginLeft: 5, color: "white", fontSize: 15 }}>
+            <Text
+              style={{
+                width: 70,
+                marginLeft: 5,
+                color: "white",
+                fontSize: 15,
+              }}
+            >
               Tutorial Requests
             </Text>
           </View>

@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   BackHandler,
   ScrollView,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,7 +24,7 @@ class SearchScreen extends React.Component {
     topics: [],
     isLoading: true,
     new: "",
-    current_topic: []
+    current_topic: [],
   };
 
   componentDidMount = () => {
@@ -75,7 +75,7 @@ class SearchScreen extends React.Component {
     this.setState({ isLoading: false });
   };
 
-  handlePress = async topic => {
+  handlePress = async (topic) => {
     var old_topics = this.state.topics;
     var new_topics = old_topics[topic];
 
@@ -108,14 +108,14 @@ class SearchScreen extends React.Component {
       } else {
         await store.dispatch(
           updateTutorials({
-            create_topic: [...this.state.current_topic, topic]
+            create_topic: [...this.state.current_topic, topic],
           })
         );
         this.props.navigation.navigate("Create");
       }
     } else {
       await this.setState({
-        current_topic: [...this.state.current_topic, topic]
+        current_topic: [...this.state.current_topic, topic],
       });
       this.setup();
     }
@@ -153,7 +153,7 @@ class SearchScreen extends React.Component {
               left: 0,
               right: 0,
               top: 0,
-              height: "100%"
+              height: "100%",
             }}
           />
           <Text style={styles.heading}>Topics</Text>
@@ -186,7 +186,9 @@ class SearchScreen extends React.Component {
                     </TouchableOpacity>
                   );
                 })}
-                <View style={{ justifyContent: "center", alignItems: "center" }}>
+                <View
+                  style={{ justifyContent: "center", alignItems: "center" }}
+                >
                   {this.state.current_topic.length < 1 ? null : (
                     <TouchableOpacity onPress={() => this.pickTopic()}>
                       <View>
@@ -209,18 +211,18 @@ class SearchScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   text: {
     textAlign: "center",
     color: "white",
-    fontSize: 16
+    fontSize: 16,
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
   },
   square: {
     margin: 10,
@@ -228,31 +230,22 @@ const styles = StyleSheet.create({
     height: Dimensions.get("window").width / 3 - 30,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "black",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
     elevation: 10,
-    backgroundColor: "black",
-  },
-  line: {
-    borderBottomColor: "black",
-    borderBottomWidth: 1,
-    alignSelf: "stretch",
-    margin: 10,
-    width: 200
+    backgroundColor: "#6da9c9",
   },
   heading: {
     fontSize: 18,
     color: "white",
-    fontWeight: "bold"
-  }
+    fontWeight: "bold",
+  },
 });
 
-const mapStateToProps = state => ({
-  tutorials: state.tutorials
+const mapStateToProps = (state) => ({
+  tutorials: state.tutorials,
 });
 
 export default connect(mapStateToProps)(SearchScreen);

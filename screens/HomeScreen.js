@@ -14,6 +14,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 
+import ModalAlert from "./components/ModalAlert";
 import CustomLoading from "./components/CustomLoading";
 import { updateTutorials } from "./../redux/actions";
 import { store } from "./../redux/store";
@@ -25,6 +26,7 @@ class HomeScreen extends React.Component {
     isLoading: true,
     posts: {},
     keys: [],
+    isModalVisible: false,
   };
 
   componentDidMount = () => {
@@ -39,9 +41,42 @@ class HomeScreen extends React.Component {
     }
   };
 
+  changeModalVisibility = (visible) => {
+    this.setState({ isModalVisible: visible });
+  };
+
+  shuffle = (array) => {
+    var currentIndex = array.length,
+      temporaryValue,
+      randomIndex;
+
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+
+    return array;
+  };
+
   setup = async () => {
     this.setState({ isLoading: true });
     var { currentUser } = await firebase.auth();
+
+    if (this.props.tutorials.newAccount) {
+      this.setState({ alertTitle: "Welcome!" });
+      this.setState({
+        alertMessage: `Hi and welcome to Skoach! To get started, why not try out the "Using Skoach" tutorials on the "Added" page`,
+      });
+      this.changeModalVisibility(true);
+      store.dispatch(updateTutorials({ newAccount: false }));
+    }
 
     if (!currentUser) {
       // sign user in
@@ -143,6 +178,7 @@ class HomeScreen extends React.Component {
         }
       });
     }
+    posts = this.shuffle(posts);
 
     // split list of tutorials into rows for display
     var rows = [];
@@ -175,6 +211,12 @@ class HomeScreen extends React.Component {
             <RefreshControl refreshing={false} onRefresh={this.getPosts} />
           }
         >
+          <ModalAlert
+            title={this.state.alertTitle}
+            message={this.state.alertMessage}
+            isModalVisible={this.state.isModalVisible}
+            onDismiss={() => this.changeModalVisibility(false)}
+          />
           <LinearGradient
             colors={["#6da9c9", "#fff"]}
             style={{

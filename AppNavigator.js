@@ -46,8 +46,8 @@ const CreateStack = createSwitchNavigator(
 
 const HomeTabs = createMaterialTopTabNavigator(
   {
-    Home: HomeScreen,
-    Added: AddedScreen,
+    Home: { screen: HomeScreen, navigationOptions: { title: "Recommended" } },
+    Added: { screen: AddedScreen, navigationOptions: { title: "Added" } },
   },
   {
     tabBarOptions: {
@@ -103,7 +103,6 @@ const AppTabs = createBottomTabNavigator(
     Home: HomeTabs,
     Search: SearchScreen,
     Create: CreateStack,
-    //   Ask: AskScreen,
     Users: PeopleScreen,
     Leaderboard: LeaderboardScreen,
   },
@@ -111,11 +110,11 @@ const AppTabs = createBottomTabNavigator(
     tabBarOptions: {
       showLabel: false,
       activeTintColor: "#ffb52b",
-      inactiveTintColor: "#fff",
+      inactiveTintColor: "grey",
       style: {
-        backgroundColor: "#6da9c9",
+        backgroundColor: "#fff",
         borderTopColor: "transparent",
-        elevation: 10,
+        elevation: 5,
       },
     },
   }
@@ -176,7 +175,7 @@ const AppStack = createStackNavigator(
       screen: UserPosts,
       navigationOptions: { title: "Your Posts" },
     },
-    Profile: ProfileScreen,
+    Profile: { screen: ProfileScreen, navigationOptions: { title: "" } },
     Learning: LearningScreen,
     Tutorial: { screen: TutorialScreen, navigationOptions: { title: "" } },
     UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
@@ -238,12 +237,12 @@ CreateStack.navigationOptions = {
     <View
       style={{
         position: "absolute",
-        bottom: 10, // space from bottombar
+        bottom: 10,
         height: 58,
-        elevation: 10,
+        elevation: 7,
         width: 58,
         borderRadius: 58,
-        backgroundColor: "black",
+        backgroundColor: "#6da9c9",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -252,7 +251,7 @@ CreateStack.navigationOptions = {
         style={{ alignSelf: "center", padding: 10 }}
         name="pencil"
         size={35}
-        color={tintColor}
+        color={tintColor == "#ffb52b" ? "#ffb52b" : "white"}
       />
     </View>
   ),

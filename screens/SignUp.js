@@ -10,6 +10,7 @@ import {
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { human, systemWeights } from "react-native-typography";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -22,6 +23,7 @@ class SignUp extends React.Component {
     username: "",
     errorMessage: null,
     isLoading: false,
+    isPasswordHidden: true,
   };
 
   componentDidMount = () => {
@@ -45,97 +47,135 @@ class SignUp extends React.Component {
   };
 
   handleSignUp = async () => {
-    this.setState({ isLoading: true });
+    await this.setState({ isLoading: true });
+    console.log(this.state.isLoading);
     this.setState({ errorMessage: null });
-    try {
-      var names = this.state.names;
-      var unique = true;
-      var name;
+    if (
+      this.state.email.length > 1 &&
+      this.state.password.length > 1 &&
+      this.state.username.length > 1
+    ) {
+      try {
+        var names = this.state.names;
+        var unique = true;
+        var name;
 
-      // check display name is unique
-      if (names.includes(this.state.username)) {
-        unique = false;
+        // check display name is unique
+        if (names.includes(this.state.username)) {
+          unique = false;
+        }
+
+        if (unique) {
+          // create user
+          await firebase
+            .auth()
+            .createUserWithEmailAndPassword(
+              this.state.email,
+              this.state.password
+            );
+
+          await store.dispatch(updateTutorials({ newAccount: true }));
+
+          var user = await firebase.auth().currentUser;
+
+          // update username
+          await user.updateProfile({
+            displayName: this.state.username,
+          });
+
+          var interests = {};
+          interests.creators = ["4CRlxvD9rpZB3ASqJriEwEJbDQ92"];
+          interests.topics = ["/topics/Meta", "/topics/Art"];
+
+          // create base user data in firestore firestore
+          var lower = this.state.username.toLowerCase();
+          lower = lower.trim();
+          await firebase
+            .firestore()
+            .collection("users/")
+            .doc(user.uid)
+            .set({
+              lowercaseName: lower,
+              username: this.state.username,
+              interests: interests,
+              minas: 15,
+            });
+
+          // add help tutorials to user screen
+          await firebase
+            .firestore()
+            .collection("users/" + user.uid + "/data")
+            .doc("learning")
+            .set({
+              "2fJyrGMwyU8bKKImOtb2": {
+                title: "Using Skoach",
+                thumbnail:
+                  "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/topics%2FMeta%2F2fJyrGMwyU8bKKImOtb2%2FThumbnail?alt=media&token=59e43224-67f6-49ec-8e74-e15688a4c9f5",
+                topic: "topics/Meta",
+              },
+              iuyEJIBF63QJRhcBNNQ6: {
+                title: "Creating a Tutorial",
+                thumbnail:
+                  "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/topics%2FMeta%2FiuyEJIBF63QJRhcBNNQ6%2FThumbnail?alt=media&token=e503408c-ec05-4409-8110-a761aceadc26",
+                topic: "topics/Meta",
+              },
+            });
+
+          // send user message to verify email
+          await firebase
+            .firestore()
+            .collection("users/" + user.uid + "/data")
+            .doc("messages")
+            .set({
+              [Date.now()]: {
+                message: "Please verify your email",
+                status: "unread",
+              },
+            });
+          await store.dispatch(updateTutorials({ unread: true }));
+
+          // update list of taken usernames
+          names.push(this.state.username);
+          firebase
+            .database()
+            .ref("/")
+            .update({ names: names });
+
+          // send user email verification
+          user.sendEmailVerification();
+        } else {
+          this.setState({
+            errorMessage: "Sorry, that username has been taken",
+          });
+        }
+      } catch (error) {
+        // create error message
+        var message;
+        switch (error.code) {
+          case "auth/invalid-email":
+            message = "That doesn't seem like a valid email address";
+            break;
+          case "auth/email-already-in-use":
+            message = "Another account already uses that email address";
+            break;
+          case "auth/weak-password":
+            message = "Sorry, that password isn't strong enough";
+            break;
+          case "auth/too-many-requests":
+            message = "Too many tries to sign up. Try again later";
+          default:
+            message = "Sorry, something went wrong";
+        }
+
+        // display errors
+        this.setState({ errorMessage: message });
       }
-
-      if (unique) {
-        // create user
-        await firebase
-          .auth()
-          .createUserWithEmailAndPassword(
-            this.state.email,
-            this.state.password
-          );
-        var user = firebase.auth().currentUser;
-
-        // update username
-        await user.updateProfile({
-          displayName: this.state.username,
+    } else {
+      setTimeout(() => {
+        this.setState({
+          errorMessage: "You haven't filled all the fields yet",
         });
-
-        var interests = {};
-        interests.creators = [];
-        interests.topics = ["/topics/Meta", "/topics/Art"];
-
-        // create base user data in firestore database
-        var lower = this.state.username.toLowerCase();
-        lower = lower.trim();
-        await firebase
-          .firestore()
-          .collection("users/")
-          .doc(user.uid)
-          .set({
-            lowercaseName: lower,
-            username: this.state.username,
-            interests: interests,
-          });
-
-        // add help tutorials to user screen
-        await firebase
-          .firestore()
-          .collection("users/" + user.uid + "/data")
-          .doc("learning")
-          .set({
-            "2fJyrGMwyU8bKKImOtb2": {
-              title: "Using Skoach",
-              thumbnail:
-                "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9sLloRcBSCZhf9QQjT%2FThumbnail?alt=media&token=8588020f-a02a-467c-8da5-26462b77b061",
-              topic: "topics/Meta",
-            },
-            iuyEJIBF63QJRhcBNNQ6: {
-              title: "Creating a Tutorial",
-              thumbnail:
-                "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/posts%2FMeta%2F-M9Ehcn1WiABy_0wDMKN%2FThumbnail?alt=media&token=e206b115-cb63-4098-abfe-c7f4b63bcd84",
-              topic: "topics/Meta",
-            },
-          });
-
-        // send user message to verify email
-        await firebase
-          .firestore()
-          .collection("users/" + user.uid + "/data")
-          .doc("messages")
-          .set({
-            [Date.now()]: {
-              message: "Please verify your email",
-              status: "unread",
-            },
-          });
-        await store.dispatch(updateTutorials({ unread: true }));
-
-        // update list of taken usernames
-        names.push(this.state.username);
-        firebase
-          .database()
-          .ref("/")
-          .update({ names: names });
-
-        // send user email verification
-        user.sendEmailVerification();
-      } else {
-        this.setState({ errorMessage: "Sorry, that username has been taken" });
-      }
-    } catch (error) {
-      this.setState({ errorMessage: error.message });
+      }, 500);
     }
     this.setState({ isLoading: false });
   };
@@ -153,19 +193,7 @@ class SignUp extends React.Component {
             height: "100%",
           }}
         />
-        <Text style={{ fontSize: 19, color: "white" }}>Sign Up</Text>
-        {this.state.errorMessage && (
-          <Text
-            style={{
-              textAlign: "center",
-              margin: 10,
-              color: "#ffb52b",
-              fontWeight: "bold",
-            }}
-          >
-            {this.state.errorMessage}
-          </Text>
-        )}
+        <Text style={[human.title1White, systemWeights.bold]}>Sign Up</Text>
         <View
           style={{
             alignItems: "center",
@@ -173,8 +201,8 @@ class SignUp extends React.Component {
             padding: 20,
             width: "80%",
             marginTop: 10,
-            marginBottom: 20,
             borderRadius: 5,
+            elevation: 1,
           }}
         >
           <View
@@ -234,13 +262,27 @@ class SignUp extends React.Component {
               <Ionicons name="md-lock" size={25} color="#6da9c9" />
             </View>
             <TextInput
-              secureTextEntry
+              secureTextEntry={this.state.isPasswordHidden}
               placeholder="Password"
               autoCapitalize="none"
               style={styles.textInput}
               onChangeText={(password) => this.setState({ password })}
               value={this.state.password}
             />
+            <TouchableOpacity
+              style={{ position: "absolute", right: 5 }}
+              onPress={() =>
+                this.setState({
+                  isPasswordHidden: !this.state.isPasswordHidden,
+                })
+              }
+            >
+              <Ionicons
+                name={this.state.isPasswordHidden ? "md-eye" : "md-eye-off"}
+                size={25}
+                color="#6da9c9"
+              />
+            </TouchableOpacity>
           </View>
           <View style={styles.submitButton}>
             {!this.state.isLoading ? (
@@ -252,6 +294,25 @@ class SignUp extends React.Component {
             )}
           </View>
         </View>
+        {this.state.errorMessage ? (
+          <Text
+            style={[
+              human.footnote,
+              { padding: 5, color: "#e3242b", ...systemWeights.bold },
+            ]}
+          >
+            {this.state.errorMessage}
+          </Text>
+        ) : (
+          <Text
+            style={[
+              human.footnote,
+              { padding: 5, color: "#e3242b", ...systemWeights.bold },
+            ]}
+          >
+            {"  "}
+          </Text>
+        )}
         <View
           style={{
             alignItems: "center",
@@ -260,14 +321,25 @@ class SignUp extends React.Component {
           }}
         >
           <TouchableOpacity
-            style={{ margin: 5 }}
+            style={{
+              marginHorizontal: 5,
+              padding: 4,
+              backgroundColor: "white",
+              borderRadius: 4,
+              elevation: 1,
+            }}
             onPress={() => this.props.navigation.navigate("Login")}
           >
             <Text style={{ color: "#6da9c9" }}>Login</Text>
           </TouchableOpacity>
-          <Text style={{ margin: 5, color: "#6da9c9" }}>|</Text>
           <TouchableOpacity
-            style={{ margin: 5 }}
+            style={{
+              marginHorizontal: 5,
+              padding: 4,
+              backgroundColor: "white",
+              borderRadius: 4,
+              elevation: 1,
+            }}
             onPress={() => this.props.navigation.navigate("App")}
           >
             <Text style={{ color: "#6da9c9" }}>Continue Anonymously</Text>
@@ -286,11 +358,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   submitButton: {
+    height: 28,
+    justifyContent: "center",
+    width: "80%",
+    alignItems: "center",
     marginTop: 10,
-    paddingTop: 2,
-    paddingBottom: 3,
-    paddingLeft: 70,
-    paddingRight: 70,
     backgroundColor: "#ffb52b",
     borderRadius: 2,
   },

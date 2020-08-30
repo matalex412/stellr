@@ -28,7 +28,6 @@ export default class LearnModal extends React.Component {
     return (
       <View>
         <TouchableOpacity
-          style={{ marginBottom: 30 }}
           onPress={() => this.setState({ isModalVisible: true })}
         >
           <View style={styles.button}>
@@ -110,7 +109,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    backgroundColor: "black",
+    backgroundColor: "#6da9c9",
+    elevation: 1,
     padding: 7,
     borderRadius: 2,
   },

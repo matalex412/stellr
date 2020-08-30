@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  RefreshControl,
   ScrollView,
   TouchableOpacity,
   Image,
@@ -12,9 +13,10 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import Carousel from "react-native-snap-carousel";
+import Carousel, { Pagination } from "react-native-snap-carousel";
 import { human } from "react-native-typography";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import ProfileBanner from "./components/ProfileBanner";
 import { store } from "./../redux/store";
@@ -29,6 +31,7 @@ class PeopleScreen extends React.Component {
     following: [],
     friends: [],
     carouselItems: ["toAdd", "following", "friends"],
+    activeIndex: 0,
   };
 
   componentDidMount = () => {
@@ -38,6 +41,7 @@ class PeopleScreen extends React.Component {
   };
 
   setup = async (n) => {
+    this.setState({ toAddLoading: true });
     // get users for currentUser to add
     if (this.state.last) {
       var docs = await firebase
@@ -209,13 +213,15 @@ class PeopleScreen extends React.Component {
         { merge: true }
       );
 
-    var added = this.state.added;
     if (friend) {
-      added.friends.push(user);
+      var friends = this.state.friends;
+      friends.push(user);
+      this.setState({ friends });
     } else {
-      added.following.push(user);
+      var following = this.state.following;
+      following.push(user);
+      this.setState({ following });
     }
-    this.setState({ added });
   };
 
   search = async () => {
@@ -232,12 +238,8 @@ class PeopleScreen extends React.Component {
           if (!querySnapshot.empty) {
             const user = querySnapshot.docs[0].data();
             if (
-              this.state.added.following.some(
-                (e) => e.username == user.username
-              ) ||
-              this.state.added.friends.some(
-                (e) => e.username == user.username
-              ) ||
+              this.state.following.some((e) => e.username == user.username) ||
+              this.state.friends.some((e) => e.username == user.username) ||
               user.username == currentUser.displayName
             ) {
               user.added = true;
@@ -258,62 +260,98 @@ class PeopleScreen extends React.Component {
 
   _renderItem = ({ item, index }) => {
     return (
-      <ScrollView style={{ marginTop: 10 }}>
+      <ScrollView
+        contentContainerStyle={{
+          marginTop: 5,
+          padding: 5,
+          paddingBottom: 40,
+        }}
+        refreshControl={
+          <RefreshControl refreshing={false} onRefresh={() => this.setup(10)} />
+        }
+      >
         {item == "toAdd" ? (
-          <Text style={[human.title2, styles.heading]}>Future friends?</Text>
+          <Text style={[human.title2White, styles.heading]}>
+            Future friends?
+          </Text>
         ) : (
-          <Text style={styles.heading}>
+          <Text style={[human.title2White, styles.heading]}>
             {item.charAt(0).toUpperCase() + item.slice(1)}
           </Text>
         )}
         {item == "toAdd" && this.state.toAddLoading ? (
-          <ActivityIndicator style={{ margin: 5 }} color="#000" size="large" />
+          <ActivityIndicator style={{ margin: 5 }} color="#fff" size="large" />
         ) : this.state[item].length > 0 ? (
-          this.state[item].map((user, i) => {
-            return (
-              <View
-                key={i}
-                style={{
-                  width: "100%",
-                  justifyContent: "center",
-                  flexDirection: "row",
-                }}
-              >
-                <ProfileBanner
-                  style={styles.profile}
-                  user={user}
-                  onPress={() => this.clickedUser(user)}
-                />
-                {user.added ? (
-                  <View
-                    style={{
-                      backgroundColor: "grey",
-                      borderRadius: 20,
-                      padding: 5,
-                      alignSelf: "center",
+          <View
+            style={{
+              justifyContent: "center",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              paddingBottom: 20,
+            }}
+          >
+            {this.state[item].map((user, i) => {
+              return (
+                <View
+                  key={i}
+                  style={{
+                    justifyContent: "center",
+                    backgroundColor: "white",
+                    elevation: 2,
+                    borderRadius: 10,
+                    margin: 5,
+                    paddingVertical: 5,
+                    width: 85,
+                  }}
+                >
+                  <ProfileBanner
+                    imageStyle={{
+                      marginBottom: 5,
+                      marginRight: 0,
+                      width: 33,
+                      height: 33,
                     }}
-                  >
-                    <Text>Added</Text>
-                  </View>
-                ) : this.state.currentUser.isAnonymous ||
-                  item != "toAdd" ? null : (
-                  <TouchableOpacity
-                    onPress={() => this.follow(user)}
-                    style={{
-                      backgroundColor: "#ffb52b",
-                      borderRadius: 20,
-                      padding: 5,
-                      alignSelf: "center",
-                    }}
-                  >
-                    <Text style={human.subhead}>Add User</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            );
-          })
+                    font={15}
+                    viewStyle={{ flexDirection: "column" }}
+                    user={user}
+                    size={28}
+                    onPress={() => this.clickedUser(user)}
+                  />
+                  {user.added ? (
+                    item != "toAdd" ? null : (
+                      <View
+                        style={{
+                          backgroundColor: "grey",
+                          borderRadius: 20,
+                          padding: 5,
+                          alignSelf: "center",
+                        }}
+                      >
+                        <Text>Added</Text>
+                      </View>
+                    )
+                  ) : this.state.currentUser.isAnonymous ||
+                    item != "toAdd" ? null : (
+                    <TouchableOpacity
+                      onPress={() => this.follow(user)}
+                      style={{
+                        backgroundColor: "#ffb52b",
+                        borderRadius: 20,
+                        padding: 5,
+                        alignSelf: "center",
+                      }}
+                    >
+                      <Text style={human.subhead}>Add User</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+          </View>
         ) : (
-          <Text style={[human.body, { textAlign: "center", padding: 20 }]}>
+          <Text
+            style={[human.title2White, { textAlign: "center", padding: 20 }]}
+          >
             None Made Yet...
           </Text>
         )}
@@ -326,30 +364,12 @@ class PeopleScreen extends React.Component {
       <View style={styles.container}>
         {this.state.isLoading ? (
           <View style={styles.contentContainer}>
-            <LinearGradient
-              colors={["#6da9c9", "#fff"]}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 0,
-                height: "100%",
-              }}
-            />
+            <Background />
             <CustomLoading verse="Therefore encourage one another and build one another up" />
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.contentContainer}>
-            <LinearGradient
-              colors={["#6da9c9", "#fff"]}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 0,
-                height: "100%",
-              }}
-            />
+          <View style={styles.contentContainer}>
+            <Background />
             <View style={{ alignItems: "center", flexDirection: "row" }}>
               <TextInput
                 value={this.state.usernameQuery}
@@ -410,6 +430,24 @@ class PeopleScreen extends React.Component {
                 )}
               </View>
             )}
+            <Pagination
+              dotsLength={3}
+              containerStyle={{
+                paddingBottom: 10,
+              }}
+              animatedDuration={50}
+              activeDotIndex={this.state.activeIndex}
+              dotColor="#fff"
+              inactiveDotColor="dimgray"
+              dotStyle={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                marginHorizontal: 4,
+              }}
+              inactiveDotOpacity={0.4}
+              inactiveDotScale={0.6}
+            />
             <Carousel
               layout={"default"}
               ref={(ref) => (this.carousel = ref)}
@@ -508,7 +546,7 @@ class PeopleScreen extends React.Component {
                 })}
               </View>
             )*/}
-          </ScrollView>
+          </View>
         )}
       </View>
     );
@@ -521,7 +559,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   contentContainer: {
-    padding: 10,
+    paddingVertical: 10,
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -530,7 +568,6 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 22,
     alignSelf: "center",
-    marginTop: 20,
   },
   profile: {
     alignItems: "flex-start",

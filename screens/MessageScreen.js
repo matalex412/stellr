@@ -104,41 +104,41 @@ class MessageScreen extends React.Component {
           ) : this.state.times.length == 0 ? (
             <Text style={{ color: "white" }}>No Messages</Text>
           ) : (
-            Object.keys(this.state.data).map((time, index) => {
-              return (
-                <View style={styles.message} key={index}>
-                  <Text
-                    style={{
-                      fontWeight: "bold",
-                      marginLeft: 20,
-                      textAlign: "left",
-                      fontSize: 20,
-                      color:
-                        this.state.data[time].status == "unread"
-                          ? "#ffb52b"
-                          : "black",
-                    }}
-                  >
-                    {this.state.times[index]} -
-                  </Text>
-                  <Text
-                    style={{
-                      flex: 1,
-                      flexWrap: "wrap",
-                      fontSize: 20,
-                      marginLeft: 5,
-                      marginRight: 20,
-                      color:
-                        this.state.data[time].status == "unread"
-                          ? "#ffb52b"
-                          : "black",
-                    }}
-                  >
-                    {this.state.data[time].message}
-                  </Text>
-                </View>
-              );
-            })
+            <View style={{ width: "100%", flexDirection: "column-reverse" }}>
+              {Object.keys(this.state.data).map((time, index) => {
+                return (
+                  <View style={styles.message} key={index}>
+                    <Text
+                      style={{
+                        fontWeight: "bold",
+                        textAlign: "left",
+                        fontSize: 20,
+                        color:
+                          this.state.data[time].status == "unread"
+                            ? "#ffb52b"
+                            : "black",
+                      }}
+                    >
+                      {this.state.times[index]} -
+                    </Text>
+                    <Text
+                      style={{
+                        flex: 1,
+                        flexWrap: "wrap",
+                        fontSize: 20,
+                        marginLeft: 5,
+                        color:
+                          this.state.data[time].status == "unread"
+                            ? "#ffb52b"
+                            : "black",
+                      }}
+                    >
+                      {this.state.data[time].message}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       </View>
@@ -158,15 +158,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   message: {
+    padding: 5,
+    marginVertical: 10,
+    marginHorizontal: 20,
+    backgroundColor: "white",
+    borderRadius: 3,
+    elevation: 2,
     flexDirection: "row",
-    width: "100%",
-  },
-  line: {
-    borderBottomColor: "black",
-    borderBottomWidth: 1,
-    alignSelf: "center",
-    margin: 10,
-    width: "70%",
   },
 });
 

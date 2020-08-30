@@ -12,6 +12,7 @@ const tutorialsReducer = (
     unread: false,
     vids: [""],
     uservids: [""],
+    page: 0,
   },
   action
 ) => {

@@ -5,10 +5,12 @@ import {
   TextInput,
   View,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { connect } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { human, systemWeights } from "react-native-typography";
 
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -19,9 +21,12 @@ class LoginScreen extends React.Component {
     email: "",
     password: "",
     errorMessage: null,
+    isLoading: false,
+    isPasswordHidden: true,
   };
 
   handleLogin = async () => {
+    this.setState({ isLoading: true });
     this.setState({ errorMessage: null });
     if (this.state.email.length > 1 && this.state.password.length > 1) {
       try {
@@ -30,14 +35,38 @@ class LoginScreen extends React.Component {
           .auth()
           .signInWithEmailAndPassword(this.state.email, this.state.password);
       } catch (error) {
+        // create error message
+        var message;
+        switch (error.code) {
+          case "auth/invalid-email":
+            message = "That doesn't seem like a valid email address";
+            break;
+          case "auth/user-disabled":
+            message = "This account has been disabled";
+            break;
+          case "auth/user-not-found":
+            message = "Sorry, the account for that email doesn't exist";
+            break;
+          case "auth/wrong-password":
+            message = "Sorry, you've entered the wrong password";
+            break;
+          case "auth/too-many-requests":
+            message = "Too many tries to login. Try again later";
+          default:
+            message = "Sorry, something went wrong";
+        }
+
         // display errors
-        this.setState({ errorMessage: error.message });
+        this.setState({ errorMessage: message });
       }
     } else {
-      this.setState({
-        errorMessage: "Please fill in the email and password fields",
-      });
+      setTimeout(() => {
+        this.setState({
+          errorMessage: "Please fill in the email and password fields",
+        });
+      }, 500);
     }
+    this.setState({ isLoading: false });
   };
 
   render() {
@@ -53,19 +82,7 @@ class LoginScreen extends React.Component {
             height: "100%",
           }}
         />
-        <Text style={{ fontSize: 19, color: "white" }}>Login</Text>
-        {this.state.errorMessage && (
-          <Text
-            style={{
-              textAlign: "center",
-              margin: 10,
-              color: "#ffb52b",
-              fontWeight: "bold",
-            }}
-          >
-            {this.state.errorMessage}
-          </Text>
-        )}
+        <Text style={[human.title1White, systemWeights.bold]}>Login</Text>
         <View
           style={{
             alignItems: "center",
@@ -73,8 +90,8 @@ class LoginScreen extends React.Component {
             padding: 20,
             width: "80%",
             marginTop: 10,
-            marginBottom: 20,
             borderRadius: 5,
+            elevation: 1,
           }}
         >
           <View
@@ -122,32 +139,65 @@ class LoginScreen extends React.Component {
               <Ionicons name="md-lock" size={25} color="#6da9c9" />
             </View>
             <TextInput
-              secureTextEntry
+              secureTextEntry={this.state.isPasswordHidden}
               style={styles.textInput}
               autoCapitalize="none"
               placeholder="Password"
               onChangeText={(password) => this.setState({ password })}
               value={this.state.password}
             />
-            <View style={{ alignSelf: "flex-end" }}>
-              <TouchableOpacity
-                style={{ margin: 10, alignSelf: "flex-end" }}
-                onPress={() => {
-                  this.props.navigation.navigate("Forgot");
-                }}
-              >
-                <Text style={{ color: "#6da9c9" }}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={{ position: "absolute", right: 5 }}
+              onPress={() =>
+                this.setState({
+                  isPasswordHidden: !this.state.isPasswordHidden,
+                })
+              }
+            >
+              <Ionicons
+                name={this.state.isPasswordHidden ? "md-eye" : "md-eye-off"}
+                size={25}
+                color="#6da9c9"
+              />
+            </TouchableOpacity>
           </View>
           <TouchableOpacity
-            style={styles.submitButton}
-            activeOpacity={0.5}
-            onPress={this.handleLogin}
+            style={{ margin: 5 }}
+            onPress={() => {
+              this.props.navigation.navigate("Forgot");
+            }}
           >
-            <Text style={{ color: "white", fontSize: 20 }}>Login</Text>
+            <Text style={{ color: "#6da9c9" }}>Forgot Password?</Text>
           </TouchableOpacity>
+          <View style={styles.submitButton}>
+            {!this.state.isLoading ? (
+              <TouchableOpacity activeOpacity={0.5} onPress={this.handleLogin}>
+                <Text style={{ color: "white", fontSize: 20 }}>Login</Text>
+              </TouchableOpacity>
+            ) : (
+              <ActivityIndicator color="white" />
+            )}
+          </View>
         </View>
+        {this.state.errorMessage ? (
+          <Text
+            style={[
+              human.footnote,
+              { padding: 5, color: "#e3242b", ...systemWeights.bold },
+            ]}
+          >
+            {this.state.errorMessage}
+          </Text>
+        ) : (
+          <Text
+            style={[
+              human.footnote,
+              { padding: 5, color: "#e3242b", ...systemWeights.bold },
+            ]}
+          >
+            {"  "}
+          </Text>
+        )}
         <View
           style={{
             alignItems: "center",
@@ -156,14 +206,25 @@ class LoginScreen extends React.Component {
           }}
         >
           <TouchableOpacity
-            style={{ margin: 5 }}
+            style={{
+              marginHorizontal: 5,
+              padding: 4,
+              backgroundColor: "white",
+              borderRadius: 4,
+              elevation: 1,
+            }}
             onPress={() => this.props.navigation.navigate("SignUp")}
           >
             <Text style={{ color: "#6da9c9" }}>Sign Up</Text>
           </TouchableOpacity>
-          <Text style={{ margin: 5, color: "#6da9c9" }}>|</Text>
           <TouchableOpacity
-            style={{ margin: 5 }}
+            style={{
+              marginHorizontal: 5,
+              padding: 4,
+              backgroundColor: "white",
+              borderRadius: 4,
+              elevation: 1,
+            }}
             onPress={() => this.props.navigation.navigate("App")}
           >
             <Text style={{ color: "#6da9c9" }}>Continue Anonymously</Text>
@@ -182,11 +243,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   submitButton: {
+    height: 28,
+    justifyContent: "center",
+    width: "80%",
+    alignItems: "center",
     marginTop: 10,
-    paddingTop: 2,
-    paddingBottom: 3,
-    paddingLeft: 70,
-    paddingRight: 70,
     backgroundColor: "#ffb52b",
     borderRadius: 2,
   },

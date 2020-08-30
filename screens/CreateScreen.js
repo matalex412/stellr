@@ -17,7 +17,11 @@ import * as Permissions from "expo-permissions";
 import { connect } from "react-redux";
 import { AdMobBanner } from "expo-ads-admob";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { human, systemWeights } from "react-native-typography";
+import { ProgressSteps, ProgressStep } from "react-native-progress-steps";
 
+import ModalAlert from "./components/ModalAlert";
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -26,9 +30,13 @@ import { firebase } from "./../src/config";
 class CreateScreen extends React.Component {
   state = {
     isLoading: true,
-    isFormValid: false,
+    isFormValid: true,
     steps: [{ step: "" }],
     checked: false,
+    errors: false,
+    page: 0,
+    isModalVisible: false,
+    alertIcon: null,
   };
 
   componentDidMount = () => {
@@ -38,10 +46,13 @@ class CreateScreen extends React.Component {
     } else {
       this.vids = [];
     }
+    var { page } = this.props.tutorials;
+    this.setState({ page });
     this.makeTopic();
   };
 
   componentWillUnmount = async () => {
+    await store.dispatch(updateTutorials({ page: this.state.page }));
     // store video references (when users chooses topic)
     await store.dispatch(updateTutorials({ vids: this.vids }));
   };
@@ -138,15 +149,44 @@ class CreateScreen extends React.Component {
     }
   };
 
-  validateForm = async () => {
+  validateForm = async (page) => {
     // check tutorial requirements
-    var checkthumbnail = this.props.tutorials.thumbnail;
-    var checktitle = this.props.tutorials.title.length > 3;
-    var checktopic = this.props.tutorials.create_topic.length > 0;
-    if (checktitle && checktopic && checkthumbnail) {
-      await this.setState({ isFormValid: true });
+    if (page == 0) {
+      if (!(this.props.tutorials.title.length > 3)) {
+        this.setState({ isFormValid: false });
+        this.setState({ errors: true });
+      } else {
+        this.setState({ isFormValid: true });
+        this.setState({ errors: false });
+        this.setState((prevState) => ({ page: page + 1 }));
+      }
+    } else if (page == 1) {
+      if (
+        !(
+          this.props.tutorials.thumbnail &&
+          this.props.tutorials.create_topic.length > 0
+        )
+      ) {
+        this.setState({ errors: true });
+        this.setState({ isFormValid: false });
+      } else {
+        this.setState({ errors: false });
+        this.setState({ isFormValid: false });
+      }
     } else {
-      this.setState({ checked: true });
+      // check enough writing for each step
+      var steps = this.props.tutorials.steps;
+      if (
+        steps.every((query) => {
+          return query.step.length > 0;
+        })
+      ) {
+        this.setState({ errors: false });
+        this.setState({ isFormValid: true });
+      } else {
+        this.setState({ errors: true });
+        this.setState({ isFormValid: false });
+      }
     }
   };
 
@@ -160,11 +200,14 @@ class CreateScreen extends React.Component {
       this.setState({ isLoading: true });
       const { currentUser } = firebase.auth();
       if (currentUser.isAnonymous) {
-        Alert.alert(
-          "Create an Account",
-          "To post your own tutorials and add other people's tutorials, please create an account"
-        );
-        firebase.auth().signOut();
+        // redirect user
+        this.setState({ alertTitle: "Account Needed" });
+        this.setState({ alertIcon: "md-person" });
+        this.setState({
+          alertMessage:
+            "To post your own tutorials and to gain access to other features, please create an account",
+        });
+        this.setState({ isModalVisible: true });
       } else {
         // store tutorial data
         var tutorial = {};
@@ -174,10 +217,17 @@ class CreateScreen extends React.Component {
         tutorial.create_topic = this.props.tutorials.create_topic;
         tutorial.thumbnail = this.props.tutorials.thumbnail;
         var topic = this.props.tutorials.create_topic;
+        var info = this.props.tutorials.info;
+
+        if (!info || info == "") {
+          info = null;
+        }
 
         // reset screen data
+        await store.dispatch(updateTutorials({ page: 0 }));
         await store.dispatch(updateTutorials({ request: null }));
         await store.dispatch(updateTutorials({ title: "" }));
+        await store.dispatch(updateTutorials({ info: "" }));
         await store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
         await store.dispatch(updateTutorials({ create_topic: [] }));
         await store.dispatch(updateTutorials({ create_topic_string: null }));
@@ -187,10 +237,12 @@ class CreateScreen extends React.Component {
         this.setState({ isLoading: false });
 
         // redirect user
-        Alert.alert(
-          "Thanks",
-          "Thank you for making a tutorial and helping Skoach grow. You're tutorial is being uploaded and we'll send you a message when it's done!"
-        );
+        this.setState({ alertIcon: null });
+        this.setState({ alertTitle: "Thanks!" });
+        this.setState({
+          alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
+        });
+        this.setState({ isModalVisible: true });
         this.props.navigation.navigate("Home");
 
         // get topic route
@@ -213,6 +265,7 @@ class CreateScreen extends React.Component {
             stars: 0,
             incomplete: 0,
             learns: 0,
+            info: info,
           });
 
         // store thumbnail and get route
@@ -323,11 +376,6 @@ class CreateScreen extends React.Component {
           );
         await store.dispatch(updateTutorials({ unread: true }));
       }
-    } else {
-      Alert.alert(
-        "Not Finished",
-        "Sorry, your tutorial doesn't have all requirements fulfilled (make sure you've added a thumbnail and topic)"
-      );
     }
   };
 
@@ -363,13 +411,6 @@ class CreateScreen extends React.Component {
     this.props.navigation.navigate("Tutorial");
   };
 
-  info = () => {
-    Alert.alert(
-      "Requirements",
-      "Please make sure you've added a thumbnail and topic to your tutorial. A valid post must have a long enough title and each step also needs a description longer than 3 characters."
-    );
-  };
-
   changeTopic = async () => {
     // clear data about user's made post and redirect user to topic screen
     await store.dispatch(updateTutorials({ userpost: null }));
@@ -395,356 +436,448 @@ class CreateScreen extends React.Component {
     store.dispatch(updateTutorials({ steps: steps }));
   };
 
+  defaultScrollViewProps = {
+    contentContainerStyle: styles.contentContainer,
+  };
+
+  changeModalVisibility = (visible) => {
+    this.setState({ isModalVisible: visible });
+  };
+
   render() {
     var width = Dimensions.get("window").width;
     return (
-      <View style={styles.container}>
-        <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
-          {this.state.isLoading ? (
-            <CustomLoading verse="Do you see a man skillful in his work? He will stand before kings" />
-          ) : (
-            <View>
-              <View style={{ margin: 10, flex: 1, flexDirection: "column" }}>
-                <AdMobBanner
-                  adUnitID="ca-app-pub-3262091936426324/7558442816"
-                  onDidFailToReceiveAdWithError={() =>
-                    console.log("banner ad not loading")
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <Background />
+        {this.state.isLoading ? (
+          <CustomLoading verse="Do you see a man skillful in his work? He will stand before kings" />
+        ) : (
+          <View>
+            <View style={{ flexDirection: "column" }}>
+              <AdMobBanner
+                adUnitID="ca-app-pub-3262091936426324/7558442816"
+                onDidFailToReceiveAdWithError={() =>
+                  console.log("banner ad not loading")
+                }
+                servePersonalizedAds
+              />
+            </View>
+            <ModalAlert
+              title={this.state.alertTitle}
+              message={this.state.alertMessage}
+              isModalVisible={this.state.isModalVisible}
+              onDismiss={() => this.changeModalVisibility(false)}
+              icon={this.state.alertIcon}
+            />
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <ProgressSteps
+                activeStepIconBorderColor="white"
+                completedProgressBarColor="white"
+                completedStepIconColor="white"
+                activeLabelColor="white"
+                activeStepNumColor="white"
+                completedCheckColor="#6da9c9"
+                completedLabelColor="white"
+                activeStep={this.state.page}
+              >
+                <ProgressStep
+                  scrollViewProps={this.defaultScrollViewProps}
+                  label="What Tutorial?"
+                  previousBtnTextStyle={styles.toggleProgress}
+                  nextBtnTextStyle={styles.toggleProgress}
+                  onNext={() => this.validateForm(0)}
+                  onPrevious={() =>
+                    this.setState((prevState) => ({ page: prevState.page - 1 }))
                   }
-                  servePersonalizedAds
-                />
-              </View>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <TextInput
-                  placeholderTextColor={
-                    this.state.checked
-                      ? this.props.tutorials.title.length < 4
-                        ? "#ffb52b"
-                        : "white"
-                      : "white"
-                  }
-                  value={this.props.tutorials.title}
-                  placeholder="Enter Title"
-                  onChangeText={(title) =>
-                    store.dispatch(updateTutorials({ title: title }))
-                  }
-                  style={{
-                    color: "black",
-                    padding: 10,
-                    fontSize: 23,
-                    fontStyle: "italic",
-                  }}
-                />
-                {this.props.tutorials.thumbnail && (
-                  <Image
-                    source={{ uri: this.props.tutorials.thumbnail }}
-                    style={{ width: "100%", height: 200, marginBottom: 5 }}
-                  />
-                )}
-                {this.props.tutorials.create_topic_string && (
-                  <Text style={{ color: "black", padding: 10 }}>
-                    Topic: {this.props.tutorials.create_topic_string}
-                  </Text>
-                )}
-                <View
-                  style={{
-                    backgroundColor: "black",
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    padding: 10,
-                    borderRadius: 30,
-                  }}
+                  errors={this.state.errors}
                 >
-                  <TouchableOpacity
-                    style={{ marginRight: 5 }}
-                    onPress={this.thumbnail}
-                  >
-                    <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                      <Ionicons
-                        name="md-image"
-                        size={20}
-                        style={{ margin: 3 }}
-                        color="#ffb52b"
-                      />
-                      <Text
-                        style={{
-                          color: this.state.checked
-                            ? this.props.tutorials.create_topic.length > 1
-                              ? "white"
-                              : "#ffb52b"
-                            : "white",
-                          margin: 3,
-                        }}
-                      >
-                        Thumbnail
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={{ marginRight: 5 }}
-                    onPress={this.changeTopic}
-                  >
-                    <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                      <Ionicons
-                        name="ios-folder"
-                        size={20}
-                        style={{ margin: 3 }}
-                        color="#ffb52b"
-                      />
-                      <Text
-                        style={{
-                          color: this.state.checked
-                            ? this.props.tutorials.create_topic.length > 1
-                              ? "white"
-                              : "#ffb52b"
-                            : "white",
-                          margin: 3,
-                        }}
-                      >
-                        Topic
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-                {this.props.tutorials.steps.map((step, index) => (
                   <View
-                    key={index}
                     style={{
-                      alginItems: "center",
-                      margin: 5,
-                      flexDirection: "row",
-                      flexWrap: "wrap",
+                      alignItems: "flex-start",
                     }}
                   >
-                    <View
+                    <Text
                       style={{
-                        justifyContent: "center",
-                        backgroundColor: "#6da9c9",
-                        borderRadius: 10,
+                        ...human.calloutWhiteObject,
+                        ...systemWeights.bold,
                       }}
                     >
-                      <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => this._pickMedia("Images", index)}
-                      >
-                        <Ionicons name="md-image" size={25} color="#ffb52b" />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => this._pickMedia("Videos", index)}
-                      >
-                        <Ionicons
-                          name="ios-videocam"
-                          size={25}
-                          color="#ffb52b"
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => this.removeStep(index)}
-                      >
-                        <Ionicons name="md-trash" size={25} color="#ffb52b" />
-                      </TouchableOpacity>
-                    </View>
-                    <View
-                      style={{
-                        alignItems: "center",
-                        backgroundColor: "#6da9c9",
-                        width: width - 100,
-                        padding: 10,
-                        margin: 10,
-                        borderRadius: 5,
-                        shadowOffset: { width: 10, height: 10 },
-                        shadowColor: "black",
-                        shadowOpacity: 1.0,
-                      }}
-                    >
-                      <Text style={styles.heading}>Step {index + 1}</Text>
-                      {step.Videos && (
-                        <View>
-                          <Video
-                            onPlaybackStatusUpdate={(playbackStatus) =>
-                              this._onPlaybackStatusUpdate(
-                                playbackStatus,
-                                index
-                              )
-                            }
-                            ref={(component) => (this.vids[index] = component)}
-                            source={{ uri: step.Videos }}
-                            rate={1.0}
-                            volume={1.0}
-                            isMuted={false}
-                            resizeMode={Video.RESIZE_MODE_CONTAIN}
-                            useNativeControls
-                            style={{ margin: 10, width: 200, height: 200 }}
-                          />
-                          <TouchableOpacity
-                            style={[styles.button, styles.corner]}
-                            onPress={() => this.removeMedia(index, "Videos")}
-                          >
-                            <Ionicons
-                              name="md-close"
-                              size={20}
-                              color="#6da9c9"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                      {step.Images && (
-                        <View>
-                          <Image
-                            source={{ uri: step.Images }}
-                            style={{ margin: 10, width: 200, height: 200 }}
-                          />
-                          <TouchableOpacity
-                            style={[styles.button, styles.corner]}
-                            onPress={() => this.removeMedia(index, "Images")}
-                          >
-                            <Ionicons
-                              name="md-close"
-                              size={20}
-                              color="#6da9c9"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                      {step.error && (
-                        <Text
-                          style={{
-                            fontWeight: "bold",
-                            fontSize: 17,
-                            color: "#ffb52b",
-                          }}
-                        >
-                          {step.error}
-                        </Text>
-                      )}
-                      <TextInput
-                        multiline={true}
-                        value={step.step}
-                        placeholder="Enter Step"
-                        onChangeText={(value) =>
-                          this.handleFieldChange(value, index)
-                        }
-                        placeholderTextColor={
-                          this.state.checked
-                            ? step.step.length < 4
-                              ? "#ffb52b"
-                              : "black"
-                            : "black"
-                        }
-                        style={{
-                          borderColor: "#ffb52b",
-                          color: this.state.checked
-                            ? step.step.length < 4
-                              ? "#ffb52b"
-                              : "black"
-                            : "black",
-                          width: width,
-                          paddingLeft: 60,
-                          paddingRight: 60,
-                          margin: 10,
-                          fontSize: 15,
-                          textAlign: "center",
-                        }}
-                      />
-                    </View>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  style={{ padding: 10 }}
-                  onPress={this.addStep}
-                  disabled={this.props.tutorials.steps.length > 9}
-                >
-                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                    <Ionicons
-                      name="md-add-circle"
-                      size={20}
-                      style={{ margin: 3 }}
-                      color="#6da9c9"
-                    />
-                    <Text style={{ margin: 3, color: "#6da9c9" }}>
-                      Add New Step
+                      Title*
                     </Text>
+                    <TextInput
+                      placeholderTextColor="grey"
+                      value={this.props.tutorials.title}
+                      placeholder="How to make a tutorial"
+                      onChangeText={(title) => {
+                        store.dispatch(updateTutorials({ title: title }));
+                        if (title.length > 3) {
+                          this.setState({ errors: false });
+                        }
+                      }}
+                      style={{
+                        borderRadius: 4,
+                        backgroundColor: "white",
+                        elevation: 2,
+                        borderWidth: this.state.errors ? 1 : 0,
+                        borderColor: "#c21807",
+                        color: "#6da9c9",
+                        padding: 5,
+                        fontSize: 20,
+                        fontStyle: "italic",
+                      }}
+                    />
+                    {this.state.errors ? (
+                      <Text
+                        style={[
+                          human.footnote,
+                          { color: "#e3242b", ...systemWeights.bold },
+                        ]}
+                      >
+                        The title must be long enough
+                      </Text>
+                    ) : (
+                      <Text
+                        style={[
+                          human.footnote,
+                          { color: "#e3242b", ...systemWeights.bold },
+                        ]}
+                      >
+                        {"  "}
+                      </Text>
+                    )}
                   </View>
-                </TouchableOpacity>
-                <View
-                  style={{
-                    marginBottom: 20,
-                    flexDirection: "row",
-                    alignItems: "center",
-                  }}
+                  <View
+                    style={{
+                      marginHorizontal: 20,
+                      marginTop: 5,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        ...human.calloutWhiteObject,
+                        ...systemWeights.bold,
+                      }}
+                    >
+                      Description
+                    </Text>
+                    <TextInput
+                      placeholderTextColor="grey"
+                      multiline={true}
+                      value={this.props.tutorials.info}
+                      placeholder="Write a short description of what the tutorial is about"
+                      onChangeText={(info) =>
+                        store.dispatch(updateTutorials({ info: info }))
+                      }
+                      style={{
+                        color: "#6da9c9",
+                        padding: 5,
+                        fontSize: 17,
+                        borderRadius: 4,
+                        backgroundColor: "white",
+                        elevation: 2,
+                        color: "#6da9c9",
+                      }}
+                    />
+                  </View>
+                </ProgressStep>
+                <ProgressStep
+                  onPrevious={() => this.setState({ errors: false })}
+                  scrollViewProps={this.defaultScrollViewProps}
+                  label="Display"
+                  previousBtnTextStyle={styles.toggleProgress}
+                  nextBtnTextStyle={styles.toggleProgress}
+                  onNext={() => this.validateForm(1)}
+                  errors={this.state.errors}
                 >
-                  <TouchableOpacity onPress={this.handleSubmit}>
+                  <TouchableOpacity onPress={this.changeTopic}>
                     <View
                       style={{
-                        borderRadius: 20,
+                        borderWidth:
+                          this.state.errors &&
+                          this.props.tutorials.create_topic.length == 0
+                            ? 2
+                            : 0,
+                        borderColor: "#c21807",
+                        elevation: 1,
+                        borderRadius: 5,
+                        backgroundColor: "white",
                         alignItems: "center",
                         flexDirection: "row",
                         flexWrap: "wrap",
-                        backgroundColor: "#6da9c9",
-                        paddingRight: 5,
-                        paddingLeft: 5,
+                        padding: 5,
                       }}
                     >
                       <Ionicons
-                        name="ios-send"
-                        size={20}
-                        color="#ffb52b"
-                        style={{ margin: 5 }}
+                        name="ios-folder"
+                        size={30}
+                        style={{ margin: 3 }}
+                        color="#6da0c0"
                       />
                       <Text
-                        style={{ margin: 5, fontSize: 16, color: "#ffb52b" }}
+                        style={{
+                          color: "#6da9c9",
+                          textAlign: "center",
+                          fontSize: 20,
+                          marginRight: 5,
+                        }}
                       >
-                        Publish Tutorial
+                        Choose Topic
+                      </Text>
+                      {this.props.tutorials.create_topic_string && (
+                        <Text
+                          style={{
+                            color: "#6da9c9",
+                            textAlign: "center",
+                            fontSize: 20,
+                          }}
+                        >
+                          - {this.props.tutorials.create_topic_string}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      borderWidth:
+                        this.state.errors && !this.props.tutorials.thumbnail
+                          ? 2
+                          : 0,
+                      borderColor: "#c21807",
+                      marginVertical: 10,
+                      backgroundColor: "white",
+                      elevation: 1,
+                      borderRadius: 5,
+                      padding: 5,
+                    }}
+                    onPress={this.thumbnail}
+                  >
+                    <View
+                      style={{
+                        alignItems: "center",
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Ionicons name="md-image" size={40} color="#6da9c9" />
+                      <Text
+                        style={{
+                          marginLeft: 5,
+                          color: "#6da9c9",
+                          fontSize: 20,
+                        }}
+                      >
+                        Choose Thumbnail
                       </Text>
                     </View>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={this.info}>
-                    <Ionicons
-                      name="md-information-circle-outline"
-                      size={20}
-                      style={{ margin: 5 }}
-                      color="#ffb52b"
+                  {this.props.tutorials.thumbnail && (
+                    <Image
+                      source={{ uri: this.props.tutorials.thumbnail }}
+                      style={{ width: "100%", height: 200, borderRadius: 3 }}
                     />
+                  )}
+                </ProgressStep>
+                <ProgressStep
+                  scrollViewProps={{
+                    contentContainerStyle: {
+                      flexGrow: 1,
+                      justifyContent: "center",
+                    },
+                  }}
+                  label="Steps"
+                  onSubmit={this.handleSubmit}
+                  previousBtnTextStyle={styles.toggleProgress}
+                  nextBtnTextStyle={styles.toggleProgress}
+                >
+                  {this.props.tutorials.steps.map((step, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        alignItems: "center",
+                        margin: 5,
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <View
+                        style={{
+                          justifyContent: "center",
+                          elevation: 2,
+                          backgroundColor: "#fff",
+                          borderRadius: 10,
+                        }}
+                      >
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={() => this._pickMedia("Images", index)}
+                        >
+                          <Ionicons name="md-image" size={25} color="#ffb52b" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={() => this._pickMedia("Videos", index)}
+                        >
+                          <Ionicons
+                            name="ios-videocam"
+                            size={25}
+                            color="#ffb52b"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={() => this.removeStep(index)}
+                        >
+                          <Ionicons name="md-trash" size={25} color="#ffb52b" />
+                        </TouchableOpacity>
+                      </View>
+                      <View
+                        style={{
+                          borderWidth:
+                            this.state.errors && step.step.length == 0 ? 2 : 0,
+                          borderColor: "#c21807",
+                          alignItems: "center",
+                          backgroundColor: "#fff",
+                          elevation: 2,
+                          width: width - 100,
+                          padding: 10,
+                          margin: 10,
+                          borderRadius: 5,
+                          shadowOffset: { width: 10, height: 10 },
+                          shadowColor: "black",
+                          shadowOpacity: 1.0,
+                        }}
+                      >
+                        <Text style={styles.heading}>Step {index + 1}</Text>
+                        {step.Videos && (
+                          <View>
+                            <Video
+                              onPlaybackStatusUpdate={(playbackStatus) =>
+                                this._onPlaybackStatusUpdate(
+                                  playbackStatus,
+                                  index
+                                )
+                              }
+                              ref={(component) =>
+                                (this.vids[index] = component)
+                              }
+                              source={{ uri: step.Videos }}
+                              rate={1.0}
+                              volume={1.0}
+                              isMuted={false}
+                              resizeMode={Video.RESIZE_MODE_CONTAIN}
+                              useNativeControls
+                              style={{ margin: 10, width: 200, height: 200 }}
+                            />
+                            <TouchableOpacity
+                              style={[styles.button, styles.corner]}
+                              onPress={() => this.removeMedia(index, "Videos")}
+                            >
+                              <Ionicons
+                                name="md-close"
+                                size={20}
+                                color="#6da9c9"
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {step.Images && (
+                          <View>
+                            <Image
+                              source={{ uri: step.Images }}
+                              style={{ margin: 10, width: 200, height: 200 }}
+                            />
+                            <TouchableOpacity
+                              style={[styles.button, styles.corner]}
+                              onPress={() => this.removeMedia(index, "Images")}
+                            >
+                              <Ionicons
+                                name="md-close"
+                                size={20}
+                                color="#6da9c9"
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {step.error && (
+                          <Text
+                            style={{
+                              fontWeight: "bold",
+                              fontSize: 17,
+                              color: "#c21807",
+                            }}
+                          >
+                            {step.error}
+                          </Text>
+                        )}
+                        <TextInput
+                          multiline={true}
+                          value={step.step}
+                          placeholder="Please enter a description of what you should do for this step..."
+                          onChangeText={(value) =>
+                            this.handleFieldChange(value, index)
+                          }
+                          placeholderTextColor={
+                            this.state.checked
+                              ? step.step.length < 4
+                                ? "#ffb52b"
+                                : "#6da9c9"
+                              : "#6da9c9"
+                          }
+                          style={{
+                            borderColor: "#ffb52b",
+                            color: "#6da9c9",
+                            width: width,
+                            paddingLeft: 70,
+                            paddingRight: 70,
+                            margin: 10,
+                            fontSize: 15,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    style={{ alignItems: "center" }}
+                    onPress={this.addStep}
+                    disabled={this.props.tutorials.steps.length > 9}
+                  >
+                    <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                      <Ionicons
+                        name="md-add-circle"
+                        size={20}
+                        style={{ margin: 3 }}
+                        color="#6da9c9"
+                      />
+                      <Text style={{ margin: 3, color: "#6da9c9" }}>
+                        Add New Step
+                      </Text>
+                    </View>
                   </TouchableOpacity>
-                </View>
-              </View>
+                </ProgressStep>
+              </ProgressSteps>
             </View>
-          )}
-        </ScrollView>
-      </View>
+          </View>
+        )}
+      </ScrollView>
     );
   }
 }
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 16,
-    fontWeight: "bold",
-    margin: 10,
-    color: "black",
+    ...human.headlineObject,
+    color: "#6da9c9",
+    alignSelf: "flex-start",
+    marginLeft: 10,
+    ...systemWeights.semibold,
   },
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
-    borderRightWidth: 1,
     borderColor: "#6da9c9",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
+    paddingHorizontal: 10,
   },
   corner: {
     position: "absolute",
@@ -761,16 +894,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 40,
     height: 40,
-    backgroundColor: "#000",
+    backgroundColor: "#6da9c9",
     borderRadius: 40,
     margin: 5,
   },
-  line: {
-    borderBottomColor: "black",
-    borderBottomWidth: 1,
-    alignSelf: "stretch",
-    margin: 10,
-    width: 200,
+  toggleProgress: {
+    ...human.headlineObject,
+    color: "#6da9c9",
   },
 });
 

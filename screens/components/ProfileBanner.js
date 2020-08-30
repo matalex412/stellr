@@ -28,7 +28,15 @@ export default class ProfileBanner extends React.Component {
             </View>
           )}
           <View style={{ alignItems: "center" }}>
-            <Text style={[human.body, { fontSize: 20, textAlign: "center" }]}>
+            <Text
+              style={[
+                human.body,
+                {
+                  fontSize: this.props.font ? this.props.font : 20,
+                  textAlign: "center",
+                },
+              ]}
+            >
               {this.props.user.username}
             </Text>
             {this.props.bio && (

@@ -190,32 +190,62 @@ class SearchScreen extends React.Component {
             }}
           />
           {this.state.isLoading ? (
-            <CustomLoading verse="Ask and it will be given to you; seek and you will find" />
+            <CustomLoading verse="Ask and it will be given to you; look and you will find" />
           ) : (
-            <View>
-              <AskScreen />
-              {this.props.tutorials.current_topic.length < 1 ? null : (
-                <TouchableOpacity onPress={this.goBack}>
-                  <View
-                    style={{
-                      marginBottom: 10,
-                      flexDirection: "row",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Ionicons
-                      color="white"
-                      style={{ margin: 10 }}
-                      name="md-arrow-back"
-                      size={25}
-                    />
-                    <Text style={{ fontSize: 15, color: "white" }}>
-                      Go Back
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )}
+            <View
+              style={{
+                marginBottom: postids.length > 2 ? 20 : 0,
+                flex: 1,
+                justifyContent: "center",
+              }}
+            >
+              <View
+                style={{
+                  marginBottom:
+                    this.props.tutorials.current_topic.length < 1 ? 0 : 45,
+                }}
+              >
+                <View
+                  style={
+                    this.props.tutorials.current_topic.length < 1
+                      ? { alignItems: "center" }
+                      : { position: "absolute", top: 0, right: 5 }
+                  }
+                >
+                  <AskScreen />
+                </View>
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 5,
+                  }}
+                >
+                  {this.props.tutorials.current_topic.length < 1 ? null : (
+                    <TouchableOpacity onPress={this.goBack}>
+                      <View
+                        style={{
+                          marginBottom: 10,
+                          flexDirection: "row",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons
+                          color="white"
+                          style={{ margin: 10 }}
+                          name="md-arrow-back"
+                          size={25}
+                        />
+                        <Text style={{ fontSize: 15, color: "white" }}>
+                          Go Back
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
               {topics.length < 1 ? null : (
                 <View>
                   <View
@@ -296,14 +326,9 @@ const styles = StyleSheet.create({
     height: Dimensions.get("window").width / 3 - 30,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "black",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
     elevation: 10,
-    backgroundColor: "black",
+    borderRadius: 2,
+    backgroundColor: "#6da9c9",
   },
   text: {
     textAlign: "center",
