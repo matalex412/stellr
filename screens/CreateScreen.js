@@ -30,11 +30,8 @@ import { firebase } from "./../src/config";
 class CreateScreen extends React.Component {
   state = {
     isLoading: true,
-    isFormValid: true,
     steps: [{ step: "" }],
-    checked: false,
     errors: false,
-    page: 0,
     isModalVisible: false,
     alertIcon: null,
   };
@@ -46,13 +43,10 @@ class CreateScreen extends React.Component {
     } else {
       this.vids = [];
     }
-    var { page } = this.props.tutorials;
-    this.setState({ page });
     this.makeTopic();
   };
 
   componentWillUnmount = async () => {
-    await store.dispatch(updateTutorials({ page: this.state.page }));
     // store video references (when users chooses topic)
     await store.dispatch(updateTutorials({ vids: this.vids }));
   };
@@ -153,12 +147,9 @@ class CreateScreen extends React.Component {
     // check tutorial requirements
     if (page == 0) {
       if (!(this.props.tutorials.title.length > 3)) {
-        this.setState({ isFormValid: false });
         this.setState({ errors: true });
       } else {
-        this.setState({ isFormValid: true });
         this.setState({ errors: false });
-        this.setState((prevState) => ({ page: page + 1 }));
       }
     } else if (page == 1) {
       if (
@@ -168,10 +159,8 @@ class CreateScreen extends React.Component {
         )
       ) {
         this.setState({ errors: true });
-        this.setState({ isFormValid: false });
       } else {
         this.setState({ errors: false });
-        this.setState({ isFormValid: false });
       }
     } else {
       // check enough writing for each step
@@ -182,10 +171,8 @@ class CreateScreen extends React.Component {
         })
       ) {
         this.setState({ errors: false });
-        this.setState({ isFormValid: true });
       } else {
         this.setState({ errors: true });
-        this.setState({ isFormValid: false });
       }
     }
   };
@@ -196,7 +183,7 @@ class CreateScreen extends React.Component {
 
   handleSubmit = async () => {
     await this.validateForm();
-    if (this.state.isFormValid) {
+    if (!this.state.errors) {
       this.setState({ isLoading: true });
       const { currentUser } = firebase.auth();
       if (currentUser.isAnonymous) {
@@ -224,7 +211,7 @@ class CreateScreen extends React.Component {
         }
 
         // reset screen data
-        await store.dispatch(updateTutorials({ page: 0 }));
+        // await store.dispatch(updateTutorials({ page: 0 }));
         await store.dispatch(updateTutorials({ request: null }));
         await store.dispatch(updateTutorials({ title: "" }));
         await store.dispatch(updateTutorials({ info: "" }));
@@ -453,7 +440,7 @@ class CreateScreen extends React.Component {
           <CustomLoading verse="Do you see a man skillful in his work? He will stand before kings" />
         ) : (
           <View>
-            <View style={{ flexDirection: "column" }}>
+            <View style={{ alignItems: "center" }}>
               <AdMobBanner
                 adUnitID="ca-app-pub-3262091936426324/7558442816"
                 onDidFailToReceiveAdWithError={() =>
@@ -478,7 +465,6 @@ class CreateScreen extends React.Component {
                 activeStepNumColor="white"
                 completedCheckColor="#6da9c9"
                 completedLabelColor="white"
-                activeStep={this.state.page}
               >
                 <ProgressStep
                   scrollViewProps={this.defaultScrollViewProps}
@@ -486,9 +472,6 @@ class CreateScreen extends React.Component {
                   previousBtnTextStyle={styles.toggleProgress}
                   nextBtnTextStyle={styles.toggleProgress}
                   onNext={() => this.validateForm(0)}
-                  onPrevious={() =>
-                    this.setState((prevState) => ({ page: prevState.page - 1 }))
-                  }
                   errors={this.state.errors}
                 >
                   <View
@@ -603,6 +586,7 @@ class CreateScreen extends React.Component {
                         borderRadius: 5,
                         backgroundColor: "white",
                         alignItems: "center",
+                        justifyContent: "center",
                         flexDirection: "row",
                         flexWrap: "wrap",
                         padding: 5,

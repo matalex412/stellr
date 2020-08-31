@@ -48,7 +48,6 @@ class SignUp extends React.Component {
 
   handleSignUp = async () => {
     await this.setState({ isLoading: true });
-    console.log(this.state.isLoading);
     this.setState({ errorMessage: null });
     if (
       this.state.email.length > 1 &&

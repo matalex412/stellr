@@ -13,6 +13,7 @@ import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
+import { AdMobBanner } from "expo-ads-admob";
 
 import ModalAlert from "./components/ModalAlert";
 import CustomLoading from "./components/CustomLoading";
@@ -92,7 +93,7 @@ class HomeScreen extends React.Component {
     }
 
     this.getPosts();
-    var is = currentUser.isVerified;
+
     // check user is verified
     if (currentUser.isVerified) {
       // get user's messages
@@ -103,11 +104,6 @@ class HomeScreen extends React.Component {
         .get();
       if (doc.exists) {
         var messages = doc.data();
-        for (message of messages) {
-          if (message.message == "Please verify your email") {
-            break;
-          }
-        }
 
         if (messages["Please verify your email"]) {
           firebase
@@ -136,6 +132,11 @@ class HomeScreen extends React.Component {
       if (doc.exists) {
         var data = doc.data();
         var interests = data.interests;
+      } else {
+        var interests = {
+          creators: ["4CRlxvD9rpZB3ASqJriEwEJbDQ92"],
+          topics: ["/topics/Meta", "/topics/Art"],
+        };
       }
     } else if (currentUser.isAnonymous) {
       var interests = { creators: [], topics: ["/topics/Meta", "/topics/Art"] };
@@ -145,7 +146,6 @@ class HomeScreen extends React.Component {
       doc,
       docs,
       post,
-      jpost,
       posts = [];
 
     for (creator of interests.creators) {
@@ -218,7 +218,7 @@ class HomeScreen extends React.Component {
             onDismiss={() => this.changeModalVisibility(false)}
           />
           <LinearGradient
-            colors={["#6da9c9", "#fff"]}
+            colors={["#fff", "#fff"]}
             style={{
               position: "absolute",
               left: 0,
@@ -228,34 +228,49 @@ class HomeScreen extends React.Component {
             }}
           />
           {this.state.isLoading ? (
-            <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
+            <CustomLoading
+              color="#6da9c9"
+              verse="Do you see a man skilled in his work? He will stand before kings"
+            />
           ) : (
-            <View style={{ justifyContent: "center", alignItems: "center" }}>
-              {this.state.rows.map((row, index) => {
-                return (
-                  <View key={index} style={{ flexDirection: "row" }}>
-                    {row.map((image, i) => {
-                      return (
-                        <TouchableOpacity
-                          key={i}
-                          onPress={() => this.handlePress(image)}
-                        >
-                          <Image
-                            resizeMode={"cover"}
-                            style={{
-                              width: width / 2 - 28,
-                              height: 200,
-                              margin: 7,
-                              borderRadius: 5,
-                            }}
-                            source={{ uri: image.thumbnail }}
-                          />
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                );
-              })}
+            <View>
+              <View style={{ alignItems: "center", marginBottom: 5 }}>
+                <AdMobBanner
+                  adUnitID="ca-app-pub-3262091936426324/7558442816"
+                  onDidFailToReceiveAdWithError={() =>
+                    console.log("banner ad not loading")
+                  }
+                  servePersonalizedAds
+                />
+              </View>
+              <View style={{ justifyContent: "center", alignItems: "center" }}>
+                {this.state.rows.map((row, index) => {
+                  return (
+                    <View key={index} style={{ flexDirection: "row" }}>
+                      {row.map((image, i) => {
+                        return (
+                          <TouchableOpacity
+                            key={i}
+                            onPress={() => this.handlePress(image)}
+                            style={{ elevation: 2 }}
+                          >
+                            <Image
+                              resizeMode={"cover"}
+                              style={{
+                                width: width / 2 - 28,
+                                height: 200,
+                                margin: 7,
+                                borderRadius: 5,
+                              }}
+                              source={{ uri: image.thumbnail }}
+                            />
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           )}
         </ScrollView>

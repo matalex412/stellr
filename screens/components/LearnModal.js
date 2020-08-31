@@ -39,7 +39,7 @@ export default class LearnModal extends React.Component {
           <TouchableOpacity
             onPress={() => this.setState({ isModalVisible: false })}
           >
-            <Ionicons name="md-close" size={20} color="white" />
+            <Ionicons name="md-close" size={30} color="white" />
           </TouchableOpacity>
           <View
             style={{

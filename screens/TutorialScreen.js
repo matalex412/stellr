@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Dimensions,
 } from "react-native";
@@ -77,6 +76,7 @@ class TutorialScreen extends React.Component {
         ids = Object.keys(doc1.data());
         if (ids.includes(this.props.tutorials.current_key)) {
           this.setState({ added: true });
+          this.setState({ paid: true });
         }
       }
       this.setState({ currentUser });
@@ -258,7 +258,7 @@ class TutorialScreen extends React.Component {
             .collection("users")
             .doc(this.props.tutorials.current.uid)
             .update({
-              minas: Firebase.firestore.FieldValue.increment(4),
+              minas: Firebase.firestore.FieldValue.increment(5),
             });
         }
 
@@ -279,7 +279,7 @@ class TutorialScreen extends React.Component {
                 .collection("users")
                 .doc(this.props.tutorials.current.uid)
                 .update({
-                  minas: Firebase.firestore.FieldValue.increment(4),
+                  minas: Firebase.firestore.FieldValue.increment(5),
                 });
               this.setState({ paid: true });
             } else {
@@ -476,7 +476,7 @@ class TutorialScreen extends React.Component {
               {!this.state.paid ? (
                 <View style={{ margin: 15, flexDirection: "row" }}>
                   <TouchableOpacity
-                    onPress={this.buy}
+                    onPress={() => this.buy(false)}
                     style={[
                       styles.button,
                       { paddingVertical: 0, marginRight: 5 },

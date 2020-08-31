@@ -1,8 +1,6 @@
 import React from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import {
-  PacmanIndicator,
-} from 'react-native-indicators'
+import { PacmanIndicator } from "react-native-indicators";
 
 export default class CustomLoading extends React.Component {
   constructor(props) {
@@ -11,17 +9,27 @@ export default class CustomLoading extends React.Component {
 
   render() {
     return (
-        <View style={styles.container}>
-          <Text style={{ textAlign: "center", fontFamily: "serif", color: "white", fontSize: 20, padding: 20}}>"{this.props.verse}"</Text>
-          <View style={{ margin: 10, width: 10, height: 10 }}>
-            <PacmanIndicator
-              count={3}
-              color='white'
-              animationDuration={300}
-              size={80}
-            />
-          </View>
+      <View style={styles.container}>
+        <Text
+          style={{
+            textAlign: "center",
+            fontFamily: "serif",
+            color: this.props.color ? this.props.color : "white",
+            fontSize: 20,
+            padding: 20,
+          }}
+        >
+          "{this.props.verse}"
+        </Text>
+        <View style={{ margin: 10, width: 10, height: 10 }}>
+          <PacmanIndicator
+            count={3}
+            color={this.props.color ? this.props.color : "white"}
+            animationDuration={300}
+            size={80}
+          />
         </View>
+      </View>
     );
   }
 }
@@ -32,6 +40,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
   },
 });

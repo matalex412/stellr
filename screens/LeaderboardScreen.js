@@ -10,6 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { firebase } from "./../src/config";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { connect } from "react-redux";
+import { AdMobBanner } from "expo-ads-admob";
 
 import Background from "./components/Background";
 import ProfileBanner from "./components/ProfileBanner";
@@ -70,7 +71,6 @@ class LeaderboardScreen extends React.Component {
       this.setState({ current });
     } else {
       await this.setState({ isAnonymous: true });
-      console.log(this.state.isAnonymous);
     }
 
     this.setState({ users });
@@ -79,22 +79,21 @@ class LeaderboardScreen extends React.Component {
 
   render() {
     return (
-      <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
         <Background />
         {this.state.isLoading ? (
           <CustomLoading verse="I can do all things through him who strengthens me" />
         ) : (
-          <ScrollView contentContainerStyle={styles.contentContainer}>
-            <LinearGradient
-              colors={["#6da9c9", "#fff"]}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 0,
-                height: "100%",
-              }}
-            />
+          <View style={{ width: "100%", alignItems: "center" }}>
+            <View style={{ alignItems: "center" }}>
+              <AdMobBanner
+                adUnitID="ca-app-pub-3262091936426324/7558442816"
+                onDidFailToReceiveAdWithError={() =>
+                  console.log("banner ad not loading")
+                }
+                servePersonalizedAds
+              />
+            </View>
             <View
               style={{
                 alignItems: "flex-end",
@@ -230,9 +229,9 @@ class LeaderboardScreen extends React.Component {
                 </Text>
               </View>
             )}
-          </ScrollView>
+          </View>
         )}
-      </View>
+      </ScrollView>
     );
   }
 }
@@ -241,8 +240,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
   },
   bar: {
     backgroundColor: "white",

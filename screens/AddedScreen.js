@@ -85,6 +85,8 @@ class HomeScreen extends React.Component {
   };
 
   handlePress = async (key) => {
+    console.log(key);
+    console.log(this.state.posts[key]);
     // redirect user to learning page with post info
     await store.dispatch(updateTutorials({ learn_key: key }));
     await store.dispatch(updateTutorials({ added: this.state.posts[key] }));

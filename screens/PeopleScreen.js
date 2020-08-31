@@ -37,12 +37,47 @@ class PeopleScreen extends React.Component {
   componentDidMount = () => {
     var { currentUser } = firebase.auth();
     this.setState({ currentUser });
-    this.setup(10);
+    this.setup();
   };
 
-  setup = async (n) => {
+  setup = async () => {
+    // get users already added by currentUser
+    var { currentUser } = firebase.auth();
+    var doc2 = await firebase
+      .firestore()
+      .collection(`users/${currentUser.uid}/data`)
+      .doc("people")
+      .get();
+    var people = doc2.data();
+
+    // separate currentUser's added profiles into friends and following
+    var i,
+      person,
+      friends = [],
+      following = [];
+
+    for (i in people) {
+      person = people[i];
+      person.uid = i;
+
+      if (person.status == "friend") {
+        friends.push(person);
+      } else {
+        following.push(person);
+      }
+    }
+
+    this.setState({ friends });
+    this.setState({ following });
+    this.setState({ isLoading: false });
+
+    this.getOtherUsers(9);
+  };
+
+  getOtherUsers = async (n) => {
     this.setState({ toAddLoading: true });
     // get users for currentUser to add
+    var { currentUser } = firebase.auth();
     if (this.state.last) {
       var docs = await firebase
         .firestore()
@@ -71,62 +106,28 @@ class PeopleScreen extends React.Component {
       users.push(user);
     });
 
-    // get users already added by currentUser
-    var people = {};
-    var { currentUser } = firebase.auth();
-    var doc2 = await firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc("people")
-      .get();
-    this.setState({ toAddLoading: true });
-
     // remove users already added by user and user's own profile
-    if (doc2.exists) {
-      var i,
-        people = doc2.data();
+    var i;
+    var people = this.state.following.concat(this.state.friends);
 
-      for (i = 0; i < users.length; i++) {
-        user = users[i];
-        if (
-          Object.keys(people).includes(user.uid) ||
-          user.uid == currentUser.uid
-        ) {
-          users.splice(i, 1);
-          i--;
-        }
+    for (i = 0; i < users.length; i++) {
+      user = users[i];
+      if (
+        Object.keys(people).includes(user.uid) ||
+        user.uid == currentUser.uid
+      ) {
+        users.splice(i, 1);
+        i--;
       }
     }
-
-    // separate currentUser's added profiles into friends and following
-    var i,
-      person,
-      friends = [],
-      following = [];
-
-    for (i in people) {
-      person = people[i];
-      person.uid = i;
-
-      if (person.status == "friend") {
-        friends.push(person);
-      } else {
-        following.push(person);
-      }
-    }
-
-    this.setState({ friends });
-    this.setState({ following });
-
-    this.setState({ isLoading: false });
 
     var toAdd = this.state.toAdd.concat(users);
     await this.setState({ toAdd });
 
     // rerun setup till 10 new users to add
-    if (this.state.toAdd.length < 10) {
+    if (toAdd.length < 9) {
       await this.setState({ last: d });
-      this.setup(10 - this.state.toAdd.length);
+      this.getOtherUsers(9 - this.state.toAdd.length);
     } else {
       await this.setState({ toAdd: this.shuffle(toAdd) });
       this.setState({ last: null });
@@ -267,7 +268,10 @@ class PeopleScreen extends React.Component {
           paddingBottom: 40,
         }}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => this.setup(10)} />
+          <RefreshControl
+            refreshing={false}
+            onRefresh={() => this.getOtherUsers(9)}
+          />
         }
       >
         {item == "toAdd" ? (

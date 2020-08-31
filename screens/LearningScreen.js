@@ -6,7 +6,6 @@ import {
   Button,
   Image,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Dimensions,
 } from "react-native";
@@ -20,6 +19,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import Carousel, { Pagination } from "react-native-snap-carousel";
 import { human, systemWeights } from "react-native-typography";
 
+import ModalAlert from "./components/ModalAlert";
 import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import LearnModal from "./components/LearnModal";
@@ -34,9 +34,8 @@ class LearningScreen extends React.Component {
     posts: {},
     activeIndex: 0,
     added: false,
-    rating: 3,
-    isModalVisible: false, //needed?
-    learnt: false,
+    isModalVisible: false,
+    minas: 0,
   };
 
   componentDidMount = () => {
@@ -78,6 +77,7 @@ class LearningScreen extends React.Component {
         ids = Object.keys(doc2.data());
         if (ids.includes(this.props.tutorials.learn_key)) {
           this.setState({ added: true });
+          this.setState({ paid: true });
         }
       }
     }
@@ -85,10 +85,14 @@ class LearningScreen extends React.Component {
 
     // check if post exists
     if (!doc.exists) {
-      Alert.alert(
-        "Error",
-        "Sorry, this tutorial has either been deleted or its topic has been changed"
-      );
+      // redirect user
+      this.setState({ alertIcon: "md-close" });
+      this.setState({ alertTitle: "Tutorial Moved" });
+      this.setState({
+        alertMessage:
+          "Sorry, this tutorial has either been deleted or its topic has been changed",
+      });
+      this.setState({ isModalVisible: true });
 
       if (this.state.added) {
         // remove post from learning object for user
@@ -101,10 +105,12 @@ class LearningScreen extends React.Component {
             .learn_key]: Firebase.firestore.FieldValue.delete(),
         });
       }
-
-      this.props.navigation.navigate("Home");
     } else {
       var post = doc.data();
+      if (post.topic == "/topics/Meta") {
+        this.setState({ paid: true });
+      }
+
       this.setState({ currentUser });
       this.setState({ post });
       this.setState({ isLoading: false });
@@ -133,14 +139,11 @@ class LearningScreen extends React.Component {
     await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
   };
 
-  learnt = async (rating, complete, added) => {
-    // Display an interstitial
-    await AdMobInterstitial.setAdUnitID(
-      "ca-app-pub-3262091936426324/1869093284"
-    );
-    await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
-    await AdMobInterstitial.showAdAsync();
+  changeModalVisibility = (visible) => {
+    this.setState({ isModalVisible: visible });
+  };
 
+  learnt = async (rating, complete, added) => {
     const { currentUser } = firebase.auth();
 
     if (added) {
@@ -215,12 +218,13 @@ class LearningScreen extends React.Component {
         [field]: Firebase.firestore.FieldValue.increment(1),
       });
 
-    // update creator's weekly stars
+    // update creator's stars
     await firebase
       .firestore()
       .collection("users")
-      .doc(this.props.tutorials.added.uid)
+      .doc(this.state.post.uid)
       .update({
+        stars: Firebase.firestore.FieldValue.increment(rating),
         weeklyStars: Firebase.firestore.FieldValue.increment(rating),
       });
 
@@ -247,7 +251,14 @@ class LearningScreen extends React.Component {
         { merge: true }
       );
 
-    Alert.alert("Added", "This tutorial has been added to your home");
+    // redirect user
+    this.setState({ alertIcon: "md-add-circle" });
+    this.setState({ alertTitle: "Added" });
+    this.setState({
+      alertMessage: `The tutorial "${this.state.post.title}" has been added to your home page`,
+    });
+    this.setState({ isModalVisible: true });
+
     this.setState({ added: true });
   };
 
@@ -257,43 +268,66 @@ class LearningScreen extends React.Component {
     }
   };
 
-  /*buy = async () => {
+  buy = async (ad) => {
     var { currentUser } = await firebase.auth();
 
     if (!currentUser.isAnonymous) {
-      var userRef = firebase
-        .firestore()
-        .collection("users")
-        .doc(currentUser.uid);
+      if (ad) {
+        AdMobInterstitial.showAdAsync();
+        this.setState({ paid: true });
 
-      firebase.firestore().runTransaction((transaction) => {
-        return transaction.get(userRef).then((doc) => {
-          var minas = doc.data().minas - 5;
-          if (minas >= 0) {
-            transaction.update(userRef, { minas });
-            firebase
-              .firestore()
-              .collection("users")
-              .doc(this.props.tutorials.current.uid)
-              .update({
-                minas: Firebase.firestore.FieldValue.increment(5),
+        if (currentUser.uid != this.state.post.uid) {
+          firebase
+            .firestore()
+            .collection("users")
+            .doc(this.state.post.uid)
+            .update({
+              minas: Firebase.firestore.FieldValue.increment(5),
+            });
+        }
+      } else {
+        var userRef = firebase
+          .firestore()
+          .collection("users")
+          .doc(currentUser.uid);
+
+        firebase.firestore().runTransaction((transaction) => {
+          return transaction.get(userRef).then((doc) => {
+            var minas = doc.data().minas - 5;
+            if (minas >= 0) {
+              transaction.update(userRef, { minas });
+              firebase
+                .firestore()
+                .collection("users")
+                .doc(this.state.post.uid)
+                .update({
+                  minas: Firebase.firestore.FieldValue.increment(5),
+                });
+              this.setState({ paid: true });
+            } else {
+              // redirect user
+              this.setState({ alertIcon: "md-cash" });
+              this.setState({ alertTitle: "Earn Minas" });
+              this.setState({
+                alertMessage:
+                  "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials",
               });
-            this.setState({ paid: true });
-          } else {
-            Alert.alert(
-              "Not Enough Minas",
-              "Sorry, you don't have enough Minas right now. You can earn Minas by creating tutorials"
-            );
-          }
+              this.setState({ isModalVisible: true });
+            }
+          });
         });
-      });
+      }
     } else {
-      Alert.alert(
-        "Not Enough Minas",
-        "Sorry, you don't have enough Minas right now. You can earn Minas by creating tutorials (you need an account to do this)"
-      );
+      // redirect user
+      this.setState({ alertIcon: "md-cash" });
+      this.setState({ alertTitle: "Earn Minas" });
+      this.setState({
+        alertMessage:
+          "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials (account needed)",
+      });
+      this.setState({ isModalVisible: true });
     }
-  };*/
+  };
 
   _renderItem = ({ item, index }) => {
     var width = Dimensions.get("window").width;
@@ -352,6 +386,13 @@ class LearningScreen extends React.Component {
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Background />
+        <ModalAlert
+          title={this.state.alertTitle}
+          message={this.state.alertMessage}
+          isModalVisible={this.state.isModalVisible}
+          onDismiss={() => this.changeModalVisibility(false)}
+          icon={this.state.alertIcon}
+        />
         {this.state.isLoading ? (
           <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
         ) : (
@@ -423,6 +464,7 @@ class LearningScreen extends React.Component {
                   showRating={false}
                   type="custom"
                   size={20}
+                  useNativeDriver={true}
                 />
               </View>
               {this.state.post.info ? (
@@ -436,65 +478,91 @@ class LearningScreen extends React.Component {
                     },
                   ]}
                 >
-                  {this.props.tutorials.current.info}
+                  {this.state.post.info}
                 </Text>
               ) : null}
 
-              <View style={{ alignItems: "center" }}>
-                <Pagination
-                  dotsLength={this.state.post.steps.length}
-                  containerStyle={{
-                    paddingTop: 10,
-                    paddingBottom: 15,
-                  }}
-                  animatedDuration={50}
-                  activeDotIndex={this.state.activeIndex}
-                  dotColor="#fff"
-                  inactiveDotColor="dimgray"
-                  dotStyle={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    marginHorizontal: 4,
-                  }}
-                  inactiveDotOpacity={0.4}
-                  inactiveDotScale={0.6}
-                />
-                <Carousel
-                  layout={"default"}
-                  ref={(ref) => (this.carousel = ref)}
-                  data={this.state.post.steps}
-                  sliderWidth={300}
-                  itemWidth={300}
-                  renderItem={this._renderItem}
-                  onSnapToItem={(index) =>
-                    this.setState({ activeIndex: index })
-                  }
-                  containerCustomStyle={{
-                    flexGrow: 0,
-                  }}
-                />
-                <View
-                  style={{
-                    flexDirection: "row",
-                    marginBottom: 15,
-                  }}
-                >
-                  {this.state.currentUser.isAnonymous ? null : this.state
-                      .added ? null : (
-                    <TouchableOpacity onPress={this.addHome}>
-                      <View style={[styles.button, { marginRight: 10 }]}>
-                        <Ionicons
-                          name="md-bookmark"
-                          size={25}
-                          color="#ffb52b"
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                  <LearnModal added={this.state.added} learnt={this.learnt} />
+              {!this.state.paid ? (
+                <View style={{ margin: 15, flexDirection: "row" }}>
+                  <TouchableOpacity
+                    onPress={() => this.buy(false)}
+                    style={[
+                      styles.button,
+                      { paddingVertical: 0, marginRight: 5 },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name="cash-usd"
+                      size={40}
+                      color="#ffb52b"
+                    />
+                    <Text style={{ color: "white" }}> Use 5 Minas</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => this.buy(true)}
+                    style={[styles.button, { paddingTop: 0, paddingBottom: 0 }]}
+                  >
+                    <Ionicons name="md-play-circle" size={25} color="#ffb52b" />
+                    <Text style={{ color: "white" }}> Play ad </Text>
+                  </TouchableOpacity>
                 </View>
-              </View>
+              ) : (
+                <View style={{ alignItems: "center" }}>
+                  <Pagination
+                    dotsLength={this.state.post.steps.length}
+                    containerStyle={{
+                      paddingTop: 10,
+                      paddingBottom: 15,
+                    }}
+                    animatedDuration={50}
+                    activeDotIndex={this.state.activeIndex}
+                    dotColor="#fff"
+                    inactiveDotColor="dimgray"
+                    dotStyle={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      marginHorizontal: 4,
+                    }}
+                    inactiveDotOpacity={0.4}
+                    inactiveDotScale={0.6}
+                  />
+                  <Carousel
+                    layout={"default"}
+                    ref={(ref) => (this.carousel = ref)}
+                    data={this.state.post.steps}
+                    sliderWidth={300}
+                    itemWidth={300}
+                    renderItem={this._renderItem}
+                    onSnapToItem={(index) =>
+                      this.setState({ activeIndex: index })
+                    }
+                    containerCustomStyle={{
+                      flexGrow: 0,
+                    }}
+                  />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      marginBottom: 15,
+                    }}
+                  >
+                    {this.state.currentUser.isAnonymous ? null : this.state
+                        .added ? null : (
+                      <TouchableOpacity onPress={this.addHome}>
+                        <View style={[styles.button, { marginRight: 10 }]}>
+                          <Ionicons
+                            name="md-bookmark"
+                            size={25}
+                            color="#ffb52b"
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    <LearnModal added={this.state.added} learnt={this.learnt} />
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         )}

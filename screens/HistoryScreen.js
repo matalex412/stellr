@@ -117,7 +117,7 @@ class UserPosts extends React.Component {
             </TouchableOpacity>
           </View>
         ) : (
-          <View>
+          <View style={{ flexDirection: "column-reverse" }}>
             {this.state.postids.map((postid, index) => {
               return (
                 <View key={index} style={{ paddingTop: 5 }}>

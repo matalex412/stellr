@@ -213,6 +213,7 @@ export default class AccountScreen extends React.Component {
                     viewStyle={{ flexDirection: "column" }}
                     user={this.state.user}
                     size={100}
+                    onPress={this.changeProfilePic}
                   />
                   <View
                     style={{
