@@ -8,8 +8,8 @@ import {
   ScrollView,
 } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import TutorialCover from "./components/TutorialCover";
@@ -91,16 +91,7 @@ class UserPosts extends React.Component {
   render() {
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+        <Background />
         {this.state.isLoading ? (
           <CustomLoading verse="Trust in the Lord with all your heart, and do not lean on your own understanding" />
         ) : this.state.postids.length < 1 ? (
@@ -111,7 +102,7 @@ class UserPosts extends React.Component {
             <TouchableOpacity
               onPress={() => this.props.navigation.navigate("Search")}
             >
-              <Text style={{ fontSize: 16, color: "#6da9c9" }}>
+              <Text style={{ fontSize: 16, color: "#2274A5" }}>
                 Explore Tutorials
               </Text>
             </TouchableOpacity>

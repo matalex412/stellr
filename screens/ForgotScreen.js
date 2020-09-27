@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 
+import Background from "./components/Background";
 import { firebase } from "./../src/config";
 
 export default class ForgotScreen extends React.Component {
@@ -34,16 +34,7 @@ export default class ForgotScreen extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+        <Background />
         <Text
           style={{
             textAlign: "center",
@@ -74,7 +65,7 @@ export default class ForgotScreen extends React.Component {
               flexWrap: "wrap",
             }}
           >
-            <Ionicons name="md-mail" size={25} color="#6da9c9" />
+            <Ionicons name="md-mail" size={25} color="#2274A5" />
             <TextInput
               style={styles.textInput}
               keyboardType="email-address"
@@ -94,7 +85,7 @@ export default class ForgotScreen extends React.Component {
           style={{ margin: 5 }}
           onPress={() => this.props.navigation.navigate("Login")}
         >
-          <Text style={{ color: "#6da9c9" }}>Back to Login</Text>
+          <Text style={{ color: "#2274A5" }}>Back to Login</Text>
         </TouchableOpacity>
         {this.state.errorMessage && (
           <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
@@ -127,7 +118,7 @@ const styles = StyleSheet.create({
     width: "60%",
     marginLeft: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "#6da9c9",
-    color: "#6da9c9",
+    borderBottomColor: "#2274A5",
+    color: "#2274A5",
   },
 });

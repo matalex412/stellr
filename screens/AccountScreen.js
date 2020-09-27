@@ -10,12 +10,12 @@ import {
   Image,
   TextInput,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import * as Permissions from "expo-permissions";
 import Modal from "react-native-modal";
 
+import Background from "./components/Background";
 import LinkSection from "./components/LinkSection";
 import ProfileBanner from "./components/ProfileBanner";
 import { firebase } from "./../src/config";
@@ -164,16 +164,7 @@ export default class AccountScreen extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+        <Background />
         {this.state.isLoading ? (
           <ActivityIndicator size="large" />
         ) : (

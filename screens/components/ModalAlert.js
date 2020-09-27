@@ -38,7 +38,7 @@ export default class LearnModal extends React.Component {
               style={{
                 ...human.title2Object,
                 ...systemWeights.bold,
-                color: "#6da9c9",
+                color: "#2274A5",
               }}
             >
               {this.props.title}
@@ -46,7 +46,7 @@ export default class LearnModal extends React.Component {
             <Text
               style={[
                 human.body,
-                { color: "#6da9c9", textAlign: "center", marginVertical: 5 },
+                { color: "#2274A5", textAlign: "center", marginVertical: 5 },
               ]}
             >
               {this.props.message}

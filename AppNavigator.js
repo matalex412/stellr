@@ -12,6 +12,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { human } from "react-native-typography";
 
+import StarCount from "./screens/components/StarCount";
 import AppHeader from "./screens/components/AppHeader";
 import HomeScreen from "./screens/HomeScreen";
 import AddedScreen from "./screens/AddedScreen";
@@ -52,15 +53,13 @@ const HomeTabs = createMaterialTopTabNavigator(
   {
     tabBarOptions: {
       upperCaseLabel: false,
-      labelStyle: human.headlineWhite,
+      labelStyle: { ...human.headlineObject, color: "#2274A5" },
       tabStyle: { alignItems: "flex-start" },
-      activeTintColor: "#ffb52b",
-      inactiveTintColor: "white",
       style: {
-        backgroundColor: "#6da9c9",
+        backgroundColor: "#bcd4e6",
       },
       indicatorStyle: {
-        backgroundColor: "#ffb52b",
+        backgroundColor: "#2274A5",
       },
     },
   }
@@ -81,7 +80,7 @@ const LoginStack = createStackNavigator(
   },
   {
     defaultNavigationOptions: {
-      headerStyle: { backgroundColor: "#6da9c9" },
+      headerStyle: { backgroundColor: "#2274A5" },
       headerTitleStyle: {
         color: "white",
       },
@@ -109,7 +108,7 @@ const AppTabs = createBottomTabNavigator(
   {
     tabBarOptions: {
       showLabel: false,
-      activeTintColor: "#ffb52b",
+      activeTintColor: "#2274A5",
       inactiveTintColor: "grey",
       style: {
         backgroundColor: "#fff",
@@ -141,7 +140,14 @@ const AppStack = createStackNavigator(
     Tabs: {
       screen: AppTabs,
       navigationOptions: ({ navigation, goBack, tutorials }) => ({
-        title: "Skoach",
+        title: "Stellr",
+        headerTitleAlign: "center",
+        headerTitleStyle: {
+          fontFamily: "Roboto",
+          fontSize: 23,
+          color: "white",
+        },
+        headerLeft: () => <StarCount />,
         headerRight: () => <AppHeader navigation={navigation} />,
       }),
     },
@@ -176,7 +182,7 @@ const AppStack = createStackNavigator(
       navigationOptions: { title: "Your Posts" },
     },
     Profile: { screen: ProfileScreen, navigationOptions: { title: "" } },
-    Learning: LearningScreen,
+    Learning: { screen: LearningScreen, navigationOptions: { title: "" } },
     Tutorial: { screen: TutorialScreen, navigationOptions: { title: "" } },
     UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
     UserTutorial: { screen: UserPostScreen, navigationOptions: { title: "" } },
@@ -184,7 +190,7 @@ const AppStack = createStackNavigator(
   },
   {
     defaultNavigationOptions: {
-      headerStyle: { backgroundColor: "#6da9c9" },
+      headerStyle: { backgroundColor: "#2274A5" },
       headerTitleStyle: {
         color: "white",
       },
@@ -242,7 +248,7 @@ CreateStack.navigationOptions = {
         elevation: 7,
         width: 58,
         borderRadius: 58,
-        backgroundColor: "#6da9c9",
+        backgroundColor: "#2274A5",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -251,7 +257,7 @@ CreateStack.navigationOptions = {
         style={{ alignSelf: "center", padding: 10 }}
         name="pencil"
         size={35}
-        color={tintColor == "#ffb52b" ? "#ffb52b" : "white"}
+        color={tintColor == "#2274A5" ? "#ffb52b" : "white"}
       />
     </View>
   ),

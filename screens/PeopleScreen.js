@@ -10,7 +10,6 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Carousel, { Pagination } from "react-native-snap-carousel";
@@ -96,15 +95,15 @@ class PeopleScreen extends React.Component {
     }
 
     // format users
-    var d,
-      user,
+    var user,
       users = [];
     docs.forEach((doc) => {
-      d = doc;
       user = doc.data();
       user.uid = doc.id;
       users.push(user);
     });
+
+    var last = docs.docs[docs.docs.length - 1];
 
     // remove users already added by user and user's own profile
     var i;
@@ -125,12 +124,11 @@ class PeopleScreen extends React.Component {
     await this.setState({ toAdd });
 
     // rerun setup till 10 new users to add
+    await this.setState({ last });
     if (toAdd.length < 9) {
-      await this.setState({ last: d });
       this.getOtherUsers(9 - this.state.toAdd.length);
     } else {
       await this.setState({ toAdd: this.shuffle(toAdd) });
-      this.setState({ last: null });
       this.setState({ toAddLoading: false });
     }
   };
@@ -284,7 +282,11 @@ class PeopleScreen extends React.Component {
           </Text>
         )}
         {item == "toAdd" && this.state.toAddLoading ? (
-          <ActivityIndicator style={{ margin: 5 }} color="#fff" size="large" />
+          <ActivityIndicator
+            style={{ margin: 5 }}
+            color="#2274A5"
+            size="large"
+          />
         ) : this.state[item].length > 0 ? (
           <View
             style={{
@@ -354,7 +356,10 @@ class PeopleScreen extends React.Component {
           </View>
         ) : (
           <Text
-            style={[human.title2White, { textAlign: "center", padding: 20 }]}
+            style={[
+              human.title2,
+              { color: "#2274A5", textAlign: "center", padding: 20 },
+            ]}
           >
             None Made Yet...
           </Text>
@@ -372,7 +377,12 @@ class PeopleScreen extends React.Component {
             <CustomLoading verse="Therefore encourage one another and build one another up" />
           </View>
         ) : (
-          <View style={styles.contentContainer}>
+          <View
+            style={[
+              styles.contentContainer,
+              { paddingTop: 20, paddingBottom: 10 },
+            ]}
+          >
             <Background />
             <View style={{ alignItems: "center", flexDirection: "row" }}>
               <TextInput
@@ -391,10 +401,12 @@ class PeopleScreen extends React.Component {
                 }}
               />
               <TouchableOpacity style={{ padding: 5 }} onPress={this.search}>
-                <Ionicons color="#ffb52b" name="md-search" size={30} />
+                <Ionicons color="#2274A5" name="md-search" size={30} />
               </TouchableOpacity>
             </View>
-            {!this.state.searched ? null : !this.state.result ? (
+            {!this.state.searched ? (
+              <View style={{ height: 30 }} />
+            ) : !this.state.result ? (
               <View
                 style={{
                   borderRadius: 5,
@@ -437,7 +449,8 @@ class PeopleScreen extends React.Component {
             <Pagination
               dotsLength={3}
               containerStyle={{
-                paddingBottom: 10,
+                paddingBottom: 0,
+                paddingTop: 10,
               }}
               animatedDuration={50}
               activeDotIndex={this.state.activeIndex}
@@ -563,13 +576,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   contentContainer: {
-    paddingVertical: 10,
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
   },
   heading: {
+    color: "#2274A5",
     fontSize: 22,
     alignSelf: "center",
   },

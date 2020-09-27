@@ -11,10 +11,11 @@ import {
 } from "react-native";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 import { AdMobBanner } from "expo-ads-admob";
+import { human, systemWeights } from "react-native-typography";
 
+import Background from "./components/Background";
 import ModalAlert from "./components/ModalAlert";
 import CustomLoading from "./components/CustomLoading";
 import { updateTutorials } from "./../redux/actions";
@@ -77,6 +78,16 @@ class HomeScreen extends React.Component {
       });
       this.changeModalVisibility(true);
       store.dispatch(updateTutorials({ newAccount: false }));
+    } else {
+      var doc = await firebase
+        .firestore()
+        .collection("users")
+        .doc(currentUser.uid)
+        .get();
+      var data = doc.data();
+      if (data.stars) {
+        store.dispatch(updateTutorials({ stars: data.stars }));
+      }
     }
 
     if (!currentUser) {
@@ -180,17 +191,7 @@ class HomeScreen extends React.Component {
     }
     posts = this.shuffle(posts);
 
-    // split list of tutorials into rows for display
-    var rows = [];
-    var i,
-      j,
-      temparray,
-      chunk = 2;
-    for (i = 0, j = posts.length; i < j; i += chunk) {
-      temparray = posts.slice(i, i + chunk);
-      rows.push(temparray);
-    }
-    this.setState({ rows });
+    this.setState({ posts });
     this.setState({ isLoading: false });
   };
 
@@ -211,30 +212,18 @@ class HomeScreen extends React.Component {
             <RefreshControl refreshing={false} onRefresh={this.getPosts} />
           }
         >
+          <Background />
           <ModalAlert
             title={this.state.alertTitle}
             message={this.state.alertMessage}
             isModalVisible={this.state.isModalVisible}
             onDismiss={() => this.changeModalVisibility(false)}
           />
-          <LinearGradient
-            colors={["#fff", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
           {this.state.isLoading ? (
-            <CustomLoading
-              color="#6da9c9"
-              verse="Do you see a man skilled in his work? He will stand before kings"
-            />
+            <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : (
             <View>
-              <View style={{ alignItems: "center", marginBottom: 5 }}>
+              <View style={{ alignItems: "center", marginVertical: 3 }}>
                 <AdMobBanner
                   adUnitID="ca-app-pub-3262091936426324/7558442816"
                   onDidFailToReceiveAdWithError={() =>
@@ -243,31 +232,54 @@ class HomeScreen extends React.Component {
                   servePersonalizedAds
                 />
               </View>
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                {this.state.rows.map((row, index) => {
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  marginBottom: 15,
+                }}
+              >
+                {this.state.posts.map((image, index) => {
                   return (
-                    <View key={index} style={{ flexDirection: "row" }}>
-                      {row.map((image, i) => {
-                        return (
-                          <TouchableOpacity
-                            key={i}
-                            onPress={() => this.handlePress(image)}
-                            style={{ elevation: 2 }}
-                          >
-                            <Image
-                              resizeMode={"cover"}
-                              style={{
-                                width: width / 2 - 28,
-                                height: 200,
-                                margin: 7,
-                                borderRadius: 5,
-                              }}
-                              source={{ uri: image.thumbnail }}
-                            />
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => this.handlePress(image)}
+                      style={{ margin: 5 }}
+                    >
+                      <View
+                        style={{
+                          elevation: 1,
+                          borderColor: "transparent",
+                          borderWidth: 0.01,
+                        }}
+                      >
+                        <Image
+                          resizeMode={"cover"}
+                          style={{
+                            width: width / 2 - 20,
+                            height: 200,
+                            borderRadius: 3,
+                          }}
+                          source={{ uri: image.thumbnail }}
+                        />
+                      </View>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          human.subhead,
+                          systemWeights.semibold,
+                          {
+                            textAlign: "center",
+                            marginTop: 3,
+                            color: "#2274A5",
+                            width: width / 2 - 20,
+                          },
+                        ]}
+                      >
+                        {image.title}
+                      </Text>
+                    </TouchableOpacity>
                   );
                 })}
               </View>

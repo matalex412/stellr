@@ -11,10 +11,10 @@ import {
   Dimensions,
 } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
+import Background from "./components/Background";
 import AskScreen from "./AskScreen";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
@@ -179,16 +179,7 @@ class SearchScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Ask and it will be given to you; look and you will find" />
           ) : (
@@ -280,7 +271,7 @@ class SearchScreen extends React.Component {
                 this.props.tutorials.current_topic.length < 1 ? null : (
                   <View style={{ padding: 20, alignItems: "center" }}>
                     <TouchableOpacity onPress={() => this.noPosts()}>
-                      <Text style={{ fontSize: 18, color: "#6da9c9" }}>
+                      <Text style={{ fontSize: 18, color: "#2274A5" }}>
                         No tutorials have been made yet, be the first
                       </Text>
                     </TouchableOpacity>
@@ -328,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     elevation: 10,
     borderRadius: 2,
-    backgroundColor: "#6da9c9",
+    backgroundColor: "#2274A5",
   },
   text: {
     textAlign: "center",

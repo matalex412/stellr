@@ -22,13 +22,13 @@ export default class Field extends React.Component {
             store.dispatch(updateTutorials({ info: info }))
           }
           style={{
-            color: "#6da9c9",
+            color: "#2274A5",
             padding: 5,
             fontSize: 17,
             borderRadius: 4,
             backgroundColor: "white",
             elevation: 2,
-            color: "#6da9c9",
+            color: "#2274A5",
           }}
         />
       </View>

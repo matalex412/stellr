@@ -12,10 +12,12 @@ export default class TutorialCover extends React.Component {
       <TouchableOpacity onPress={this.props.onPress}>
         <View
           style={{
-            padding: 5,
+            borderColor: "#fff",
+            marginVertical: 5,
             flexDirection: "row",
             flexWrap: "wrap",
             justifyContent: "center",
+            elevation: 3,
           }}
         >
           <Image
@@ -36,7 +38,7 @@ export default class TutorialCover extends React.Component {
               alignSelf: "center",
             }}
           >
-            <Text style={{ color: "#6da9c9", fontSize: 20 }}>
+            <Text style={{ color: "#2274A5", fontSize: 20 }}>
               {this.props.tutorial.title}
             </Text>
           </View>

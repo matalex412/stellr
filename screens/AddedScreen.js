@@ -9,9 +9,9 @@ import {
 } from "react-native";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { updateTutorials } from "./../redux/actions";
@@ -85,8 +85,6 @@ class HomeScreen extends React.Component {
   };
 
   handlePress = async (key) => {
-    console.log(key);
-    console.log(this.state.posts[key]);
     // redirect user to learning page with post info
     await store.dispatch(updateTutorials({ learn_key: key }));
     await store.dispatch(updateTutorials({ added: this.state.posts[key] }));
@@ -110,16 +108,7 @@ class HomeScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : this.state.currentUser.isAnonymous ? (
@@ -170,7 +159,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#f5f5f5",
+    paddingVertical: 10,
   },
   button: {
     position: "absolute",

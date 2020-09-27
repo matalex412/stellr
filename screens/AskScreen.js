@@ -8,7 +8,6 @@ import {
   ScrollView,
 } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Modal from "react-native-modal";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -144,7 +143,7 @@ class AskScreen extends React.Component {
             <Text style={styles.heading}>Requested Tutorials</Text>
             <View
               style={{
-                backgroundColor: "#6da9c9",
+                backgroundColor: "#2274A5",
                 margin: 5,
                 padding: 5,
                 borderRadius: 5,
@@ -182,13 +181,13 @@ class AskScreen extends React.Component {
               ))}
             </View>
             {this.state.errorMessage && (
-              <Text style={{ color: "#6da9c9" }}>
+              <Text style={{ color: "#2274A5" }}>
                 {this.state.errorMessage}
               </Text>
             )}
             <View
               style={{
-                backgroundColor: "#6da9c9",
+                backgroundColor: "#2274A5",
                 borderRadius: 2,
                 padding: 3,
                 margin: 10,

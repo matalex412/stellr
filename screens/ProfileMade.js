@@ -7,10 +7,10 @@ import {
   ScrollView,
 } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AdMobBanner } from "expo-ads-admob";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -64,16 +64,7 @@ class ProfileMade extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Love is patient, love is kind" />
           ) : (

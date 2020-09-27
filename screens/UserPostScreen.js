@@ -15,9 +15,9 @@ import * as ImagePicker from "expo-image-picker";
 import * as Permissions from "expo-permissions";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
 import Firebase from "firebase";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -458,16 +458,7 @@ class UserPostScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="For everything there is a season, and a time for every matter" />
           ) : (
@@ -530,7 +521,7 @@ class UserPostScreen extends React.Component {
                 <View
                   style={{
                     alignItems: "center",
-                    backgroundColor: "#6da9c9",
+                    backgroundColor: "#2274A5",
                     width: width - 100,
                     padding: 10,
                     margin: 10,
@@ -581,7 +572,7 @@ class UserPostScreen extends React.Component {
                         style={[styles.button, styles.corner]}
                         onPress={() => this.removeMedia(index, "Videos")}
                       >
-                        <Ionicons name="md-close" size={20} color="#6da9c9" />
+                        <Ionicons name="md-close" size={20} color="#2274A5" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -595,7 +586,7 @@ class UserPostScreen extends React.Component {
                         style={[styles.button, styles.corner]}
                         onPress={() => this.removeMedia(index, "Images")}
                       >
-                        <Ionicons name="md-close" size={20} color="#6da9c9" />
+                        <Ionicons name="md-close" size={20} color="#2274A5" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -640,9 +631,9 @@ class UserPostScreen extends React.Component {
                     name="md-add-circle"
                     size={20}
                     style={{ margin: 3 }}
-                    color="#6da9c9"
+                    color="#2274A5"
                   />
-                  <Text style={{ color: "#6da9c9", margin: 3 }}>
+                  <Text style={{ color: "#2274A5", margin: 3 }}>
                     Add New Step
                   </Text>
                 </View>
@@ -654,7 +645,7 @@ class UserPostScreen extends React.Component {
                     alignItems: "center",
                     flexDirection: "row",
                     flexWrap: "wrap",
-                    backgroundColor: "#6da9c9",
+                    backgroundColor: "#2274A5",
                     paddingRight: 5,
                     paddingLeft: 5,
                   }}

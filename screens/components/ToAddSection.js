@@ -103,7 +103,7 @@ class ToAddSection extends React.Component {
         {this.state.isLoading ? (
           <View style={styles.contentContainer}>
             <LinearGradient
-              colors={["#6da9c9", "#fff"]}
+              colors={["#2274A5", "#fff"]}
               style={{
                 position: "absolute",
                 left: 0,

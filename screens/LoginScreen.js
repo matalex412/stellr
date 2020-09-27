@@ -8,10 +8,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { human, systemWeights } from "react-native-typography";
 
+import Background from "./components/Background";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -72,16 +72,7 @@ class LoginScreen extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+        <Background />
         <Text style={[human.title1White, systemWeights.bold]}>Login</Text>
         <View
           style={{
@@ -109,7 +100,7 @@ class LoginScreen extends React.Component {
                 height: 25,
               }}
             >
-              <Ionicons name="md-mail" size={25} color="#6da9c9" />
+              <Ionicons name="md-mail" size={25} color="#2274A5" />
             </View>
             <TextInput
               style={styles.textInput}
@@ -136,7 +127,7 @@ class LoginScreen extends React.Component {
                 height: 25,
               }}
             >
-              <Ionicons name="md-lock" size={25} color="#6da9c9" />
+              <Ionicons name="md-lock" size={25} color="#2274A5" />
             </View>
             <TextInput
               secureTextEntry={this.state.isPasswordHidden}
@@ -157,7 +148,7 @@ class LoginScreen extends React.Component {
               <Ionicons
                 name={this.state.isPasswordHidden ? "md-eye" : "md-eye-off"}
                 size={25}
-                color="#6da9c9"
+                color="#2274A5"
               />
             </TouchableOpacity>
           </View>
@@ -167,7 +158,7 @@ class LoginScreen extends React.Component {
               this.props.navigation.navigate("Forgot");
             }}
           >
-            <Text style={{ color: "#6da9c9" }}>Forgot Password?</Text>
+            <Text style={{ color: "#2274A5" }}>Forgot Password?</Text>
           </TouchableOpacity>
           <View style={styles.submitButton}>
             {!this.state.isLoading ? (
@@ -215,7 +206,7 @@ class LoginScreen extends React.Component {
             }}
             onPress={() => this.props.navigation.navigate("SignUp")}
           >
-            <Text style={{ color: "#6da9c9" }}>Sign Up</Text>
+            <Text style={{ color: "#2274A5" }}>Sign Up</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={{
@@ -227,7 +218,7 @@ class LoginScreen extends React.Component {
             }}
             onPress={() => this.props.navigation.navigate("App")}
           >
-            <Text style={{ color: "#6da9c9" }}>Continue Anonymously</Text>
+            <Text style={{ color: "#2274A5" }}>Continue Anonymously</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -256,8 +247,8 @@ const styles = StyleSheet.create({
     width: "80%",
     marginLeft: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "#6da9c9",
-    color: "#6da9c9",
+    borderBottomColor: "#2274A5",
+    color: "#2274A5",
   },
   line: {
     borderBottomColor: "white",

@@ -369,7 +369,7 @@ class LearningScreen extends React.Component {
           )}
           <Text
             style={{
-              color: "#6da9c9",
+              color: "#2274A5",
               fontSize: 16,
               textAlign: "center",
             }}
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   heading: {
     ...human.headlineObject,
     ...systemWeights.semibold,
-    color: "#6da9c9",
+    color: "#2274A5",
     alignSelf: "flex-start",
     marginLeft: 10,
     marginBottom: 10,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    backgroundColor: "#6da9c9",
+    backgroundColor: "#2274A5",
     elevation: 1,
     padding: 7,
     borderRadius: 2,

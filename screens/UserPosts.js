@@ -7,8 +7,8 @@ import {
   ScrollView,
 } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -72,16 +72,7 @@ class UserPosts extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : this.state.keys.length < 1 ? (
@@ -92,7 +83,7 @@ class UserPosts extends React.Component {
               <TouchableOpacity
                 onPress={() => this.props.navigation.navigate("Create")}
               >
-                <Text style={{ fontSize: 18, color: "#6da9c9" }}>
+                <Text style={{ fontSize: 18, color: "#2274A5" }}>
                   Make one now
                 </Text>
               </TouchableOpacity>

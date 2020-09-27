@@ -6,7 +6,6 @@ import {
   View,
   TouchableOpacity,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { firebase } from "./../src/config";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { connect } from "react-redux";
@@ -85,7 +84,7 @@ class LeaderboardScreen extends React.Component {
           <CustomLoading verse="I can do all things through him who strengthens me" />
         ) : (
           <View style={{ width: "100%", alignItems: "center" }}>
-            <View style={{ alignItems: "center" }}>
+            <View style={{ marginVertical: 5, alignItems: "center" }}>
               <AdMobBanner
                 adUnitID="ca-app-pub-3262091936426324/7558442816"
                 onDidFailToReceiveAdWithError={() =>
@@ -165,7 +164,7 @@ class LeaderboardScreen extends React.Component {
                   onPress={() => this.clickedUser(user)}
                   key={index}
                   style={{
-                    paddingLeft: 20,
+                    paddingHorizontal: 10,
                     justifyContent: "flex-start",
                     alignItems: "center",
                     flexDirection: "row",
@@ -175,7 +174,7 @@ class LeaderboardScreen extends React.Component {
                       user.uid == this.state.current.uid
                         ? "#ffb52b"
                         : index % 2 == 0
-                        ? "#6da9c9"
+                        ? "#2274A5"
                         : "white",
                   }}
                 >

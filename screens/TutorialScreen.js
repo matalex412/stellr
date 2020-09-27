@@ -93,14 +93,19 @@ class TutorialScreen extends React.Component {
         var interests = data.interests;
         interests.creators = Object.values(interests.creators);
         interests.topics = Object.values(interests.topics);
+
         if (!interests.creators.includes(this.props.tutorials.current.uid)) {
           interests.creators.push(this.props.tutorials.current.uid);
+          if (interests.creators.length > 5) {
+            interests.creators.shift();
+          }
         }
         if (!interests.topics.includes(this.props.tutorials.current.topic)) {
           interests.topics.push(this.props.tutorials.current.topic);
+          if (interests.topics.length > 5) {
+            interests.topics.shift();
+          }
         }
-        interests.topics.splice(0, interests.topics.length - 10);
-        interests.creators.splice(0, interests.topics.length - 10);
 
         firebase
           .firestore()
@@ -351,7 +356,7 @@ class TutorialScreen extends React.Component {
           )}
           <Text
             style={{
-              color: "#6da9c9",
+              color: "#2274A5",
               fontSize: 16,
               textAlign: "center",
             }}
@@ -452,7 +457,7 @@ class TutorialScreen extends React.Component {
                     (this.props.tutorials.current.learns +
                       this.props.tutorials.current.incomplete)
                   }
-                  selectedCloor="#ffb52b"
+                  selectedColor="#ffb52b"
                   showRating={false}
                   type="custom"
                   size={20}
@@ -571,7 +576,7 @@ const styles = StyleSheet.create({
   heading: {
     ...human.headlineObject,
     ...systemWeights.semibold,
-    color: "#6da9c9",
+    color: "#2274A5",
     alignSelf: "flex-start",
     marginLeft: 10,
     marginBottom: 10,
@@ -585,7 +590,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    backgroundColor: "#6da9c9",
+    backgroundColor: "#2274A5",
     elevation: 1,
     padding: 7,
     borderRadius: 2,

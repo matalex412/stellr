@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Skoach",
-    "slug": "skoach",
+    "name": "Stellr",
+    "slug": "stellr",
     "privacy": "public",
     "platforms": ["ios", "android", "web"],
     "version": "1.1.3",

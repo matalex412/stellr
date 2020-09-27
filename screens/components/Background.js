@@ -5,7 +5,7 @@ export default class Background extends React.Component {
   render() {
     return (
       <LinearGradient
-        colors={["#6da9c9", "#fff"]}
+        colors={["#bcd4e6", "#d6e2e9", "#fff"]}
         style={{
           position: "absolute",
           left: 0,

@@ -14,7 +14,7 @@ export default class CustomLoading extends React.Component {
           style={{
             textAlign: "center",
             fontFamily: "serif",
-            color: this.props.color ? this.props.color : "white",
+            color: this.props.color ? this.props.color : "#2274A5",
             fontSize: 20,
             padding: 20,
           }}
@@ -24,7 +24,7 @@ export default class CustomLoading extends React.Component {
         <View style={{ margin: 10, width: 10, height: 10 }}>
           <PacmanIndicator
             count={3}
-            color={this.props.color ? this.props.color : "white"}
+            color={this.props.color ? this.props.color : "#2274A5"}
             animationDuration={300}
             size={80}
           />

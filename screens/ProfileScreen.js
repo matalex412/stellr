@@ -1,10 +1,10 @@
 import React from "react";
 import { View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { connect } from "react-redux";
 import { createMaterialTopTabNavigator } from "react-navigation-tabs";
 import { createAppContainer } from "react-navigation";
 
+import Background from "./components/Background";
 import ProfileHome from "./ProfileHome";
 import ProfileMade from "./ProfileMade";
 import TutorialScreen from "./TutorialScreen";
@@ -21,7 +21,7 @@ const ProfileTabs = createMaterialTopTabNavigator(
       activeTintColor: "#ffb52b",
       inactiveTintColor: "white",
       style: {
-        backgroundColor: "#6da9c9",
+        backgroundColor: "#2274A5",
       },
       indicatorStyle: {
         backgroundColor: "#ffb52b",
@@ -69,16 +69,7 @@ class ProfileScreen extends React.Component {
   render() {
     return (
       <View style={{ flex: 1 }}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+        <Background />
         <ProfileBanner
           style={{ alignSelf: "center", margin: 10 }}
           user={this.props.tutorials.profile}

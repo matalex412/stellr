@@ -11,7 +11,6 @@ import {
   Dimensions,
 } from "react-native";
 import { Video } from "expo-av";
-import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import * as Permissions from "expo-permissions";
 import { connect } from "react-redux";
@@ -182,7 +181,7 @@ class CreateScreen extends React.Component {
   };
 
   handleSubmit = async () => {
-    await this.validateForm();
+    //  await this.validateForm();
     if (!this.state.errors) {
       this.setState({ isLoading: true });
       const { currentUser } = firebase.auth();
@@ -196,6 +195,14 @@ class CreateScreen extends React.Component {
         });
         this.setState({ isModalVisible: true });
       } else {
+        // redirect user
+        this.setState({ alertIcon: null });
+        this.setState({ alertTitle: "Thanks!" });
+        this.setState({
+          alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
+        });
+        this.setState({ isModalVisible: true });
+
         // store tutorial data
         var tutorial = {};
         var steps = this.props.tutorials.steps;
@@ -223,16 +230,9 @@ class CreateScreen extends React.Component {
         this.setState({ isFormValid: false });
         this.setState({ isLoading: false });
 
-        // redirect user
-        this.setState({ alertIcon: null });
-        this.setState({ alertTitle: "Thanks!" });
-        this.setState({
-          alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
-        });
-        this.setState({ isModalVisible: true });
-        this.props.navigation.navigate("Home");
+        //  this.props.navigation.navigate("Home");
 
-        // get topic route
+        /*// get topic route
         var topic_route = tutorial.create_topic;
         var route;
         var topic = "";
@@ -361,7 +361,7 @@ class CreateScreen extends React.Component {
             },
             { merge: true }
           );
-        await store.dispatch(updateTutorials({ unread: true }));
+        await store.dispatch(updateTutorials({ unread: true }));*/
       }
     }
   };
@@ -463,7 +463,7 @@ class CreateScreen extends React.Component {
                 completedStepIconColor="white"
                 activeLabelColor="white"
                 activeStepNumColor="white"
-                completedCheckColor="#6da9c9"
+                completedCheckColor="#2274A5"
                 completedLabelColor="white"
               >
                 <ProgressStep
@@ -471,7 +471,7 @@ class CreateScreen extends React.Component {
                   label="What Tutorial?"
                   previousBtnTextStyle={styles.toggleProgress}
                   nextBtnTextStyle={styles.toggleProgress}
-                  onNext={() => this.validateForm(0)}
+                  onNext={() => this.handleSubmit()}
                   errors={this.state.errors}
                 >
                   <View
@@ -503,7 +503,7 @@ class CreateScreen extends React.Component {
                         elevation: 2,
                         borderWidth: this.state.errors ? 1 : 0,
                         borderColor: "#c21807",
-                        color: "#6da9c9",
+                        color: "#2274A5",
                         padding: 5,
                         fontSize: 20,
                         fontStyle: "italic",
@@ -553,13 +553,13 @@ class CreateScreen extends React.Component {
                         store.dispatch(updateTutorials({ info: info }))
                       }
                       style={{
-                        color: "#6da9c9",
+                        color: "#2274A5",
                         padding: 5,
                         fontSize: 17,
                         borderRadius: 4,
                         backgroundColor: "white",
                         elevation: 2,
-                        color: "#6da9c9",
+                        color: "#2274A5",
                       }}
                     />
                   </View>
@@ -600,7 +600,7 @@ class CreateScreen extends React.Component {
                       />
                       <Text
                         style={{
-                          color: "#6da9c9",
+                          color: "#2274A5",
                           textAlign: "center",
                           fontSize: 20,
                           marginRight: 5,
@@ -611,7 +611,7 @@ class CreateScreen extends React.Component {
                       {this.props.tutorials.create_topic_string && (
                         <Text
                           style={{
-                            color: "#6da9c9",
+                            color: "#2274A5",
                             textAlign: "center",
                             fontSize: 20,
                           }}
@@ -643,11 +643,11 @@ class CreateScreen extends React.Component {
                         flexWrap: "wrap",
                       }}
                     >
-                      <Ionicons name="md-image" size={40} color="#6da9c9" />
+                      <Ionicons name="md-image" size={40} color="#2274A5" />
                       <Text
                         style={{
                           marginLeft: 5,
-                          color: "#6da9c9",
+                          color: "#2274A5",
                           fontSize: 20,
                         }}
                       >
@@ -760,7 +760,7 @@ class CreateScreen extends React.Component {
                               <Ionicons
                                 name="md-close"
                                 size={20}
-                                color="#6da9c9"
+                                color="#2274A5"
                               />
                             </TouchableOpacity>
                           </View>
@@ -778,7 +778,7 @@ class CreateScreen extends React.Component {
                               <Ionicons
                                 name="md-close"
                                 size={20}
-                                color="#6da9c9"
+                                color="#2274A5"
                               />
                             </TouchableOpacity>
                           </View>
@@ -805,12 +805,12 @@ class CreateScreen extends React.Component {
                             this.state.checked
                               ? step.step.length < 4
                                 ? "#ffb52b"
-                                : "#6da9c9"
-                              : "#6da9c9"
+                                : "#2274A5"
+                              : "#2274A5"
                           }
                           style={{
                             borderColor: "#ffb52b",
-                            color: "#6da9c9",
+                            color: "#2274A5",
                             width: width,
                             paddingLeft: 70,
                             paddingRight: 70,
@@ -831,9 +831,9 @@ class CreateScreen extends React.Component {
                         name="md-add-circle"
                         size={20}
                         style={{ margin: 3 }}
-                        color="#6da9c9"
+                        color="#2274A5"
                       />
-                      <Text style={{ margin: 3, color: "#6da9c9" }}>
+                      <Text style={{ margin: 3, color: "#2274A5" }}>
                         Add New Step
                       </Text>
                     </View>
@@ -851,7 +851,7 @@ class CreateScreen extends React.Component {
 const styles = StyleSheet.create({
   heading: {
     ...human.headlineObject,
-    color: "#6da9c9",
+    color: "#2274A5",
     alignSelf: "flex-start",
     marginLeft: 10,
     ...systemWeights.semibold,
@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderColor: "#6da9c9",
+    borderColor: "#2274A5",
     paddingHorizontal: 10,
   },
   corner: {
@@ -878,13 +878,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 40,
     height: 40,
-    backgroundColor: "#6da9c9",
+    backgroundColor: "#2274A5",
     borderRadius: 40,
     margin: 5,
   },
   toggleProgress: {
     ...human.headlineObject,
-    color: "#6da9c9",
+    color: "#2274A5",
   },
 });
 
