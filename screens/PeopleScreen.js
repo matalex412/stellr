@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
@@ -9,19 +9,18 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { connect } from "react-redux";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import Carousel, { Pagination } from "react-native-snap-carousel";
-import { human } from "react-native-typography";
+} from 'react-native';
+import {connect} from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Carousel, {Pagination} from 'react-native-snap-carousel';
+import {human} from 'react-native-typography';
 
-import Background from "./components/Background";
-import CustomLoading from "./components/CustomLoading";
-import ProfileBanner from "./components/ProfileBanner";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import CustomLoading from './components/CustomLoading';
+import ProfileBanner from './components/ProfileBanner';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class PeopleScreen extends React.Component {
   state = {
@@ -30,23 +29,23 @@ class PeopleScreen extends React.Component {
     toAdd: [],
     following: [],
     friends: [],
-    carouselItems: ["toAdd", "following", "friends"],
+    carouselItems: ['toAdd', 'following', 'friends'],
     activeIndex: 0,
   };
 
   componentDidMount = () => {
-    var { currentUser } = firebase.auth();
-    this.setState({ currentUser });
+    var {currentUser} = firebase.auth();
+    this.setState({currentUser});
     this.setup();
   };
 
   setup = async () => {
     // get users already added by currentUser
-    var { currentUser } = firebase.auth();
+    var {currentUser} = firebase.auth();
     var doc2 = await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("people")
+      .doc('people')
       .get();
     var people = doc2.data();
 
@@ -60,51 +59,51 @@ class PeopleScreen extends React.Component {
       person = people[i];
       person.uid = i;
 
-      if (person.status == "friend") {
+      if (person.status == 'friend') {
         friends.push(person);
       } else {
         following.push(person);
       }
     }
 
-    this.setState({ friends });
-    this.setState({ following });
-    this.setState({ isLoading: false });
+    this.setState({friends});
+    this.setState({following});
+    this.setState({isLoading: false});
 
     this.getOtherUsers(9);
   };
 
   getOtherUsers = async (n) => {
-    this.setState({ toAddLoading: true });
+    this.setState({toAddLoading: true});
     // get users for currentUser to add
-    var { currentUser } = firebase.auth();
+    var {currentUser} = firebase.auth();
     if (this.state.last) {
       var docs = await firebase
         .firestore()
-        .collection("users")
-        .orderBy("username")
+        .collection('users')
+        .orderBy('username')
         .startAfter(this.state.last)
         .limit(n)
         .get();
     } else {
       var docs = await firebase
         .firestore()
-        .collection("users")
-        .orderBy("username")
+        .collection('users')
+        .orderBy('username')
         .limit(n)
         .get();
     }
 
     // format users
-    var d,
-      user,
+    var user,
       users = [];
     docs.forEach((doc) => {
-      d = doc;
       user = doc.data();
       user.uid = doc.id;
       users.push(user);
     });
+
+    var last = docs.docs[docs.docs.length - 1];
 
     // remove users already added by user and user's own profile
     var i;
@@ -122,16 +121,15 @@ class PeopleScreen extends React.Component {
     }
 
     var toAdd = this.state.toAdd.concat(users);
-    await this.setState({ toAdd });
+    await this.setState({toAdd});
 
     // rerun setup till 10 new users to add
+    await this.setState({last});
     if (toAdd.length < 9) {
-      await this.setState({ last: d });
       this.getOtherUsers(9 - this.state.toAdd.length);
     } else {
-      await this.setState({ toAdd: this.shuffle(toAdd) });
-      this.setState({ last: null });
-      this.setState({ toAddLoading: false });
+      await this.setState({toAdd: this.shuffle(toAdd)});
+      this.setState({toAddLoading: false});
     }
   };
 
@@ -156,8 +154,8 @@ class PeopleScreen extends React.Component {
   };
 
   clickedUser = async (user) => {
-    await store.dispatch(updateTutorials({ profile: user }));
-    this.props.navigation.navigate("Profile");
+    await store.dispatch(updateTutorials({profile: user}));
+    this.props.navigation.navigate('Profile');
   };
 
   follow = async (user) => {
@@ -166,20 +164,20 @@ class PeopleScreen extends React.Component {
       var person = toAdd[i];
       if (person.uid == user.uid) {
         toAdd[i].added = true;
-        this.setState({ toAdd: toAdd });
+        this.setState({toAdd: toAdd});
       }
     }
 
-    this.setState({ searched: false });
-    this.setState({ result: null });
+    this.setState({searched: false});
+    this.setState({result: null});
     var friend,
-      { currentUser } = firebase.auth();
+      {currentUser} = firebase.auth();
 
     // get the array of users the to-be-added user follows
     var toaddRef = await firebase
       .firestore()
       .collection(`users/${user.uid}/data`)
-      .doc("people");
+      .doc('people');
     var doc = await toaddRef.get();
     if (doc.exists) {
       var otherUserFollowing = doc.data();
@@ -189,7 +187,7 @@ class PeopleScreen extends React.Component {
           [currentUser.uid]: {
             username: currentUser.displayName,
             profilePic: currentUser.photoURL,
-            status: "friend",
+            status: 'friend',
           },
         });
       }
@@ -202,38 +200,38 @@ class PeopleScreen extends React.Component {
     await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("people")
+      .doc('people')
       .set(
         {
           [user.uid]: {
             username: user.username,
             profilePic: user.profilePic,
-            status: friend ? "friend" : "following",
+            status: friend ? 'friend' : 'following',
           },
         },
-        { merge: true }
+        {merge: true},
       );
 
     if (friend) {
       var friends = this.state.friends;
       friends.push(user);
-      this.setState({ friends });
+      this.setState({friends});
     } else {
       var following = this.state.following;
       following.push(user);
-      this.setState({ following });
+      this.setState({following});
     }
   };
 
   search = async () => {
     if (this.state.usernameQuery) {
-      var { currentUser } = firebase.auth();
+      var {currentUser} = firebase.auth();
 
       var lowercaseQuery = this.state.usernameQuery.toLowerCase().trim();
       var doc = await firebase
         .firestore()
-        .collection("users")
-        .where("lowercaseName", "==", lowercaseQuery)
+        .collection('users')
+        .where('lowercaseName', '==', lowercaseQuery)
         .get()
         .then((querySnapshot) => {
           if (!querySnapshot.empty) {
@@ -247,19 +245,19 @@ class PeopleScreen extends React.Component {
             }
 
             user.uid = querySnapshot.docs[0].id;
-            this.setState({ result: user });
+            this.setState({result: user});
           } else {
-            this.setState({ result: null });
+            this.setState({result: null});
           }
         });
 
-      this.setState({ searched: true });
+      this.setState({searched: true});
     } else {
-      this.setState({ searched: false });
+      this.setState({searched: false});
     }
   };
 
-  _renderItem = ({ item, index }) => {
+  _renderItem = ({item, index}) => {
     return (
       <ScrollView
         contentContainerStyle={{
@@ -272,9 +270,8 @@ class PeopleScreen extends React.Component {
             refreshing={false}
             onRefresh={() => this.getOtherUsers(9)}
           />
-        }
-      >
-        {item == "toAdd" ? (
+        }>
+        {item == 'toAdd' ? (
           <Text style={[human.title2White, styles.heading]}>
             Future friends?
           </Text>
@@ -283,31 +280,29 @@ class PeopleScreen extends React.Component {
             {item.charAt(0).toUpperCase() + item.slice(1)}
           </Text>
         )}
-        {item == "toAdd" && this.state.toAddLoading ? (
-          <ActivityIndicator style={{ margin: 5 }} color="#fff" size="large" />
+        {item == 'toAdd' && this.state.toAddLoading ? (
+          <ActivityIndicator style={{margin: 5}} color="#fff" size="large" />
         ) : this.state[item].length > 0 ? (
           <View
             style={{
-              justifyContent: "center",
-              flexDirection: "row",
-              flexWrap: "wrap",
+              justifyContent: 'center',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
               paddingBottom: 20,
-            }}
-          >
+            }}>
             {this.state[item].map((user, i) => {
               return (
                 <View
                   key={i}
                   style={{
-                    justifyContent: "center",
-                    backgroundColor: "white",
+                    justifyContent: 'center',
+                    backgroundColor: 'white',
                     elevation: 2,
                     borderRadius: 10,
                     margin: 5,
                     paddingVertical: 5,
                     width: 85,
-                  }}
-                >
+                  }}>
                   <ProfileBanner
                     imageStyle={{
                       marginBottom: 5,
@@ -316,35 +311,33 @@ class PeopleScreen extends React.Component {
                       height: 33,
                     }}
                     font={15}
-                    viewStyle={{ flexDirection: "column" }}
+                    viewStyle={{flexDirection: 'column'}}
                     user={user}
-                    size={28}
+                    size={25}
                     onPress={() => this.clickedUser(user)}
                   />
                   {user.added ? (
-                    item != "toAdd" ? null : (
+                    item != 'toAdd' ? null : (
                       <View
                         style={{
-                          backgroundColor: "grey",
+                          backgroundColor: 'grey',
                           borderRadius: 20,
                           padding: 5,
-                          alignSelf: "center",
-                        }}
-                      >
+                          alignSelf: 'center',
+                        }}>
                         <Text>Added</Text>
                       </View>
                     )
                   ) : this.state.currentUser.isAnonymous ||
-                    item != "toAdd" ? null : (
+                    item != 'toAdd' ? null : (
                     <TouchableOpacity
                       onPress={() => this.follow(user)}
                       style={{
-                        backgroundColor: "#ffb52b",
+                        backgroundColor: '#ffb52b',
                         borderRadius: 20,
                         padding: 5,
-                        alignSelf: "center",
-                      }}
-                    >
+                        alignSelf: 'center',
+                      }}>
                       <Text style={human.subhead}>Add User</Text>
                     </TouchableOpacity>
                   )}
@@ -353,9 +346,7 @@ class PeopleScreen extends React.Component {
             })}
           </View>
         ) : (
-          <Text
-            style={[human.title2White, { textAlign: "center", padding: 20 }]}
-          >
+          <Text style={[human.title2White, {textAlign: 'center', padding: 20}]}>
             None Made Yet...
           </Text>
         )}
@@ -372,54 +363,58 @@ class PeopleScreen extends React.Component {
             <CustomLoading verse="Therefore encourage one another and build one another up" />
           </View>
         ) : (
-          <View style={styles.contentContainer}>
+          <View
+            style={[
+              styles.contentContainer,
+              {paddingTop: 20, paddingBottom: 10},
+            ]}>
             <Background />
-            <View style={{ alignItems: "center", flexDirection: "row" }}>
+            <View style={{alignItems: 'center', flexDirection: 'row'}}>
               <TextInput
                 value={this.state.usernameQuery}
                 placeholder="Your friends username"
                 onChangeText={(query) => {
-                  this.setState({ searched: false });
-                  this.setState({ usernameQuery: query });
+                  this.setState({searched: false});
+                  this.setState({usernameQuery: query});
                 }}
                 style={{
                   borderRadius: 5,
-                  color: "black",
+                  color: 'black',
                   padding: 5,
-                  backgroundColor: "white",
+                  backgroundColor: 'white',
                   width: 200,
                 }}
               />
-              <TouchableOpacity style={{ padding: 5 }} onPress={this.search}>
-                <Ionicons color="#ffb52b" name="md-search" size={30} />
+              <TouchableOpacity style={{padding: 5}} onPress={this.search}>
+                <Ionicons color="#2274A5" name="md-search" size={30} />
               </TouchableOpacity>
             </View>
-            {!this.state.searched ? null : !this.state.result ? (
+            {!this.state.searched ? (
+              <View style={{height: 30}} />
+            ) : !this.state.result ? (
               <View
                 style={{
                   borderRadius: 5,
-                  color: "black",
+                  color: 'black',
                   padding: 5,
-                  backgroundColor: "white",
+                  backgroundColor: 'white',
                   width: 200,
                   marginRight: 32,
-                }}
-              >
+                }}>
                 <Text>No results</Text>
               </View>
             ) : (
               <View
                 style={{
                   borderRadius: 5,
-                  color: "black",
+                  color: 'black',
                   padding: 5,
-                  backgroundColor: "white",
+                  backgroundColor: 'white',
                   width: 200,
                   marginRight: 32,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}>
                 <ProfileBanner
                   user={this.state.result}
                   onPress={() => this.clickedUser(this.state.result)}
@@ -427,8 +422,7 @@ class PeopleScreen extends React.Component {
                 {this.state.result.added ||
                 this.state.currentUser.isAnonymous ? null : (
                   <TouchableOpacity
-                    onPress={() => this.follow(this.state.result)}
-                  >
+                    onPress={() => this.follow(this.state.result)}>
                     <Ionicons color="#ffb52b" name="md-add-circle" size={30} />
                   </TouchableOpacity>
                 )}
@@ -437,7 +431,8 @@ class PeopleScreen extends React.Component {
             <Pagination
               dotsLength={3}
               containerStyle={{
-                paddingBottom: 10,
+                paddingBottom: 0,
+                paddingTop: 10,
               }}
               animatedDuration={50}
               activeDotIndex={this.state.activeIndex}
@@ -453,13 +448,13 @@ class PeopleScreen extends React.Component {
               inactiveDotScale={0.6}
             />
             <Carousel
-              layout={"default"}
+              layout={'default'}
               ref={(ref) => (this.carousel = ref)}
               data={this.state.carouselItems}
               sliderWidth={300}
               itemWidth={300}
               renderItem={this._renderItem}
-              onSnapToItem={(index) => this.setState({ activeIndex: index })}
+              onSnapToItem={(index) => this.setState({activeIndex: index})}
             />
             {/*<Text style={styles.heading}>New Users</Text>*/}
             {/*this.state.toAddLoading ? (
@@ -560,21 +555,21 @@ class PeopleScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   contentContainer: {
     paddingVertical: 10,
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   heading: {
     fontSize: 22,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   profile: {
-    alignItems: "flex-start",
+    alignItems: 'flex-start',
     width: 200,
     marginRight: 10,
   },

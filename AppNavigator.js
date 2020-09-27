@@ -1,38 +1,39 @@
-import { createAppContainer, createSwitchNavigator } from "react-navigation";
-import { createStackNavigator } from "react-navigation-stack";
+import {createAppContainer, createSwitchNavigator} from 'react-navigation';
+import {createStackNavigator} from 'react-navigation-stack';
 import {
   createBottomTabNavigator,
   createMaterialTopTabNavigator,
-} from "react-navigation-tabs";
-import createAnimatedSwitchNavigator from "react-navigation-animated-switch";
-import { Transition } from "react-native-reanimated";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { Text, TouchableOpacity, View } from "react-native";
-import React from "react";
-import { human } from "react-native-typography";
+} from 'react-navigation-tabs';
+import createAnimatedSwitchNavigator from 'react-navigation-animated-switch';
+import {Transition} from 'react-native-reanimated';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {Text, TouchableOpacity, View} from 'react-native';
+import React from 'react';
+import {human} from 'react-native-typography';
 
-import AppHeader from "./screens/components/AppHeader";
-import HomeScreen from "./screens/HomeScreen";
-import AddedScreen from "./screens/AddedScreen";
-import CreateScreen from "./screens/CreateScreen";
-import SearchScreen from "./screens/SearchScreen";
-import LoginScreen from "./screens/LoginScreen";
-import LoadingScreen from "./screens/LoadingScreen";
-import SignUp from "./screens/SignUp";
-import TutorialScreen from "./screens/TutorialScreen";
-import LearningScreen from "./screens/LearningScreen";
-import AccountScreen from "./screens/AccountScreen";
-import TopicScreen from "./screens/TopicScreen";
-import UserPosts from "./screens/UserPosts";
-import UserPostScreen from "./screens/UserPostScreen";
-import HistoryScreen from "./screens/HistoryScreen";
-import AskScreen from "./screens/AskScreen";
-import ForgotScreen from "./screens/ForgotScreen";
-import MessageScreen from "./screens/MessageScreen";
-import PeopleScreen from "./screens/PeopleScreen";
-import ProfileScreen from "./screens/ProfileScreen";
-import LeaderboardScreen from "./screens/LeaderboardScreen";
+import LoginScreen from './screens/LoginScreen';
+import LoadingScreen from './screens/LoadingScreen';
+import SignUp from './screens/SignUp';
+import StarCount from './screens/components/StarCount';
+import AppHeader from './screens/components/AppHeader';
+import HomeScreen from './screens/HomeScreen';
+import AddedScreen from './screens/AddedScreen';
+import CreateScreen from './screens/CreateScreen';
+import SearchScreen from './screens/SearchScreen';
+import TutorialScreen from './screens/TutorialScreen';
+import LearningScreen from './screens/LearningScreen';
+import AccountScreen from './screens/AccountScreen';
+import TopicScreen from './screens/TopicScreen';
+import UserPosts from './screens/UserPosts';
+import UserPostScreen from './screens/UserPostScreen';
+import HistoryScreen from './screens/HistoryScreen';
+import AskScreen from './screens/AskScreen';
+import ForgotScreen from './screens/ForgotScreen';
+import MessageScreen from './screens/MessageScreen';
+import PeopleScreen from './screens/PeopleScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import LeaderboardScreen from './screens/LeaderboardScreen';
 
 const CreateStack = createSwitchNavigator(
   {
@@ -40,30 +41,28 @@ const CreateStack = createSwitchNavigator(
     Topic: TopicScreen,
   },
   {
-    initialRouteName: "Create",
-  }
+    initialRouteName: 'Create',
+  },
 );
 
 const HomeTabs = createMaterialTopTabNavigator(
   {
-    Home: { screen: HomeScreen, navigationOptions: { title: "Recommended" } },
-    Added: { screen: AddedScreen, navigationOptions: { title: "Added" } },
+    Home: {screen: HomeScreen, navigationOptions: {title: 'Recommended'}},
+    Added: {screen: AddedScreen, navigationOptions: {title: 'Added'}},
   },
   {
     tabBarOptions: {
       upperCaseLabel: false,
-      labelStyle: human.headlineWhite,
-      tabStyle: { alignItems: "flex-start" },
-      activeTintColor: "#ffb52b",
-      inactiveTintColor: "white",
+      labelStyle: {...human.headlineObject, color: '#2274A5'},
+      tabStyle: {alignItems: 'flex-start'},
       style: {
-        backgroundColor: "#6da9c9",
+        backgroundColor: '#bcd4e6',
       },
       indicatorStyle: {
-        backgroundColor: "#ffb52b",
+        backgroundColor: '#2274A5',
       },
     },
-  }
+  },
 );
 
 const LoginStack = createStackNavigator(
@@ -76,26 +75,26 @@ const LoginStack = createStackNavigator(
     },
     Forgot: {
       screen: ForgotScreen,
-      navigationOptions: { title: "Forgot Password" },
+      navigationOptions: {title: 'Forgot Password'},
     },
   },
   {
     defaultNavigationOptions: {
-      headerStyle: { backgroundColor: "#6da9c9" },
+      headerStyle: {backgroundColor: '#2274A5'},
       headerTitleStyle: {
-        color: "white",
+        color: 'white',
       },
       headerBackImage: () => (
         <Ionicons
           color="white"
-          style={{ margin: 10 }}
+          style={{margin: 10}}
           name="md-arrow-back"
           size={25}
         />
       ),
     },
-    initialRouteName: "Login",
-  }
+    initialRouteName: 'Login',
+  },
 );
 
 const AppTabs = createBottomTabNavigator(
@@ -109,15 +108,15 @@ const AppTabs = createBottomTabNavigator(
   {
     tabBarOptions: {
       showLabel: false,
-      activeTintColor: "#ffb52b",
-      inactiveTintColor: "grey",
+      activeTintColor: '#2274A5',
+      inactiveTintColor: 'grey',
       style: {
-        backgroundColor: "#fff",
-        borderTopColor: "transparent",
+        backgroundColor: '#fff',
+        borderTopColor: 'transparent',
         elevation: 5,
       },
     },
-  }
+  },
 );
 
 const AuthStack = createSwitchNavigator(
@@ -127,21 +126,28 @@ const AuthStack = createSwitchNavigator(
     SignUp: {
       screen: SignUp,
       navigationOptions: {
-        title: "Create Your Account",
+        title: 'Create Your Account',
       },
     },
   },
   {
-    initialRouteName: "Loading",
-  }
+    initialRouteName: 'Loading',
+  },
 );
 
 const AppStack = createStackNavigator(
   {
     Tabs: {
       screen: AppTabs,
-      navigationOptions: ({ navigation, goBack, tutorials }) => ({
-        title: "Skoach",
+      navigationOptions: ({navigation, goBack, tutorials}) => ({
+        title: 'Stellr',
+        headerTitleAlign: 'center',
+        headerTitleStyle: {
+          fontFamily: 'Roboto',
+          fontSize: 23,
+          color: 'white',
+        },
+        headerLeft: () => <StarCount />,
         headerRight: () => <AppHeader navigation={navigation} />,
       }),
     },
@@ -151,7 +157,7 @@ const AppStack = createStackNavigator(
         headerBackImage: () => (
           <Ionicons
             color="white"
-            style={{ margin: 10 }}
+            style={{margin: 10}}
             name="md-close"
             size={25}
           />
@@ -164,7 +170,7 @@ const AppStack = createStackNavigator(
         headerBackImage: () => (
           <Ionicons
             color="white"
-            style={{ margin: 10 }}
+            style={{margin: 10}}
             name="md-close"
             size={25}
           />
@@ -173,32 +179,32 @@ const AppStack = createStackNavigator(
     },
     UserPosts: {
       screen: UserPosts,
-      navigationOptions: { title: "Your Posts" },
+      navigationOptions: {title: 'Your Posts'},
     },
-    Profile: { screen: ProfileScreen, navigationOptions: { title: "" } },
-    Learning: LearningScreen,
-    Tutorial: { screen: TutorialScreen, navigationOptions: { title: "" } },
-    UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
-    UserTutorial: { screen: UserPostScreen, navigationOptions: { title: "" } },
+    Profile: {screen: ProfileScreen, navigationOptions: {title: ''}},
+    Learning: {screen: LearningScreen, navigationOptions: {title: ''}},
+    Tutorial: {screen: TutorialScreen, navigationOptions: {title: ''}},
+    UserTopic: {screen: TopicScreen, navigationOptions: {title: 'Topic'}},
+    UserTutorial: {screen: UserPostScreen, navigationOptions: {title: ''}},
     History: HistoryScreen,
   },
   {
     defaultNavigationOptions: {
-      headerStyle: { backgroundColor: "#6da9c9" },
+      headerStyle: {backgroundColor: '#2274A5'},
       headerTitleStyle: {
-        color: "white",
+        color: 'white',
       },
       headerBackImage: () => (
         <Ionicons
           color="white"
-          style={{ margin: 10 }}
+          style={{margin: 10}}
           name="md-arrow-back"
           size={25}
         />
       ),
     },
-    initialRouteName: "Tabs",
-  }
+    initialRouteName: 'Tabs',
+  },
 );
 
 const AppNavigator = createAnimatedSwitchNavigator(
@@ -207,7 +213,7 @@ const AppNavigator = createAnimatedSwitchNavigator(
     Auth: AuthStack,
   },
   {
-    initialRouteName: "Auth",
+    initialRouteName: 'Auth',
     transition: (
       <Transition.Together>
         <Transition.Out
@@ -218,13 +224,13 @@ const AppNavigator = createAnimatedSwitchNavigator(
         <Transition.In type="fade" durationMs={500} />
       </Transition.Together>
     ),
-  }
+  },
 );
 
 HomeTabs.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
+  tabBarIcon: ({tintColor}) => (
     <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
+      style={{alignSelf: 'center', padding: 10}}
       name="home-variant-outline"
       size={35}
       color={tintColor}
@@ -233,34 +239,33 @@ HomeTabs.navigationOptions = {
 };
 
 CreateStack.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
+  tabBarIcon: ({tintColor}) => (
     <View
       style={{
-        position: "absolute",
+        position: 'absolute',
         bottom: 10,
         height: 58,
         elevation: 7,
         width: 58,
         borderRadius: 58,
-        backgroundColor: "#6da9c9",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+        backgroundColor: '#2274A5',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
       <MaterialCommunityIcons
-        style={{ alignSelf: "center", padding: 10 }}
+        style={{alignSelf: 'center', padding: 10}}
         name="pencil"
         size={35}
-        color={tintColor == "#ffb52b" ? "#ffb52b" : "white"}
+        color={tintColor == '#2274A5' ? '#ffb52b' : 'white'}
       />
     </View>
   ),
 };
 
 SearchScreen.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
+  tabBarIcon: ({tintColor}) => (
     <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
+      style={{alignSelf: 'center', padding: 10}}
       name="telescope"
       size={35}
       color={tintColor}
@@ -269,9 +274,9 @@ SearchScreen.navigationOptions = {
 };
 
 LeaderboardScreen.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
+  tabBarIcon: ({tintColor}) => (
     <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
+      style={{alignSelf: 'center', padding: 10}}
       name="podium-gold"
       size={35}
       color={tintColor}
@@ -280,9 +285,9 @@ LeaderboardScreen.navigationOptions = {
 };
 
 PeopleScreen.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
+  tabBarIcon: ({tintColor}) => (
     <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
+      style={{alignSelf: 'center', padding: 10}}
       name="account-group"
       size={40}
       color={tintColor}
@@ -291,9 +296,9 @@ PeopleScreen.navigationOptions = {
 };
 
 AskScreen.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
+  tabBarIcon: ({tintColor}) => (
     <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
+      style={{alignSelf: 'center', padding: 10}}
       name="android-messages"
       size={35}
       color={tintColor}

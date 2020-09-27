@@ -40,19 +40,16 @@ export default class AppHeader extends React.Component {
               <MessageBox />
             </TouchableOpacity>
             <TouchableOpacity
-              style={{ paddingRight: 10 }}
+              style={{ paddingRight: 15 }}
               onPress={() => {
                 this.props.navigation.navigate("Account");
               }}
             >
               <View style={{ flexDirection: "row" }}>
-                <Text style={[human.subheadWhite, { paddingRight: 5 }]}>
-                  Account
-                </Text>
                 <Ionicons
                   style={{ color: "white", paddingRight: 5 }}
                   name="md-person"
-                  size={20}
+                  size={25}
                 />
               </View>
             </TouchableOpacity>

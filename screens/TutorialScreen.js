@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
@@ -7,25 +7,26 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
-} from "react-native";
-import { Video } from "expo-av";
-import { connect } from "react-redux";
-import { AdMobBanner, AdMobInterstitial } from "expo-ads-admob";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import Firebase from "firebase";
-import { AirbnbRating } from "react-native-ratings";
-import Modal from "react-native-modal";
-import Carousel, { Pagination } from "react-native-snap-carousel";
-import { human, systemWeights } from "react-native-typography";
+} from 'react-native';
+import VideoPlayer from 'react-native-video-controls';
+import {connect} from 'react-redux';
+import {AdMobBanner, AdMobInterstitial} from 'react-native-admob';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Firebase from 'firebase';
+import {AirbnbRating} from 'react-native-ratings';
+import Modal from 'react-native-modal';
+import Carousel, {Pagination} from 'react-native-snap-carousel';
+import {human, systemWeights} from 'react-native-typography';
 
-import ModalAlert from "./components/ModalAlert";
-import Background from "./components/Background";
-import CustomLoading from "./components/CustomLoading";
-import LearnModal from "./components/LearnModal";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import Step from './components/Step';
+import ModalAlert from './components/ModalAlert';
+import Background from './components/Background';
+import CustomLoading from './components/CustomLoading';
+import LearnModal from './components/LearnModal';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class TutorialScreen extends React.Component {
   state = {
@@ -43,91 +44,59 @@ class TutorialScreen extends React.Component {
   };
 
   componentWillUnmount = () => {
-    store.dispatch(updateTutorials({ current_key: null }));
+    store.dispatch(updateTutorials({current_key: null}));
   };
 
   setup = async () => {
     // get currentuser data
-    const { currentUser } = firebase.auth();
+    const {currentUser} = firebase.auth();
 
     if (!currentUser.isAnonymous) {
       var doc = await firebase
         .firestore()
-        .collection("users")
+        .collection('users')
         .doc(currentUser.uid)
         .get();
-      this.setState({ minas: doc.data().minas });
+      this.setState({minas: doc.data().minas});
     }
 
     if (this.props.tutorials.current) {
-      if (this.props.tutorials.current.topic == "/topics/Meta") {
-        this.setState({ paid: true });
+      if (this.props.tutorials.current.topic == '/topics/Meta') {
+        this.setState({paid: true});
       }
 
       // get tutorials user has added
       var ids;
       var doc1 = await firebase
         .firestore()
-        .collection("users/" + currentUser.uid + "/data")
-        .doc("learning")
+        .collection('users/' + currentUser.uid + '/data')
+        .doc('learning')
         .get();
 
       if (doc1.exists) {
         ids = Object.keys(doc1.data());
         if (ids.includes(this.props.tutorials.current_key)) {
-          this.setState({ added: true });
-          this.setState({ paid: true });
+          this.setState({added: true});
+          this.setState({paid: true});
         }
       }
-      this.setState({ currentUser });
-      this.setState({ isLoading: false });
+      this.setState({currentUser});
+      this.setState({isLoading: false});
 
-      if (!currentUser.isAnonymous) {
-        // update users interests
-        var doc = await firebase
-          .firestore()
-          .collection("users")
-          .doc(currentUser.uid)
-          .get();
-        var data = doc.data();
-        var interests = data.interests;
-        interests.creators = Object.values(interests.creators);
-        interests.topics = Object.values(interests.topics);
-        if (!interests.creators.includes(this.props.tutorials.current.uid)) {
-          interests.creators.push(this.props.tutorials.current.uid);
-        }
-        if (!interests.topics.includes(this.props.tutorials.current.topic)) {
-          interests.topics.push(this.props.tutorials.current.topic);
-        }
-        interests.topics.splice(0, interests.topics.length - 10);
-        interests.creators.splice(0, interests.topics.length - 10);
-
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(currentUser.uid)
-          .update({
-            interests: interests,
-          });
-      }
-
-      // Display an interstitial
-      await AdMobInterstitial.setAdUnitID(
-        "ca-app-pub-3262091936426324/1869093284"
-      );
-
-      await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
+      // Load an interstitial
+      AdMobInterstitial.setAdUnitID('ca-app-pub-3262091936426324/1869093284');
+      AdMobInterstitial.requestAd();
     }
   };
 
   addHome = async () => {
-    const { currentUser } = await firebase.auth();
+    const {currentUser} = await firebase.auth();
 
     // add tutorial to user's learning section
     await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("learning")
+      .doc('learning')
       .set(
         {
           [this.props.tutorials.current_key]: {
@@ -136,27 +105,27 @@ class TutorialScreen extends React.Component {
             thumbnail: this.props.tutorials.current.thumbnail,
           },
         },
-        { merge: true }
+        {merge: true},
       );
 
     // redirect user
-    this.setState({ alertIcon: "md-add-circle" });
-    this.setState({ alertTitle: "Added" });
+    this.setState({alertIcon: 'md-add-circle'});
+    this.setState({alertTitle: 'Added'});
     this.setState({
       alertMessage: `The tutorial "${this.props.tutorials.current.title}" has been added to your home page`,
     });
-    this.setState({ isModalVisible: true });
+    this.setState({isModalVisible: true});
   };
 
   learnt = async (rating, complete, added) => {
-    const { currentUser } = firebase.auth();
+    const {currentUser} = firebase.auth();
 
     if (added) {
       // remove post from learning object for user
       var postRef = firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
-        .doc("learning");
+        .doc('learning');
       postRef.update({
         [this.props.tutorials
           .current_key]: Firebase.firestore.FieldValue.delete(),
@@ -168,7 +137,7 @@ class TutorialScreen extends React.Component {
       var historyRef = firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
-        .doc("history");
+        .doc('history');
 
       // get users history
       var doc = historyRef.get();
@@ -202,15 +171,15 @@ class TutorialScreen extends React.Component {
               complete: complete,
             },
           },
-          { merge: true }
+          {merge: true},
         );
       }
     }
 
     if (complete) {
-      var field = "learns";
+      var field = 'learns';
     } else {
-      var field = "incomplete";
+      var field = 'incomplete';
     }
 
     if (!alreadyLearnt) {
@@ -228,139 +197,123 @@ class TutorialScreen extends React.Component {
     // update creator's weekly stars
     await firebase
       .firestore()
-      .collection("users")
+      .collection('users')
       .doc(this.props.tutorials.current.uid)
       .update({
         weeklyStars: Firebase.firestore.FieldValue.increment(rating),
         shekels: Firebase.firestore.FieldValue.increment(5),
       });
 
-    this.props.navigation.navigate("Search");
+    this.props.navigation.navigate('Search');
   };
 
   _onPlaybackStatusUpdate = (playbackStatus, index) => {
     if (playbackStatus.didJustFinish) {
-      this.vids[index].setStatusAsync({ shouldPlay: false, positionMillis: 0 });
+      this.vids[index].setStatusAsync({shouldPlay: false, positionMillis: 0});
     }
   };
 
   buy = async (ad) => {
-    var { currentUser } = await firebase.auth();
+    var {currentUser} = await firebase.auth();
 
-    if (!currentUser.isAnonymous) {
-      if (ad) {
-        AdMobInterstitial.showAdAsync();
-        this.setState({ paid: true });
+    if (ad) {
+      AdMobInterstitial.showAd();
+      this.setState({paid: true});
 
-        if (currentUser.uid != this.props.tutorials.current.uid) {
-          firebase
-            .firestore()
-            .collection("users")
-            .doc(this.props.tutorials.current.uid)
-            .update({
-              minas: Firebase.firestore.FieldValue.increment(5),
-            });
-        }
-
-        this.setState({ paid: true });
-      } else {
-        var userRef = firebase
+      if (currentUser.uid != this.props.tutorials.current.uid) {
+        firebase
           .firestore()
-          .collection("users")
-          .doc(currentUser.uid);
-
-        firebase.firestore().runTransaction((transaction) => {
-          return transaction.get(userRef).then((doc) => {
-            var minas = doc.data().minas - 5;
-            if (minas >= 0) {
-              transaction.update(userRef, { minas });
-              firebase
-                .firestore()
-                .collection("users")
-                .doc(this.props.tutorials.current.uid)
-                .update({
-                  minas: Firebase.firestore.FieldValue.increment(5),
-                });
-              this.setState({ paid: true });
-            } else {
-              // redirect user
-              this.setState({ alertIcon: "md-cash" });
-              this.setState({ alertTitle: "Earn Minas" });
-              this.setState({
-                alertMessage:
-                  "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials",
-              });
-              this.setState({ isModalVisible: true });
-            }
+          .collection('users')
+          .doc(this.props.tutorials.current.uid)
+          .update({
+            minas: Firebase.firestore.FieldValue.increment(5),
           });
-        });
       }
+
+      this.setState({paid: true});
+    } else if (!currentUser.isAnonymous) {
+      var userRef = firebase
+        .firestore()
+        .collection('users')
+        .doc(currentUser.uid);
+
+      firebase.firestore().runTransaction((transaction) => {
+        return transaction.get(userRef).then((doc) => {
+          var minas = doc.data().minas - 5;
+          if (minas >= 0) {
+            transaction.update(userRef, {minas});
+            firebase
+              .firestore()
+              .collection('users')
+              .doc(this.props.tutorials.current.uid)
+              .update({
+                minas: Firebase.firestore.FieldValue.increment(5),
+              });
+            this.setState({paid: true});
+          } else {
+            // redirect user
+            this.setState({alertIcon: 'md-cash'});
+            this.setState({alertTitle: 'Earn Minas'});
+            this.setState({
+              alertMessage:
+                "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials",
+            });
+            this.setState({isModalVisible: true});
+          }
+        });
+      });
     } else {
       // redirect user
-      this.setState({ alertIcon: "md-add-circle" });
-      this.setState({ alertTitle: "Earn Minas" });
+      this.setState({alertIcon: 'md-add-circle'});
+      this.setState({alertTitle: 'Earn Minas'});
       this.setState({
         alertMessage:
           "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials (account needed)",
       });
-      this.setState({ isModalVisible: true });
+      this.setState({isModalVisible: true});
+    }
+
+    if (!currentUser.isAnonymous) {
+      // update users interests
+      var doc = await firebase
+        .firestore()
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+      var data = doc.data();
+      var interests = data.interests;
+      interests.creators = Object.values(interests.creators);
+      interests.topics = Object.values(interests.topics);
+      if (!interests.creators.includes(this.props.tutorials.current.uid)) {
+        interests.creators.push(this.props.tutorials.current.uid);
+        if (interests.creators.length > 5) {
+          interests.creators.shift();
+        }
+      }
+      if (!interests.topics.includes(this.props.tutorials.current.topic)) {
+        interests.topics.push(this.props.tutorials.current.topic);
+        if (interests.topics.length > 5) {
+          interests.topics.shift();
+        }
+      }
+
+      firebase.firestore().collection('users').doc(currentUser.uid).update({
+        interests: interests,
+      });
     }
   };
 
   changeModalVisibility = (visible) => {
-    this.setState({ isModalVisible: visible });
+    this.setState({isModalVisible: visible});
   };
 
-  _renderItem = ({ item, index }) => {
-    var width = Dimensions.get("window").width;
-    return (
-      <View style={{ alignItems: "center" }}>
-        <View
-          style={{
-            borderRadius: 5,
-            backgroundColor: "#fff",
-            elevation: 3,
-            width: width - 100,
-            marginBottom: 25,
-            alignItems: "center",
-            padding: 20,
-          }}
-          key={index}
-        >
-          <Text style={styles.heading}>Step {index + 1}</Text>
-          {item.Images && (
-            <Image
-              source={{ uri: item.Images }}
-              style={{ margin: 10, width: 200, height: 200, borderRadius: 1 }}
-            />
-          )}
-          {item.Videos && (
-            <Video
-              onPlaybackStatusUpdate={(playbackStatus) =>
-                this._onPlaybackStatusUpdate(playbackStatus, index)
-              }
-              ref={(component) => (this.vids[index] = component)}
-              source={{ uri: item.Videos }}
-              rate={1.0}
-              volume={1.0}
-              isMuted={false}
-              resizeMode={Video.RESIZE_MODE_CONTAIN}
-              useNativeControls
-              style={{ margin: 10, width: 200, height: 200 }}
-            />
-          )}
-          <Text
-            style={{
-              color: "#6da9c9",
-              fontSize: 16,
-              textAlign: "center",
-            }}
-          >
-            {item.step}
-          </Text>
-        </View>
-      </View>
-    );
+  _finishedVideo = (index) => {
+    console.log(index);
+  };
+
+  _renderItem = ({item, index}) => {
+    var width = Dimensions.get('window').width;
+    return <Step key={index} index={index} item={item} width={width} />;
   };
 
   render() {
@@ -383,33 +336,30 @@ class TutorialScreen extends React.Component {
             or deleted
           </Text>
         ) : (
-          <View>
-            <View style={{ alignItems: "center" }}>
+          <View style={{width: '100%', height: '100%'}}>
+            <View style={{minHeight: 50, alignItems: 'center'}}>
               <AdMobBanner
+                adSize="smartBanner"
                 adUnitID="ca-app-pub-3262091936426324/2933794374"
-                onDidFailToReceiveAdWithError={() =>
-                  console.log("banner ad not loading")
-                }
-                servePersonalizedAds
+                onAdFailedtoLoad={() => console.log('banner ad not loading')}
               />
             </View>
             <View
               style={{
+                width: '100%',
                 padding: 10,
                 flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
               {this.state.paid ? null : (
                 <View
                   style={{
-                    alignItems: "center",
+                    alignItems: 'center',
                     top: 5,
                     right: 20,
-                    position: "absolute",
-                  }}
-                >
+                    position: 'absolute',
+                  }}>
                   <MaterialCommunityIcons
                     name="sack"
                     size={30}
@@ -417,11 +367,10 @@ class TutorialScreen extends React.Component {
                   />
                   <Text
                     style={{
-                      color: "white",
+                      color: 'white',
                       top: 10,
-                      position: "absolute",
-                    }}
-                  >
+                      position: 'absolute',
+                    }}>
                     {this.state.minas}
                   </Text>
                 </View>
@@ -430,18 +379,18 @@ class TutorialScreen extends React.Component {
               <Text style={styles.title}>
                 {this.props.tutorials.current.title}
               </Text>
-              <Text style={{ color: "white" }}>
+              <Text style={{color: '#2274A5'}}>
                 by {this.props.tutorials.current.username}
               </Text>
               <View
                 style={{
-                  flexDirection: "row",
+                  flexDirection: 'row',
                   padding: 5,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={[human.calloutWhite, { marginRight: 10 }]}>
-                  Learns:{" "}
+                  alignItems: 'center',
+                }}>
+                <Text
+                  style={[human.callout, {marginRight: 10, color: '#2274A5'}]}>
+                  Learns:{' '}
                   {this.props.tutorials.current.learns -
                     this.props.tutorials.current.incomplete}
                 </Text>
@@ -452,7 +401,7 @@ class TutorialScreen extends React.Component {
                     (this.props.tutorials.current.learns +
                       this.props.tutorials.current.incomplete)
                   }
-                  selectedCloor="#ffb52b"
+                  selectedColor="#ffb52b"
                   showRating={false}
                   type="custom"
                   size={20}
@@ -461,44 +410,42 @@ class TutorialScreen extends React.Component {
               {this.props.tutorials.current.info ? (
                 <Text
                   style={[
-                    human.calloutWhite,
+                    human.callout,
                     {
+                      color: '#2274A5',
                       marginHorizontal: 40,
                       marginVertical: 10,
-                      textAlign: "center",
+                      textAlign: 'center',
                     },
-                  ]}
-                >
+                  ]}>
                   {this.props.tutorials.current.info}
                 </Text>
               ) : null}
 
               {!this.state.paid ? (
-                <View style={{ margin: 15, flexDirection: "row" }}>
+                <View style={{margin: 15, flexDirection: 'row'}}>
                   <TouchableOpacity
                     onPress={() => this.buy(false)}
                     style={[
                       styles.button,
-                      { paddingVertical: 0, marginRight: 5 },
-                    ]}
-                  >
+                      {paddingVertical: 0, marginRight: 5},
+                    ]}>
                     <MaterialCommunityIcons
                       name="cash-usd"
                       size={40}
                       color="#ffb52b"
                     />
-                    <Text style={{ color: "white" }}> Use 5 Minas</Text>
+                    <Text style={{color: 'white'}}> Use 5 Minas</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => this.buy(true)}
-                    style={[styles.button, { paddingTop: 0, paddingBottom: 0 }]}
-                  >
+                    style={[styles.button, {paddingTop: 0, paddingBottom: 0}]}>
                     <Ionicons name="md-play-circle" size={25} color="#ffb52b" />
-                    <Text style={{ color: "white" }}> Play ad </Text>
+                    <Text style={{color: 'white'}}> Play ad </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={{ alignItems: "center" }}>
+                <View style={{alignItems: 'center'}}>
                   <Pagination
                     dotsLength={this.props.tutorials.current.steps.length}
                     containerStyle={{
@@ -519,14 +466,14 @@ class TutorialScreen extends React.Component {
                     inactiveDotScale={0.6}
                   />
                   <Carousel
-                    layout={"default"}
+                    layout={'default'}
                     ref={(ref) => (this.carousel = ref)}
                     data={this.props.tutorials.current.steps}
                     sliderWidth={300}
                     itemWidth={300}
                     renderItem={this._renderItem}
                     onSnapToItem={(index) =>
-                      this.setState({ activeIndex: index })
+                      this.setState({activeIndex: index})
                     }
                     containerCustomStyle={{
                       flexGrow: 0,
@@ -535,13 +482,12 @@ class TutorialScreen extends React.Component {
                   <View
                     style={{
                       marginBottom: 15,
-                      flexDirection: "row",
-                    }}
-                  >
+                      flexDirection: 'row',
+                    }}>
                     {this.state.currentUser.isAnonymous ? null : this.state
                         .added ? null : (
                       <TouchableOpacity onPress={this.addHome}>
-                        <View style={[styles.button, { marginRight: 10 }]}>
+                        <View style={[styles.button, {marginRight: 10}]}>
                           <Ionicons
                             name="md-bookmark"
                             size={25}
@@ -565,27 +511,28 @@ class TutorialScreen extends React.Component {
 const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heading: {
     ...human.headlineObject,
     ...systemWeights.semibold,
-    color: "#6da9c9",
-    alignSelf: "flex-start",
+    color: '#2274A5',
+    alignSelf: 'flex-start',
     marginLeft: 10,
     marginBottom: 10,
   },
   title: {
-    ...human.title2WhiteObject,
+    ...human.title2Object,
     ...systemWeights.light,
-    fontStyle: "italic",
+    color: '#2274A5',
+    fontStyle: 'italic',
   },
   button: {
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-    backgroundColor: "#6da9c9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    backgroundColor: '#2274A5',
     elevation: 1,
     padding: 7,
     borderRadius: 2,

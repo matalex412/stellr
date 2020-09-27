@@ -1,6 +1,6 @@
-import React from "react";
-import { TouchableOpacity, View, Text, Image, StyleSheet } from "react-native";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import React from 'react';
+import {TouchableOpacity, View, Text, Image, StyleSheet} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default class TutorialCover extends React.Component {
   constructor(props) {
@@ -12,16 +12,17 @@ export default class TutorialCover extends React.Component {
       <TouchableOpacity onPress={this.props.onPress}>
         <View
           style={{
-            padding: 5,
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
+            borderColor: '#fff',
+            marginVertical: 5,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            elevation: 3,
+          }}>
           <Image
-            resizeMode={"cover"}
+            resizeMode={'cover'}
             style={{
-              width: "100%",
+              width: '100%',
               height: 200,
             }}
             source={{
@@ -31,12 +32,11 @@ export default class TutorialCover extends React.Component {
           <View
             style={{
               padding: 5,
-              width: "100%",
-              backgroundColor: "white",
-              alignSelf: "center",
-            }}
-          >
-            <Text style={{ color: "#6da9c9", fontSize: 20 }}>
+              width: '100%',
+              backgroundColor: 'white',
+              alignSelf: 'center',
+            }}>
+            <Text style={{color: '#2274A5', fontSize: 20}}>
               {this.props.tutorial.title}
             </Text>
           </View>
@@ -48,9 +48,9 @@ export default class TutorialCover extends React.Component {
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: "100%",
+    width: '100%',
     padding: 5,
-    justifyContent: "flex-start",
-    flexDirection: "row",
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
   },
 });

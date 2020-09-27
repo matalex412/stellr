@@ -1,19 +1,19 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-} from "react-native";
-import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
+} from 'react-native';
+import {connect} from 'react-redux';
 
-import CustomLoading from "./components/CustomLoading";
-import TutorialCover from "./components/TutorialCover";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import CustomLoading from './components/CustomLoading';
+import TutorialCover from './components/TutorialCover';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class UserPosts extends React.Component {
   state = {
@@ -27,23 +27,23 @@ class UserPosts extends React.Component {
   };
 
   setup = async () => {
-    const { currentUser } = firebase.auth();
+    const {currentUser} = firebase.auth();
 
     // get reference data to user's posts
     var madeRef = await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("made")
+      .doc('made')
       .onSnapshot(async (doc) => {
-        this.setState({ isLoading: true });
+        this.setState({isLoading: true});
         if (doc.exists) {
           var postrefs = doc.data();
-          this.setState({ keys: Object.keys(postrefs) });
-          await this.setState({ postrefs });
+          this.setState({keys: Object.keys(postrefs)});
+          await this.setState({postrefs});
         }
-        this.setState({ isLoading: false });
+        this.setState({isLoading: false});
       });
-    this.setState({ madeRef });
+    this.setState({madeRef});
   };
 
   handlePress = async (key) => {
@@ -57,8 +57,8 @@ class UserPosts extends React.Component {
     var post = doc.data();
     post.topic = this.state.postrefs[key].topic;
     post.postid = key;
-    await store.dispatch(updateTutorials({ userpost: post }));
-    this.props.navigation.navigate("UserTutorial");
+    await store.dispatch(updateTutorials({userpost: post}));
+    this.props.navigation.navigate('UserTutorial');
   };
 
   componentWillUnmount = () => {
@@ -72,27 +72,17 @@ class UserPosts extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : this.state.keys.length < 1 ? (
-            <View style={{ alignItems: "center" }}>
-              <Text style={{ color: "white", fontSize: 20 }}>
+            <View style={{alignItems: 'center'}}>
+              <Text style={{color: 'white', fontSize: 20}}>
                 You haven't made any yet
               </Text>
               <TouchableOpacity
-                onPress={() => this.props.navigation.navigate("Create")}
-              >
-                <Text style={{ fontSize: 18, color: "#6da9c9" }}>
+                onPress={() => this.props.navigation.navigate('Create')}>
+                <Text style={{fontSize: 18, color: '#2274A5'}}>
                   Make one now
                 </Text>
               </TouchableOpacity>
@@ -117,22 +107,22 @@ class UserPosts extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   button: {
     borderWidth: 0,
-    borderColor: "rgba(0,0,0,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 40,
     height: 40,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 40,
     margin: 0,
   },

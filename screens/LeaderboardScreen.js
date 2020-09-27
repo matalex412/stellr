@@ -1,22 +1,21 @@
-import React from "react";
+import React from 'react';
 import {
   Text,
   StyleSheet,
   ScrollView,
   View,
   TouchableOpacity,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { firebase } from "./../src/config";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { connect } from "react-redux";
-import { AdMobBanner } from "expo-ads-admob";
+} from 'react-native';
+import {firebase} from './../src/config';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {connect} from 'react-redux';
+import {AdMobBanner} from 'react-native-admob';
 
-import Background from "./components/Background";
-import ProfileBanner from "./components/ProfileBanner";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import CustomLoading from "./components/CustomLoading";
+import Background from './components/Background';
+import ProfileBanner from './components/ProfileBanner';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import CustomLoading from './components/CustomLoading';
 
 class LeaderboardScreen extends React.Component {
   state = {
@@ -31,17 +30,17 @@ class LeaderboardScreen extends React.Component {
   };
 
   clickedUser = async (user) => {
-    await store.dispatch(updateTutorials({ profile: user }));
-    this.props.navigation.navigate("Profile");
+    await store.dispatch(updateTutorials({profile: user}));
+    this.props.navigation.navigate('Profile');
   };
 
   setup = async () => {
-    var { currentUser } = await firebase.auth();
+    var {currentUser} = await firebase.auth();
 
     var docs = await firebase
       .firestore()
-      .collection("users")
-      .orderBy("weeklyStars", "desc")
+      .collection('users')
+      .orderBy('weeklyStars', 'desc')
       .limit(5)
       .get();
 
@@ -56,25 +55,25 @@ class LeaderboardScreen extends React.Component {
     // check day so leaderboard is only displayed on sunday
     var d = new Date().getDay();
     if (d == 0) {
-      this.setState({ showLeaderboard: true });
+      this.setState({showLeaderboard: true});
     }
 
     if (!currentUser.isAnonymous) {
       var doc2 = await firebase
         .firestore()
-        .collection("users")
+        .collection('users')
         .doc(currentUser.uid)
         .get();
 
       var current = doc2.data();
       current.uid = doc2.id;
-      this.setState({ current });
+      this.setState({current});
     } else {
-      await this.setState({ isAnonymous: true });
+      await this.setState({isAnonymous: true});
     }
 
-    this.setState({ users });
-    this.setState({ isLoading: false });
+    this.setState({users});
+    this.setState({isLoading: false});
   };
 
   render() {
@@ -84,28 +83,33 @@ class LeaderboardScreen extends React.Component {
         {this.state.isLoading ? (
           <CustomLoading verse="I can do all things through him who strengthens me" />
         ) : (
-          <View style={{ width: "100%", alignItems: "center" }}>
-            <View style={{ alignItems: "center" }}>
+          <View
+            style={{
+              width: '100%',
+              alignItems: 'center',
+              marginBottom: 20,
+            }}>
+            <View
+              style={{marginVertical: 5, minHeight: 50, alignItems: 'center'}}>
               <AdMobBanner
                 adUnitID="ca-app-pub-3262091936426324/7558442816"
                 onDidFailToReceiveAdWithError={() =>
-                  console.log("banner ad not loading")
+                  console.log('banner ad not loading')
                 }
-                servePersonalizedAds
+                adSize="smartBanner"
               />
             </View>
             <View
               style={{
-                alignItems: "flex-end",
+                alignItems: 'flex-end',
                 padding: 10,
-                flexDirection: "row",
-              }}
-            >
+                flexDirection: 'row',
+              }}>
               <View style={styles.podium}>
                 {this.state.showLeaderboard && this.state.users[2] ? (
                   <ProfileBanner
-                    imageStyle={{ marginRight: 0, width: 50, height: 50 }}
-                    viewStyle={{ flexDirection: "column" }}
+                    imageStyle={{marginRight: 0, width: 50, height: 50}}
+                    viewStyle={{flexDirection: 'column'}}
                     user={this.state.users[2]}
                     size={40}
                     onPress={() => this.clickedUser(this.state.users[2])}
@@ -114,17 +118,17 @@ class LeaderboardScreen extends React.Component {
                   <Ionicons
                     color="white"
                     name="md-help-outline"
-                    style={{ alignSelf: "center", marginBottom: 5 }}
+                    style={{alignSelf: 'center', marginBottom: 5}}
                     size={50}
                   />
                 )}
-                <View style={[styles.bar, { height: 100 }]} />
+                <View style={[styles.bar, {height: 100}]} />
               </View>
               <View style={styles.podium}>
                 {this.state.showLeaderboard && this.state.users[0] ? (
                   <ProfileBanner
-                    imageStyle={{ marginRight: 0, width: 50, height: 50 }}
-                    viewStyle={{ flexDirection: "column" }}
+                    imageStyle={{marginRight: 0, width: 50, height: 50}}
+                    viewStyle={{flexDirection: 'column'}}
                     user={this.state.users[0]}
                     size={40}
                     onPress={() => this.clickedUser(this.state.users[0])}
@@ -133,17 +137,17 @@ class LeaderboardScreen extends React.Component {
                   <Ionicons
                     color="white"
                     name="md-help-outline"
-                    style={{ alignSelf: "center", marginBottom: 5 }}
+                    style={{alignSelf: 'center', marginBottom: 5}}
                     size={50}
                   />
                 )}
-                <View style={[styles.bar, { height: 200 }]} />
+                <View style={[styles.bar, {height: 200}]} />
               </View>
               <View style={styles.podium}>
                 {this.state.showLeaderboard && this.state.users[1] ? (
                   <ProfileBanner
-                    imageStyle={{ marginRight: 0, width: 50, height: 50 }}
-                    viewStyle={{ flexDirection: "column" }}
+                    imageStyle={{marginRight: 0, width: 50, height: 50}}
+                    viewStyle={{flexDirection: 'column'}}
                     user={this.state.users[1]}
                     size={40}
                     onPress={() => this.clickedUser(this.state.users[1])}
@@ -152,11 +156,11 @@ class LeaderboardScreen extends React.Component {
                   <Ionicons
                     color="white"
                     name="md-help-outline"
-                    style={{ alignSelf: "center", marginBottom: 5 }}
+                    style={{alignSelf: 'center', marginBottom: 5}}
                     size={50}
                   />
                 )}
-                <View style={[styles.bar, { height: 150 }]} />
+                <View style={[styles.bar, {height: 150}]} />
               </View>
             </View>
             {this.state.users.map((user, index) => {
@@ -165,22 +169,21 @@ class LeaderboardScreen extends React.Component {
                   onPress={() => this.clickedUser(user)}
                   key={index}
                   style={{
-                    paddingLeft: 20,
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                    flexDirection: "row",
-                    width: "80%",
+                    paddingHorizontal: 10,
+                    justifyContent: 'flex-start',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    width: '80%',
                     elevation: 1,
                     backgroundColor:
                       user.uid == this.state.current.uid
-                        ? "#ffb52b"
+                        ? '#ffb52b'
                         : index % 2 == 0
-                        ? "#6da9c9"
-                        : "white",
-                  }}
-                >
-                  <Text style={{ fontSize: 15, margin: 5 }}>
-                    Rank {index + 1}{" "}
+                        ? '#2274A5'
+                        : 'white',
+                  }}>
+                  <Text style={{color: 'black', fontSize: 15, margin: 5}}>
+                    Rank {index + 1}{' '}
                   </Text>
                   <ProfileBanner
                     style={styles.profile}
@@ -190,12 +193,14 @@ class LeaderboardScreen extends React.Component {
                   <Ionicons
                     name="md-star"
                     size={20}
-                    style={{ margin: 3 }}
+                    style={{margin: 3}}
                     color={
-                      user.uid == this.state.current.uid ? "#000" : "#ffb52b"
+                      user.uid == this.state.current.uid ? '#000' : '#ffb52b'
                     }
                   />
-                  <Text style={{ fontSize: 15 }}>{user.weeklyStars}</Text>
+                  <Text style={{color: 'black', fontSize: 15}}>
+                    {user.weeklyStars}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -204,14 +209,13 @@ class LeaderboardScreen extends React.Component {
               <View
                 style={{
                   margin: 20,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flexDirection: "row",
-                  width: "80%",
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  width: '80%',
                   elevation: 1,
-                  backgroundColor: "#ffb52b",
-                }}
-              >
+                  backgroundColor: '#ffb52b',
+                }}>
                 <ProfileBanner
                   style={styles.profile}
                   user={this.state.current}
@@ -219,10 +223,10 @@ class LeaderboardScreen extends React.Component {
                 <Ionicons
                   name="md-star"
                   size={20}
-                  style={{ margin: 3 }}
+                  style={{margin: 3}}
                   color="#000"
                 />
-                <Text style={{ fontSize: 15 }}>
+                <Text style={{fontSize: 15}}>
                   {this.state.current.weeklyStars
                     ? this.state.current.weeklyStars
                     : 0}
@@ -239,17 +243,17 @@ class LeaderboardScreen extends React.Component {
 const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
+    alignItems: 'center',
   },
   bar: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     elevation: 3,
   },
   text: {
     fontSize: 13,
     margin: 5,
-    color: "white",
-    alignSelf: "center",
+    color: 'white',
+    alignSelf: 'center',
   },
   podium: {
     margin: 5,

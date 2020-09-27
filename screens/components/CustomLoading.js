@@ -1,6 +1,6 @@
-import React from "react";
-import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
-import { PacmanIndicator } from "react-native-indicators";
+import React from 'react';
+import {View, ActivityIndicator, Text, StyleSheet} from 'react-native';
+import {PacmanIndicator} from 'react-native-indicators';
 
 export default class CustomLoading extends React.Component {
   constructor(props) {
@@ -12,19 +12,18 @@ export default class CustomLoading extends React.Component {
       <View style={styles.container}>
         <Text
           style={{
-            textAlign: "center",
-            fontFamily: "serif",
-            color: this.props.color ? this.props.color : "white",
+            textAlign: 'center',
+            fontFamily: 'serif',
+            color: this.props.color ? this.props.color : '#2274A5',
             fontSize: 20,
             padding: 20,
-          }}
-        >
+          }}>
           "{this.props.verse}"
         </Text>
-        <View style={{ margin: 10, width: 10, height: 10 }}>
+        <View style={{margin: 10, width: 10, height: 10}}>
           <PacmanIndicator
             count={3}
-            color={this.props.color ? this.props.color : "white"}
+            color={this.props.color ? this.props.color : '#2274A5'}
             animationDuration={300}
             size={80}
           />
@@ -36,10 +35,10 @@ export default class CustomLoading extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
+    width: '100%',
     flex: 1,
     padding: 20,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

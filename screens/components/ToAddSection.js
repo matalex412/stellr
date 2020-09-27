@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
@@ -8,30 +8,30 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { connect } from "react-redux";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { createMaterialTopTabNavigator } from "react-navigation-tabs";
-import { createAppContainer } from "react-navigation";
+} from 'react-native';
+import {LinearGradient} from 'expo-linear-gradient';
+import {connect} from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {createMaterialTopTabNavigator} from 'react-navigation-tabs';
+import {createAppContainer} from 'react-navigation';
 
-import CustomLoading from "./components/CustomLoading";
-import ProfileBanner from "./components/ProfileBanner";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import CustomLoading from './components/CustomLoading';
+import ProfileBanner from './components/ProfileBanner';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class ToAddSection extends React.Component {
   state = {
     toAddLoading: true,
     isLoading: true,
     toAdd: [],
-    added: { following: [], friends: [] },
+    added: {following: [], friends: []},
   };
 
   clickedUser = async (user) => {
-    await store.dispatch(updateTutorials({ profile: user }));
-    this.props.navigation.navigate("Profile");
+    await store.dispatch(updateTutorials({profile: user}));
+    this.props.navigation.navigate('Profile');
   };
 
   follow = async (user) => {
@@ -40,20 +40,20 @@ class ToAddSection extends React.Component {
       var person = toAdd[i];
       if (person.uid == user.uid) {
         toAdd[i].added = true;
-        this.setState({ toAdd: toAdd });
+        this.setState({toAdd: toAdd});
       }
     }
 
-    this.setState({ searched: false });
-    this.setState({ result: null });
+    this.setState({searched: false});
+    this.setState({result: null});
     var friend,
-      { currentUser } = firebase.auth();
+      {currentUser} = firebase.auth();
 
     // get the array of users the to-be-added user follows
     var toaddRef = await firebase
       .firestore()
       .collection(`users/${user.uid}/data`)
-      .doc("people");
+      .doc('people');
     var doc = await toaddRef.get();
     if (doc.exists) {
       var otherUserFollowing = doc.data();
@@ -63,7 +63,7 @@ class ToAddSection extends React.Component {
           [currentUser.uid]: {
             username: currentUser.displayName,
             profilePic: currentUser.photoURL,
-            status: "friend",
+            status: 'friend',
           },
         });
       }
@@ -76,16 +76,16 @@ class ToAddSection extends React.Component {
     await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("people")
+      .doc('people')
       .set(
         {
           [user.uid]: {
             username: user.username,
             profilePic: user.profilePic,
-            status: friend ? "friend" : "following",
+            status: friend ? 'friend' : 'following',
           },
         },
-        { merge: true }
+        {merge: true},
       );
 
     var added = this.state.added;
@@ -94,7 +94,7 @@ class ToAddSection extends React.Component {
     } else {
       added.following.push(user);
     }
-    this.setState({ added });
+    this.setState({added});
   };
 
   render() {
@@ -103,13 +103,13 @@ class ToAddSection extends React.Component {
         {this.state.isLoading ? (
           <View style={styles.contentContainer}>
             <LinearGradient
-              colors={["#6da9c9", "#fff"]}
+              colors={['#2274A5', '#fff']}
               style={{
-                position: "absolute",
+                position: 'absolute',
                 left: 0,
                 right: 0,
                 top: 0,
-                height: "100%",
+                height: '100%',
               }}
             />
             <CustomLoading verse="Therefore encourage one another and build one another up" />
@@ -118,7 +118,7 @@ class ToAddSection extends React.Component {
           <ScrollView contentContainerStyle={styles.contentContainer}>
             {this.state.toAddLoading ? (
               <ActivityIndicator
-                style={{ margin: 5 }}
+                style={{margin: 5}}
                 color="#000"
                 size="large"
               />
@@ -128,11 +128,10 @@ class ToAddSection extends React.Component {
                   <View
                     key={index}
                     style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      flexDirection: "row",
-                    }}
-                  >
+                      width: '100%',
+                      justifyContent: 'center',
+                      flexDirection: 'row',
+                    }}>
                     <ProfileBanner
                       style={styles.profile}
                       user={user}
@@ -141,24 +140,22 @@ class ToAddSection extends React.Component {
                     {user.added ? (
                       <View
                         style={{
-                          backgroundColor: "grey",
+                          backgroundColor: 'grey',
                           borderRadius: 20,
                           padding: 5,
-                          alignSelf: "center",
-                        }}
-                      >
+                          alignSelf: 'center',
+                        }}>
                         <Text>Added</Text>
                       </View>
                     ) : this.state.currentUser.isAnonymous ? null : (
                       <TouchableOpacity
                         onPress={() => this.follow(user)}
                         style={{
-                          backgroundColor: "#ffb52b",
+                          backgroundColor: '#ffb52b',
                           borderRadius: 20,
                           padding: 5,
-                          alignSelf: "center",
-                        }}
-                      >
+                          alignSelf: 'center',
+                        }}>
                         <Text>Add User</Text>
                       </TouchableOpacity>
                     )}
@@ -176,23 +173,23 @@ class ToAddSection extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   contentContainer: {
     padding: 10,
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   heading: {
     fontSize: 22,
-    fontWeight: "bold",
-    alignSelf: "center",
+    fontWeight: 'bold',
+    alignSelf: 'center',
     marginTop: 20,
   },
   profile: {
-    alignItems: "flex-start",
+    alignItems: 'flex-start',
     width: 200,
     marginRight: 10,
   },

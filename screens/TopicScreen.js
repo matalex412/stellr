@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
@@ -9,28 +9,28 @@ import {
   BackHandler,
   ScrollView,
   Dimensions,
-} from "react-native";
-import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+} from 'react-native';
+import {connect} from 'react-redux';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class SearchScreen extends React.Component {
   state = {
     keys: [],
     topics: [],
     isLoading: true,
-    new: "",
+    new: '',
     current_topic: [],
   };
 
   componentDidMount = () => {
     this.backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      this.backAction
+      'hardwareBackPress',
+      this.backAction,
     );
 
     this.setup();
@@ -47,14 +47,11 @@ class SearchScreen extends React.Component {
 
   setup = async () => {
     // page items loading
-    this.setState({ isLoading: true });
+    this.setState({isLoading: true});
 
     // get topics
     const current_topic = this.state.current_topic;
-    var topics = await firebase
-      .database()
-      .ref("categories")
-      .once("value");
+    var topics = await firebase.database().ref('categories').once('value');
     topics = topics.toJSON();
     var step;
     for (step of current_topic) {
@@ -62,7 +59,7 @@ class SearchScreen extends React.Component {
     }
 
     // prevent users from creating "Meta" tutorials
-    if (topics["Meta"] != null) {
+    if (topics['Meta'] != null) {
       delete topics.Meta;
     }
 
@@ -70,9 +67,9 @@ class SearchScreen extends React.Component {
       delete topics.icon;
     }
 
-    await this.setState({ topics: topics });
-    await this.setState({ keys: Object.keys(this.state.topics) });
-    this.setState({ isLoading: false });
+    await this.setState({topics: topics});
+    await this.setState({keys: Object.keys(this.state.topics)});
+    this.setState({isLoading: false});
   };
 
   handlePress = async (topic) => {
@@ -87,31 +84,29 @@ class SearchScreen extends React.Component {
       if (post) {
         topic = [...this.state.current_topic, topic];
         var route;
-        var topicstring = "";
+        var topicstring = '';
         for (route of topic) {
-          topicstring = topicstring + "/topics/" + route;
+          topicstring = topicstring + '/topics/' + route;
         }
         post.topic = topicstring;
-        await store.dispatch(updateTutorials({ userpost: post }));
+        await store.dispatch(updateTutorials({userpost: post}));
 
-        var subtopics = post.topic.split("/topics/");
+        var subtopics = post.topic.split('/topics/');
         var topic_string = subtopics[1];
         var i;
         for (i = 2; i < subtopics.length; i++) {
-          topic_string = topic_string + " > " + subtopics[i];
+          topic_string = topic_string + ' > ' + subtopics[i];
         }
-        await store.dispatch(
-          updateTutorials({ usertopic_string: topic_string })
-        );
+        await store.dispatch(updateTutorials({usertopic_string: topic_string}));
 
-        this.props.navigation.navigate("UserTutorial");
+        this.props.navigation.navigate('UserTutorial');
       } else {
         await store.dispatch(
           updateTutorials({
             create_topic: [...this.state.current_topic, topic],
-          })
+          }),
         );
-        this.props.navigation.navigate("Create");
+        this.props.navigation.navigate('Create');
       }
     } else {
       await this.setState({
@@ -124,9 +119,9 @@ class SearchScreen extends React.Component {
   // CHECK FOR WHEN EDITING USERS POSTS
   pickTopic = async () => {
     await store.dispatch(
-      updateTutorials({ create_topic: [...this.state.current_topic] })
+      updateTutorials({create_topic: [...this.state.current_topic]}),
     );
-    this.props.navigation.navigate("Create");
+    this.props.navigation.navigate('Create');
   };
 
   goBack = async () => {
@@ -134,10 +129,10 @@ class SearchScreen extends React.Component {
 
     // go back one topic layer
     if (current_topic.length < 1) {
-      this.props.navigation.navigate("Create");
+      this.props.navigation.navigate('Create');
     } else {
       current_topic.pop();
-      this.setState({ current_topic });
+      this.setState({current_topic});
       this.setup();
     }
   };
@@ -146,35 +141,24 @@ class SearchScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           <Text style={styles.heading}>Topics</Text>
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <ActivityIndicator color="#2274A5" size="large" />
           ) : (
-            <View style={{ justifyContent: "center", alignItems: "center" }}>
+            <View style={{justifyContent: 'center', alignItems: 'center'}}>
               <View
                 style={{
-                  justifyContent: "center",
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                }}
-              >
+                  justifyContent: 'center',
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                }}>
                 {this.state.keys.map((topic, index) => {
                   return (
                     <TouchableOpacity
                       style={styles.square}
                       key={index}
-                      onPress={() => this.handlePress(topic)}
-                    >
+                      onPress={() => this.handlePress(topic)}>
                       <MaterialCommunityIcons
                         name={this.state.topics[topic].icon}
                         size={40}
@@ -186,15 +170,11 @@ class SearchScreen extends React.Component {
                     </TouchableOpacity>
                   );
                 })}
-                <View
-                  style={{ justifyContent: "center", alignItems: "center" }}
-                >
+                <View style={{justifyContent: 'center', alignItems: 'center'}}>
                   {this.state.current_topic.length < 1 ? null : (
                     <TouchableOpacity onPress={() => this.pickTopic()}>
                       <View>
-                        <Text style={{ fontSize: 16 }}>
-                          Select Current Topic
-                        </Text>
+                        <Text style={{fontSize: 16}}>Select Current Topic</Text>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -211,36 +191,36 @@ class SearchScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   text: {
-    textAlign: "center",
-    color: "white",
+    textAlign: 'center',
+    color: 'white',
     fontSize: 16,
   },
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   square: {
     margin: 10,
-    width: Dimensions.get("window").width / 3 - 30,
-    height: Dimensions.get("window").width / 3 - 30,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    width: Dimensions.get('window').width / 3 - 30,
+    height: Dimensions.get('window').width / 3 - 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.5,
     shadowRadius: 2,
     elevation: 10,
-    backgroundColor: "#6da9c9",
+    backgroundColor: '#2274A5',
   },
   heading: {
     fontSize: 18,
-    color: "white",
-    fontWeight: "bold",
+    color: '#2274A5',
+    fontWeight: 'bold',
   },
 });
 

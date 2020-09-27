@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
@@ -8,18 +8,19 @@ import {
   RefreshControl,
   ScrollView,
   Dimensions,
-} from "react-native";
-import { connect } from "react-redux";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
-import Firebase from "firebase";
-import { AdMobBanner } from "expo-ads-admob";
+} from 'react-native';
+import {connect} from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Firebase from 'firebase';
+import {AdMobBanner} from 'react-native-admob';
+import {human, systemWeights} from 'react-native-typography';
 
-import ModalAlert from "./components/ModalAlert";
-import CustomLoading from "./components/CustomLoading";
-import { updateTutorials } from "./../redux/actions";
-import { store } from "./../redux/store";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import ModalAlert from './components/ModalAlert';
+import CustomLoading from './components/CustomLoading';
+import {updateTutorials} from './../redux/actions';
+import {store} from './../redux/store';
+import {firebase} from './../src/config';
 
 class HomeScreen extends React.Component {
   state = {
@@ -43,7 +44,7 @@ class HomeScreen extends React.Component {
   };
 
   changeModalVisibility = (visible) => {
-    this.setState({ isModalVisible: visible });
+    this.setState({isModalVisible: visible});
   };
 
   shuffle = (array) => {
@@ -67,16 +68,29 @@ class HomeScreen extends React.Component {
   };
 
   setup = async () => {
-    this.setState({ isLoading: true });
-    var { currentUser } = await firebase.auth();
-
+    this.setState({isLoading: true});
+    var {currentUser} = await firebase.auth();
     if (this.props.tutorials.newAccount) {
-      this.setState({ alertTitle: "Welcome!" });
+      this.setState({alertTitle: 'Welcome!'});
       this.setState({
         alertMessage: `Hi and welcome to Skoach! To get started, why not try out the "Using Skoach" tutorials on the "Added" page`,
       });
       this.changeModalVisibility(true);
-      store.dispatch(updateTutorials({ newAccount: false }));
+      store.dispatch(updateTutorials({newAccount: false}));
+    } else {
+      try {
+        var doc = await firebase
+          .firestore()
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+        var data = doc.data();
+        if (data.stars) {
+          store.dispatch(updateTutorials({stars: data.stars}));
+        }
+      } catch (err) {
+        console.log(err);
+      }
     }
 
     if (!currentUser) {
@@ -100,18 +114,18 @@ class HomeScreen extends React.Component {
       var doc = await firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
-        .doc("messages")
+        .doc('messages')
         .get();
       if (doc.exists) {
         var messages = doc.data();
 
-        if (messages["Please verify your email"]) {
+        if (messages['Please verify your email']) {
           firebase
             .firestore()
             .collection(`users/${currentUser.uid}/data`)
-            .doc("messages")
+            .doc('messages')
             .update({
-              "Please verify your email": Firebase.firestore.FieldValue.delete(),
+              'Please verify your email': Firebase.firestore.FieldValue.delete(),
             });
         }
       }
@@ -119,14 +133,14 @@ class HomeScreen extends React.Component {
   };
 
   getPosts = async () => {
-    this.setState({ isLoading: true });
-    var { currentUser } = await firebase.auth();
+    this.setState({isLoading: true});
+    var {currentUser} = await firebase.auth();
 
     // get user's interests
     if (!currentUser.isAnonymous) {
       var doc = await firebase
         .firestore()
-        .collection("users")
+        .collection('users')
         .doc(currentUser.uid)
         .get();
       if (doc.exists) {
@@ -134,12 +148,15 @@ class HomeScreen extends React.Component {
         var interests = data.interests;
       } else {
         var interests = {
-          creators: ["4CRlxvD9rpZB3ASqJriEwEJbDQ92"],
-          topics: ["/topics/Meta", "/topics/Art"],
+          creators: ['4CRlxvD9rpZB3ASqJriEwEJbDQ92'],
+          topics: ['/topics/Meta', '/topics/Art'],
         };
       }
     } else if (currentUser.isAnonymous) {
-      var interests = { creators: [], topics: ["/topics/Meta", "/topics/Art"] };
+      var interests = {
+        creators: ['4CRlxvD9rpZB3ASqJriEwEJbDQ92'],
+        topics: ['/topics/Meta', '/topics/Art'],
+      };
     }
     // fetch tutorials related to user's interests
     var creator,
@@ -148,12 +165,16 @@ class HomeScreen extends React.Component {
       post,
       posts = [];
 
+    if (interests.topics.length > 0) {
+      var x = Math.ceil(5 / interests.creators.length);
+    }
+
     for (creator of interests.creators) {
       docs = await firebase
         .firestore()
-        .collectionGroup("posts")
-        .where("uid", "==", creator)
-        .limit(5)
+        .collectionGroup('posts')
+        .where('uid', '==', creator)
+        .limit(x)
         .get();
       docs.forEach((doc) => {
         post = doc.data();
@@ -162,12 +183,16 @@ class HomeScreen extends React.Component {
       });
     }
 
+    if (interests.topics.length > 0) {
+      var y = Math.ceil(5 / interests.topics.length);
+    }
+
     for (var topic of interests.topics) {
       docs = await firebase
         .firestore()
-        .collectionGroup("posts")
-        .where("topic", "==", topic)
-        .limit(5)
+        .collectionGroup('posts')
+        .where('topic', '==', topic)
+        .limit(y)
         .get();
       docs.forEach((doc) => {
         post = doc.data();
@@ -180,94 +205,91 @@ class HomeScreen extends React.Component {
     }
     posts = this.shuffle(posts);
 
-    // split list of tutorials into rows for display
-    var rows = [];
-    var i,
-      j,
-      temparray,
-      chunk = 2;
-    for (i = 0, j = posts.length; i < j; i += chunk) {
-      temparray = posts.slice(i, i + chunk);
-      rows.push(temparray);
-    }
-    this.setState({ rows });
-    this.setState({ isLoading: false });
+    this.setState({posts});
+    this.setState({isLoading: false});
   };
 
   handlePress = async (post) => {
     // redirect user to learning page with post info
-    await store.dispatch(updateTutorials({ learn_key: post.key }));
-    await store.dispatch(updateTutorials({ added: post }));
-    this.props.navigation.navigate("Learning");
+    await store.dispatch(updateTutorials({learn_key: post.key}));
+    await store.dispatch(updateTutorials({added: post}));
+    this.props.navigation.navigate('Learning');
   };
 
   render() {
-    var width = Dimensions.get("window").width;
+    var width = Dimensions.get('window').width;
     return (
       <View style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.contentContainer}
           refreshControl={
             <RefreshControl refreshing={false} onRefresh={this.getPosts} />
-          }
-        >
+          }>
+          <Background />
           <ModalAlert
             title={this.state.alertTitle}
             message={this.state.alertMessage}
             isModalVisible={this.state.isModalVisible}
             onDismiss={() => this.changeModalVisibility(false)}
           />
-          <LinearGradient
-            colors={["#fff", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
           {this.state.isLoading ? (
             <CustomLoading
-              color="#6da9c9"
+              color="#2274A5"
               verse="Do you see a man skilled in his work? He will stand before kings"
             />
           ) : (
             <View>
-              <View style={{ alignItems: "center", marginBottom: 5 }}>
+              <View style={{alignItems: 'center', marginBottom: 5}}>
                 <AdMobBanner
+                  adSize="smartBanner"
                   adUnitID="ca-app-pub-3262091936426324/7558442816"
-                  onDidFailToReceiveAdWithError={() =>
-                    console.log("banner ad not loading")
-                  }
-                  servePersonalizedAds
+                  onAdFailedtoLoad={() => console.log('banner ad not loading')}
                 />
               </View>
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                {this.state.rows.map((row, index) => {
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  marginBottom: 15,
+                }}>
+                {this.state.posts.map((image, index) => {
                   return (
-                    <View key={index} style={{ flexDirection: "row" }}>
-                      {row.map((image, i) => {
-                        return (
-                          <TouchableOpacity
-                            key={i}
-                            onPress={() => this.handlePress(image)}
-                            style={{ elevation: 2 }}
-                          >
-                            <Image
-                              resizeMode={"cover"}
-                              style={{
-                                width: width / 2 - 28,
-                                height: 200,
-                                margin: 7,
-                                borderRadius: 5,
-                              }}
-                              source={{ uri: image.thumbnail }}
-                            />
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => this.handlePress(image)}
+                      style={{margin: 5}}>
+                      <View
+                        style={{
+                          elevation: 1,
+                          borderColor: 'transparent',
+                          borderWidth: 0.01,
+                        }}>
+                        <Image
+                          resizeMode={'cover'}
+                          style={{
+                            width: width / 2 - 20,
+                            height: 200,
+                            borderRadius: 5,
+                          }}
+                          source={{uri: image.thumbnail}}
+                        />
+                      </View>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          human.subhead,
+                          systemWeights.semibold,
+                          {
+                            textAlign: 'center',
+                            marginTop: 3,
+                            color: '#2274A5',
+                            width: width / 2 - 20,
+                          },
+                        ]}>
+                        {image.title}
+                      </Text>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -282,25 +304,24 @@ class HomeScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   button: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     right: 0,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 35,
     height: 35,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderRadius: 35,
     margin: 5,
   },

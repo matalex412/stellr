@@ -1,21 +1,20 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-} from "react-native";
-import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { AdMobBanner } from "expo-ads-admob";
+} from 'react-native';
+import {connect} from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import CustomLoading from "./components/CustomLoading";
-import TutorialCover from "./components/TutorialCover";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import CustomLoading from './components/CustomLoading';
+import TutorialCover from './components/TutorialCover';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class ProfileMade extends React.Component {
   state = {
@@ -33,14 +32,14 @@ class ProfileMade extends React.Component {
     var doc = await firebase
       .firestore()
       .collection(`users/${id}/data`)
-      .doc("made")
+      .doc('made')
       .get();
     if (doc.exists) {
       var postrefs = doc.data();
-      this.setState({ keys: Object.keys(postrefs) });
-      this.setState({ postrefs });
+      this.setState({keys: Object.keys(postrefs)});
+      this.setState({postrefs});
     }
-    this.setState({ isLoading: false });
+    this.setState({isLoading: false});
   };
 
   handlePress = async (key) => {
@@ -53,33 +52,24 @@ class ProfileMade extends React.Component {
 
     // send user to tutorial screen
     await store.dispatch(
-      updateTutorials({ tutorial_topic: this.state.postrefs[key].topic })
+      updateTutorials({tutorial_topic: this.state.postrefs[key].topic}),
     );
-    await store.dispatch(updateTutorials({ current: doc.data() }));
-    await store.dispatch(updateTutorials({ current_key: key }));
-    this.props.navigation.navigate("Tutorial");
+    await store.dispatch(updateTutorials({current: doc.data()}));
+    await store.dispatch(updateTutorials({current_key: key}));
+    this.props.navigation.navigate('Tutorial');
   };
 
   render() {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Love is patient, love is kind" />
           ) : (
             <View>
               {this.state.keys.length < 1 && (
-                <Text style={{ padding: 20, fontSize: 20, color: "white" }}>
+                <Text style={{padding: 20, fontSize: 20, color: 'white'}}>
                   {this.props.tutorials.profile.username} hasn't made any
                   tutorials yet
                 </Text>
@@ -104,18 +94,18 @@ class ProfileMade extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   heading: {
     fontSize: 18,
-    color: "white",
-    fontWeight: "bold",
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

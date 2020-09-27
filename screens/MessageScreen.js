@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { connect } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 
+import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import { updateTutorials } from "./../redux/actions";
 import { store } from "./../redux/store";
@@ -89,16 +89,7 @@ class MessageScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Your word is a lamp to my feet and a light to my path" />
           ) : this.state.times.length == 0 ? (

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,98 +6,91 @@ import {
   View,
   TouchableOpacity,
   Alert,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import Ionicons from "react-native-vector-icons/Ionicons";
+} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {human, systemWeights} from 'react-native-typography';
 
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import {firebase} from './../src/config';
 
 export default class ForgotScreen extends React.Component {
   state = {
-    email: "",
+    email: '',
   };
 
   forgot = async () => {
     try {
       await firebase.auth().sendPasswordResetEmail(this.state.email);
       Alert.alert(
-        "Reset Password",
-        `A password reset email has been sent to ${this.state.email}`
+        'Reset Password',
+        `A password reset email has been sent to ${this.state.email}`,
       );
-      this.props.navigation.navigate("Login");
+      this.props.navigation.navigate('Login');
     } catch (error) {
       // display errors
-      this.setState({ errorMessage: error.message });
+      this.setState({errorMessage: error.message});
     }
   };
 
   render() {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={["#6da9c9", "#fff"]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: "100%",
-          }}
-        />
+        <Background />
         <Text
           style={{
-            textAlign: "center",
+            textAlign: 'center',
             fontSize: 15,
             margin: 20,
-            color: "white",
-          }}
-        >
+            color: '#2274A5',
+          }}>
           Enter your email address below and we'll send you a link to reset your
           password
         </Text>
         <View
           style={{
-            alignItems: "center",
-            backgroundColor: "white",
+            alignItems: 'center',
+            backgroundColor: 'white',
             padding: 20,
             margin: 40,
             marginTop: 5,
             marginBottom: 10,
             borderRadius: 5,
-          }}
-        >
+            elevation: 1,
+          }}>
           <View
             style={{
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              flexWrap: "wrap",
-            }}
-          >
-            <Ionicons name="md-mail" size={25} color="#6da9c9" />
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+            }}>
+            <Ionicons name="md-mail" size={25} color="#2274A5" />
             <TextInput
               style={styles.textInput}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholder="Email"
-              onChangeText={(email) => this.setState({ email })}
+              onChangeText={(email) => this.setState({email})}
               value={this.state.email}
             />
           </View>
           <TouchableOpacity style={styles.submitButton} onPress={this.forgot}>
-            <Text style={{ color: "white", fontSize: 18 }}>
-              Change Password
-            </Text>
+            <Text style={{color: 'white', fontSize: 18}}>Change Password</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity
-          style={{ margin: 5 }}
-          onPress={() => this.props.navigation.navigate("Login")}
-        >
-          <Text style={{ color: "#6da9c9" }}>Back to Login</Text>
+          style={{
+            marginHorizontal: 5,
+            padding: 4,
+            backgroundColor: 'white',
+            borderRadius: 4,
+            elevation: 1,
+          }}
+          onPress={() => this.props.navigation.navigate('Login')}>
+          <Text style={{color: '#2274A5'}}>Back to Login</Text>
         </TouchableOpacity>
         {this.state.errorMessage && (
-          <Text style={{ margin: 10, color: "#ffb52b", fontWeight: "bold" }}>
+          <Text style={{margin: 10, color: '#e3242b', ...systemWeights.bold}}>
             {this.state.errorMessage}
           </Text>
         )}
@@ -109,9 +102,9 @@ export default class ForgotScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   submitButton: {
     marginTop: 10,
@@ -119,15 +112,16 @@ const styles = StyleSheet.create({
     paddingBottom: 3,
     paddingLeft: 30,
     paddingRight: 30,
-    backgroundColor: "#ffb52b",
+    backgroundColor: '#ffb52b',
     borderRadius: 2,
   },
   textInput: {
+    padding: 2,
     fontSize: 18,
-    width: "60%",
+    width: '60%',
     marginLeft: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "#6da9c9",
-    color: "#6da9c9",
+    borderBottomColor: '#2274A5',
+    color: '#2274A5',
   },
 });

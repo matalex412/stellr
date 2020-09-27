@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Text,
@@ -9,19 +9,18 @@ import {
   ScrollView,
   Alert,
   Dimensions,
-} from "react-native";
-import { Video } from "expo-av";
-import * as ImagePicker from "expo-image-picker";
-import * as Permissions from "expo-permissions";
-import { connect } from "react-redux";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
-import Firebase from "firebase";
+} from 'react-native';
+import VideoPlayer from 'react-native-video-controls';
+import ImagePicker from 'react-native-image-picker';
+import {connect} from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Firebase from 'firebase';
 
-import CustomLoading from "./components/CustomLoading";
-import { store } from "./../redux/store";
-import { updateTutorials } from "./../redux/actions";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import CustomLoading from './components/CustomLoading';
+import {store} from './../redux/store';
+import {updateTutorials} from './../redux/actions';
+import {firebase} from './../src/config';
 
 class UserPostScreen extends React.Component {
   state = {
@@ -30,7 +29,7 @@ class UserPostScreen extends React.Component {
   };
 
   componentDidMount = () => {
-    if (this.props.tutorials.uservids[0] != "") {
+    if (this.props.tutorials.uservids[0] != '') {
       this.vids = this.props.tutorials.uservids;
     } else {
       this.vids = [];
@@ -39,95 +38,74 @@ class UserPostScreen extends React.Component {
   };
 
   componentWillUnmount = async () => {
-    await store.dispatch(updateTutorials({ vids: this.vids }));
+    await store.dispatch(updateTutorials({vids: this.vids}));
   };
 
   setup = async () => {
     // format topic string
     var post = this.props.tutorials.userpost;
     var i;
-    var subtopics = post.topic.split("/topics/");
+    var subtopics = post.topic.split('/topics/');
     var topic_string = subtopics[1];
     for (i = 2; i < subtopics.length; i++) {
-      topic_string = topic_string + " > " + subtopics[i];
+      topic_string = topic_string + ' > ' + subtopics[i];
     }
-    await store.dispatch(updateTutorials({ usertopic_string: topic_string }));
+    await store.dispatch(updateTutorials({usertopic_string: topic_string}));
 
     // format user's post
     post.steps = Object.values(post.steps);
     post.old_topic = post.topic;
-    await store.dispatch(updateTutorials({ userpost: post }));
-    this.setState({ isLoading: false });
-  };
-
-  getPermissionAsync = async () => {
-    // ask for permissions to use camera roll
-    const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
-    if (status !== "granted") {
-      alert("Sorry, we need camera roll permissions to make this work!");
-    }
-    await this.setState({ permission: status === "granted" });
+    await store.dispatch(updateTutorials({userpost: post}));
+    this.setState({isLoading: false});
   };
 
   _pickMedia = async (index, type) => {
     // ensure user has given permission to access camera roll
-    if (this.state.permission != true) {
-      await this.getPermissionAsync();
+
+    if (type == 'Videos') {
+      var mediaType = 'video';
+    } else {
+      var mediaType = 'photo';
     }
-    if (this.state.permission == true) {
-      // select image or video
-      if (this.state.pickThumbnail) {
-        var options = {
-          mediaTypes: ImagePicker.MediaTypeOptions[type],
-          quality: 0.8,
-          allowsEditing: true,
-        };
-      } else {
-        var options = {
-          mediaTypes: ImagePicker.MediaTypeOptions[type],
-          quality: 0.8,
-          aspect: [1, 1],
-          allowsEditing: true,
-        };
-      }
-      try {
-        let result = await ImagePicker.launchImageLibraryAsync(options);
+    var options = {mediaType: mediaType, tintColor: '#fff', durationLimit: 60};
+    try {
+      ImagePicker.launchImageLibrary(options, (result) => {
         if (!result.cancelled) {
           if (this.state.pickThumbnail) {
             var post = this.props.tutorials.userpost;
             post.thumbnail = result.uri;
-            await store.dispatch(updateTutorials({ userpost: post }));
-          } else {
-            // store media and update post data
-            var post = this.props.tutorials.userpost;
-
-            // remove previous errors
-            if (post.steps[index].error) {
-              delete post.steps[index].error;
-            }
-
-            if (type == "Images") {
-              post.steps[index][type] = result.uri;
-              post.steps[index].Videos = null;
-
-              // remove video ref
-              if (this.vids[index]) {
-                this.vids.slice(index, 1);
-              }
-            } else if (result.duration <= 60000) {
-              post.steps[index][type] = result.uri;
-              post.steps[index].Images = null;
-            } else {
-              post.steps[index].Videos = null;
-              post.steps[index].error = "Videos cannot be longer than 1 minute";
-            }
-            post.steps[index].changed = true;
-            await store.dispatch(updateTutorials({ userpost: post }));
+            store.dispatch(updateTutorials({userpost: post}));
           }
+        } else {
+          // store media and update post data
+          var post = this.props.tutorials.userpost;
+
+          // remove previous errors
+          if (post.steps[index].error) {
+            delete post.steps[index].error;
+          }
+
+          if (type == 'Images') {
+            post.steps[index][type] = result.uri;
+            post.steps[index].Videos = null;
+
+            // remove video ref
+            if (this.vids[index]) {
+              this.vids.slice(index, 1);
+            }
+          } else if (result.duration <= 60000) {
+            post.steps[index][type] = result.uri;
+            post.steps[index].Images = null;
+          } else {
+            post.steps[index].Videos = null;
+            post.steps[index].error = 'Videos cannot be longer than 1 minute';
+          }
+          post.steps[index].changed = true;
+          store.dispatch(updateTutorials({userpost: post}));
         }
-      } catch (E) {
-        console.log(E);
-      }
+      });
+    } catch (E) {
+      console.log(E);
     }
   };
 
@@ -143,9 +121,9 @@ class UserPostScreen extends React.Component {
     var checktitle = post.title.length > 3;
 
     if (checkquery && checktitle) {
-      await this.setState({ isFormValid: true });
+      await this.setState({isFormValid: true});
     } else {
-      this.setState({ isFormValid: false });
+      this.setState({isFormValid: false});
     }
   };
 
@@ -153,21 +131,21 @@ class UserPostScreen extends React.Component {
     // change title
     var post = this.props.tutorials.userpost;
     post.title = title;
-    await store.dispatch(updateTutorials({ userpost: post }));
+    await store.dispatch(updateTutorials({userpost: post}));
   };
 
   handleFieldChange = async (value, index) => {
     // change step field
     var post = this.props.tutorials.userpost;
     post.steps[index].step = value;
-    await store.dispatch(updateTutorials({ userpost: post }));
+    await store.dispatch(updateTutorials({userpost: post}));
   };
 
   handleSubmit = async () => {
     await this.validateForm();
     if (this.state.isFormValid) {
-      await this.setState({ isLoading: true });
-      const { currentUser } = firebase.auth();
+      await this.setState({isLoading: true});
+      const {currentUser} = firebase.auth();
 
       // get post data
       var old_topic = this.props.tutorials.userpost.old_topic;
@@ -178,13 +156,9 @@ class UserPostScreen extends React.Component {
       // if topic hasn't changed
       if (old_topic == topic) {
         // update base tutorial info
-        await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .doc(id)
-          .update({
-            title: this.props.tutorials.userpost.title,
-          });
+        await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
+          title: this.props.tutorials.userpost.title,
+        });
       } else {
         // remove old version of user's tutorial
         await firebase
@@ -195,7 +169,7 @@ class UserPostScreen extends React.Component {
         await firebase
           .firestore()
           .collection(`users/${currentUser.uid}/data`)
-          .doc("made")
+          .doc('made')
           .update({
             [id]: Firebase.firestore.FieldValue.delete(),
           });
@@ -219,18 +193,15 @@ class UserPostScreen extends React.Component {
         }
 
         // create updated tutorial in new topic section
-        var doc = await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .add({
-            title: this.props.tutorials.userpost.title,
-            username: this.props.tutorials.userpost.username,
-            uid: currentUser.uid,
-            topic: topic,
-            stars: this.props.tutorials.userpost.stars,
-            incomplete: this.props.tutorials.userpost.stars,
-            learns: this.props.tutorials.userpost.stars,
-          });
+        var doc = await firebase.firestore().collection(`${topic}/posts`).add({
+          title: this.props.tutorials.userpost.title,
+          username: this.props.tutorials.userpost.username,
+          uid: currentUser.uid,
+          topic: topic,
+          stars: this.props.tutorials.userpost.stars,
+          incomplete: this.props.tutorials.userpost.stars,
+          learns: this.props.tutorials.userpost.stars,
+        });
 
         id = doc.id;
       }
@@ -278,38 +249,27 @@ class UserPostScreen extends React.Component {
         // store thumbnail and get reference
         const response = await fetch(this.props.tutorials.userpost.thumbnail);
         const blob = await response.blob();
-        ref = await firebase
-          .storage()
-          .ref()
-          .child(`${topic}/${id}/Thumbnail`);
+        ref = await firebase.storage().ref().child(`${topic}/${id}/Thumbnail`);
         await ref.put(blob);
         thumbnail = await ref.getDownloadURL();
 
-        await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .doc(id)
-          .update({
-            thumbnail: thumbnail,
-            steps: steps,
-            time: Date.now(),
-          });
+        await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
+          thumbnail: thumbnail,
+          steps: steps,
+          time: Date.now(),
+        });
       } else {
-        await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .doc(id)
-          .update({
-            steps: steps,
-            time: Date.now(),
-          });
+        await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
+          steps: steps,
+          time: Date.now(),
+        });
       }
 
       // update tutorial in made section
       await firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
-        .doc("made")
+        .doc('made')
         .set(
           {
             [id]: {
@@ -318,21 +278,21 @@ class UserPostScreen extends React.Component {
               title: this.props.tutorials.userpost.title,
             },
           },
-          { merge: true }
+          {merge: true},
         );
 
       Alert.alert(
-        "Posted",
-        "Your tutorial has been edited. Find it on the Search page or on the 'Your Posts' page"
+        'Posted',
+        "Your tutorial has been edited. Find it on the Search page or on the 'Your Posts' page",
       );
       // reset information
-      await store.dispatch(updateTutorials({ userpost: null }));
-      this.vids = [""];
-      this.props.navigation.navigate("UserPosts");
+      await store.dispatch(updateTutorials({userpost: null}));
+      this.vids = [''];
+      this.props.navigation.navigate('UserPosts');
     } else {
       Alert.alert(
-        "Not Finished",
-        "Sorry, your tutorial doesn't have all requirements fulfilled"
+        'Not Finished',
+        "Sorry, your tutorial doesn't have all requirements fulfilled",
       );
     }
   };
@@ -340,28 +300,28 @@ class UserPostScreen extends React.Component {
   addStep = async () => {
     // create new step
     var post = this.props.tutorials.userpost;
-    post.steps.push({ step: "" });
-    await store.dispatch(updateTutorials({ userpost: post }));
-    this.vids.push("");
+    post.steps.push({step: ''});
+    await store.dispatch(updateTutorials({userpost: post}));
+    this.vids.push('');
   };
 
   removeStep = async (index) => {
     // remove step
     var post = this.props.tutorials.userpost;
     post.steps.splice(index, 1);
-    store.dispatch(updateTutorials({ userpost: post }));
+    store.dispatch(updateTutorials({userpost: post}));
 
     this.vids.splice(index, 1);
   };
 
   deletePost = async () => {
-    await this.setState({ isLoading: true });
+    await this.setState({isLoading: true});
     // check user wants to delete post
-    Alert.alert("Delete Post", "Are you sure you want to delete this post?", [
+    Alert.alert('Delete Post', 'Are you sure you want to delete this post?', [
       {
-        text: "Yes",
+        text: 'Yes',
         onPress: async () => {
-          var { currentUser } = firebase.auth();
+          var {currentUser} = firebase.auth();
           var post = this.props.tutorials.userpost;
 
           // remove tutorial
@@ -373,7 +333,7 @@ class UserPostScreen extends React.Component {
           await firebase
             .firestore()
             .collection(`users/${currentUser.uid}/data`)
-            .doc("made")
+            .doc('made')
             .update({
               [post.postid]: Firebase.firestore.FieldValue.delete(),
             });
@@ -398,35 +358,35 @@ class UserPostScreen extends React.Component {
           firebase
             .firestore()
             .collection(`users/${currentUser.uid}/data`)
-            .doc("messages")
+            .doc('messages')
             .set(
               {
                 [Date.now()]: {
                   message: message,
-                  status: "unread",
+                  status: 'unread',
                 },
               },
-              { merge: true }
+              {merge: true},
             );
-          await store.dispatch(updateTutorials({ unread: true }));
+          await store.dispatch(updateTutorials({unread: true}));
 
-          await store.dispatch(updateTutorials({ userpost: null }));
-          this.props.navigation.navigate("UserPosts");
+          await store.dispatch(updateTutorials({userpost: null}));
+          this.props.navigation.navigate('UserPosts');
         },
       },
       {
-        text: "Cancel",
+        text: 'Cancel',
         onPress: () => {
-          this.setState({ isLoading: false });
+          this.setState({isLoading: false});
         },
-        style: "cancel",
+        style: 'cancel',
       },
     ]);
   };
 
   _onPlaybackStatusUpdate = (playbackStatus, index) => {
     if (playbackStatus.didJustFinish) {
-      this.vids[index].setStatusAsync({ shouldPlay: false, positionMillis: 0 });
+      this.vids[index].setStatusAsync({shouldPlay: false, positionMillis: 0});
     }
   };
 
@@ -435,17 +395,17 @@ class UserPostScreen extends React.Component {
   };
 
   thumbnail = async () => {
-    await this.setState({ pickThumbnail: true });
-    await this._pickMedia("Images");
-    await this.setState({ thumb_change: true });
-    await this.setState({ pickThumbnail: false });
+    await this.setState({pickThumbnail: true});
+    await this._pickMedia('Images');
+    await this.setState({thumb_change: true});
+    await this.setState({pickThumbnail: false});
   };
 
   removeMedia = (index, type) => {
     // remove media
     var post = this.props.tutorials.userpost;
     post.steps[index][type] = null;
-    store.dispatch(updateTutorials({ userpost: post }));
+    store.dispatch(updateTutorials({userpost: post}));
   };
 
   render() {
@@ -454,159 +414,127 @@ class UserPostScreen extends React.Component {
     } else {
       var post = {};
     }
-    var width = Dimensions.get("window").width;
+    var width = Dimensions.get('window').width;
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <LinearGradient
-            colors={["#6da9c9", "#fff"]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 0,
-              height: "100%",
-            }}
-          />
+          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="For everything there is a season, and a time for every matter" />
           ) : (
-            <View style={{ alignItems: "center" }}>
+            <View style={{alignItems: 'center'}}>
               <TextInput
                 value={post.title}
                 placeholder="Enter Title"
                 onChangeText={(title) => this.handleTitleChange(title)}
                 style={{
-                  color: "white",
+                  color: '#2274A5',
                   padding: 10,
                   fontSize: 23,
-                  fontStyle: "italic",
+                  fontStyle: 'italic',
                 }}
               />
-              <View>
-                <View style={styles.line} />
-              </View>
               <Image
-                source={{ uri: this.props.tutorials.userpost.thumbnail }}
-                style={{ margin: 10, width: width, height: 200 }}
+                source={{uri: this.props.tutorials.userpost.thumbnail}}
+                style={{margin: 10, width: width, height: 200}}
               />
-              <Text style={{ padding: 10, color: "white" }}>
+              <Text style={{padding: 10, color: '#2274A5'}}>
                 Topic: {this.props.tutorials.usertopic_string}
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+              <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
                 <TouchableOpacity
-                  style={{ marginRight: 5 }}
-                  onPress={this.thumbnail}
-                >
-                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  style={{marginRight: 5}}
+                  onPress={this.thumbnail}>
+                  <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
                     <Ionicons
                       name="md-image"
                       size={20}
-                      style={{ margin: 3 }}
-                      color="#ffb52b"
+                      style={{margin: 3}}
+                      color="#2274A5"
                     />
-                    <Text style={{ margin: 3, color: "white" }}>Thumbnail</Text>
+                    <Text style={{margin: 3, color: '#2274A5'}}>Thumbnail</Text>
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={{ marginRight: 5 }}
-                  onPress={() => this.props.navigation.navigate("UserTopic")}
-                >
-                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  style={{marginRight: 5}}
+                  onPress={() => this.props.navigation.navigate('UserTopic')}>
+                  <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
                     <Ionicons
                       name="ios-folder"
                       size={20}
-                      style={{ margin: 3 }}
-                      color="#ffb52b"
+                      style={{margin: 3}}
+                      color="#2274A5"
                     />
-                    <Text style={{ margin: 3, color: "white" }}>Topic</Text>
+                    <Text style={{margin: 3, color: '#2274A5'}}>Topic</Text>
                   </View>
                 </TouchableOpacity>
-              </View>
-              <View>
-                <View style={styles.line} />
               </View>
               {Object.values(post.steps).map((step, index) => (
                 <View
                   style={{
-                    alignItems: "center",
-                    backgroundColor: "#6da9c9",
+                    alignItems: 'center',
+                    backgroundColor: '#fff',
+                    elevation: 3,
                     width: width - 100,
                     padding: 10,
                     margin: 10,
                     borderRadius: 5,
-                    shadowOffset: { width: 10, height: 10 },
-                    shadowColor: "black",
+                    shadowOffset: {width: 10, height: 10},
+                    shadowColor: '#2274A5',
                     shadowOpacity: 1.0,
                   }}
-                  key={index}
-                >
+                  key={index}>
                   <Text style={styles.heading}>Step {index + 1}</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
                     <TouchableOpacity
                       style={styles.button}
-                      onPress={() => this._pickMedia(index, "Images")}
-                    >
+                      onPress={() => this._pickMedia(index, 'Images')}>
                       <Ionicons name="md-image" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.button}
-                      onPress={() => this._pickMedia(index, "Videos")}
-                    >
+                      onPress={() => this._pickMedia(index, 'Videos')}>
                       <Ionicons name="ios-videocam" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.button}
-                      onPress={() => this.removeStep(index)}
-                    >
+                      onPress={() => this.removeStep(index)}>
                       <Ionicons name="md-trash" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                   </View>
                   {step.Videos && (
-                    <View>
-                      <Video
-                        onPlaybackStatusUpdate={(playbackStatus) =>
-                          this._onPlaybackStatusUpdate(playbackStatus, index)
-                        }
-                        ref={(component) => this.addRef(component, index)}
-                        source={{ uri: step.Videos }}
-                        rate={1.0}
-                        volume={1.0}
-                        isMuted={false}
-                        resizeMode={Video.RESIZE_MODE_CONTAIN}
-                        useNativeControls
-                        style={{ margin: 10, width: 200, height: 200 }}
-                      />
-                      <TouchableOpacity
-                        style={[styles.button, styles.corner]}
-                        onPress={() => this.removeMedia(index, "Videos")}
-                      >
-                        <Ionicons name="md-close" size={20} color="#6da9c9" />
-                      </TouchableOpacity>
-                    </View>
+                    <VideoPlayer
+                      ref={(component) => this.addRef}
+                      onEnd={() => this._finishedVideo(index)}
+                      source={{uri: step.Videos}}
+                      rate={1.0}
+                      volume={1.0}
+                      resizeMode="cover"
+                      disableVolume
+                      disableBack
+                      style={{margin: 10}}
+                    />
                   )}
                   {step.Images && (
                     <View>
                       <Image
-                        source={{ uri: step.Images }}
-                        style={{ margin: 10, width: 200, height: 200 }}
+                        source={{uri: step.Images}}
+                        style={{margin: 10, width: 200, height: 200}}
                       />
                       <TouchableOpacity
                         style={[styles.button, styles.corner]}
-                        onPress={() => this.removeMedia(index, "Images")}
-                      >
-                        <Ionicons name="md-close" size={20} color="#6da9c9" />
+                        onPress={() => this.removeMedia(index, 'Images')}>
+                        <Ionicons name="md-close" size={20} color="white" />
                       </TouchableOpacity>
                     </View>
                   )}
                   {step.error && (
                     <Text
                       style={{
-                        fontWeight: "bold",
+                        fontWeight: 'bold',
                         fontSize: 17,
-                        color: "#ffb52b",
-                      }}
-                    >
+                        color: '#ffb52b',
+                      }}>
                       {step.error}
                     </Text>
                   )}
@@ -618,31 +546,31 @@ class UserPostScreen extends React.Component {
                       this.handleFieldChange(value, index)
                     }
                     style={{
-                      borderColor: "#ffb52b",
+                      borderColor: '#ffb52b',
                       color: this.state.checked
                         ? step.step.length < 4
-                          ? "#ffb52b"
-                          : "black"
-                        : "black",
+                          ? '#ffb52b'
+                          : '#2274A5'
+                        : '#2274A5',
                       width: width,
                       paddingLeft: 60,
                       paddingRight: 60,
                       margin: 10,
                       fontSize: 15,
-                      textAlign: "center",
+                      textAlign: 'center',
                     }}
                   />
                 </View>
               ))}
-              <TouchableOpacity style={{ padding: 10 }} onPress={this.addStep}>
-                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+              <TouchableOpacity style={{padding: 10}} onPress={this.addStep}>
+                <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
                   <Ionicons
                     name="md-add-circle"
                     size={20}
-                    style={{ margin: 3 }}
-                    color="#6da9c9"
+                    style={{margin: 3}}
+                    color="#2274A5"
                   />
-                  <Text style={{ color: "#6da9c9", margin: 3 }}>
+                  <Text style={{color: '#2274A5', margin: 3}}>
                     Add New Step
                   </Text>
                 </View>
@@ -651,29 +579,27 @@ class UserPostScreen extends React.Component {
                 <View
                   style={{
                     borderRadius: 20,
-                    alignItems: "center",
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    backgroundColor: "#6da9c9",
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    backgroundColor: '#2274A5',
                     paddingRight: 5,
                     paddingLeft: 5,
-                  }}
-                >
+                  }}>
                   <Ionicons
                     name="ios-send"
                     size={20}
                     color="#ffb52b"
-                    style={{ margin: 5 }}
+                    style={{margin: 5}}
                   />
-                  <Text style={{ margin: 5, fontSize: 16, color: "#ffb52b" }}>
+                  <Text style={{margin: 5, fontSize: 16, color: '#ffb52b'}}>
                     Update Tutorial
                   </Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity onPress={this.deletePost}>
                 <Text
-                  style={{ padding: 10, color: "#ffb52b", fontWeight: "bold" }}
-                >
+                  style={{padding: 10, color: '#e3242b', fontWeight: 'bold'}}>
                   Delete Post
                 </Text>
               </TouchableOpacity>
@@ -688,22 +614,22 @@ class UserPostScreen extends React.Component {
 const styles = StyleSheet.create({
   heading: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     margin: 10,
-    color: "white",
+    color: '#2274A5',
   },
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   corner: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     right: 0,
     width: 30,
@@ -712,20 +638,14 @@ const styles = StyleSheet.create({
   },
   button: {
     borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 40,
     height: 40,
-    backgroundColor: "black",
+    backgroundColor: '#2274A5',
     borderRadius: 40,
+    borderColor: 'white',
     margin: 5,
-  },
-  line: {
-    borderBottomColor: "white",
-    borderBottomWidth: 1,
-    alignSelf: "stretch",
-    margin: 10,
-    width: 200,
   },
 });
 
