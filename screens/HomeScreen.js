@@ -43,30 +43,6 @@ class HomeScreen extends React.Component {
     }
   };
 
-  changeModalVisibility = (visible) => {
-    this.setState({ isModalVisible: visible });
-  };
-
-  shuffle = (array) => {
-    var currentIndex = array.length,
-      temporaryValue,
-      randomIndex;
-
-    // While there remain elements to shuffle...
-    while (0 !== currentIndex) {
-      // Pick a remaining element...
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex -= 1;
-
-      // And swap it with the current element.
-      temporaryValue = array[currentIndex];
-      array[currentIndex] = array[randomIndex];
-      array[randomIndex] = temporaryValue;
-    }
-
-    return array;
-  };
-
   setup = async () => {
     this.setState({ isLoading: true });
     var { currentUser } = await firebase.auth();
@@ -76,7 +52,7 @@ class HomeScreen extends React.Component {
       this.setState({
         alertMessage: `Hi and welcome to Skoach! To get started, why not try out the "Using Skoach" tutorials on the "Added" page`,
       });
-      this.changeModalVisibility(true);
+      this.setState({ isModalVisible: true });
       store.dispatch(updateTutorials({ newAccount: false }));
     } else {
       var doc = await firebase
@@ -85,8 +61,8 @@ class HomeScreen extends React.Component {
         .doc(currentUser.uid)
         .get();
       var data = doc.data();
-      if (data.stars) {
-        store.dispatch(updateTutorials({ stars: data.stars }));
+      if (data.weeklyStars) {
+        store.dispatch(updateTutorials({ stars: data.weeklyStars }));
       }
     }
 
@@ -152,6 +128,7 @@ class HomeScreen extends React.Component {
     } else if (currentUser.isAnonymous) {
       var interests = { creators: [], topics: ["/topics/Meta", "/topics/Art"] };
     }
+
     // fetch tutorials related to user's interests
     var creator,
       doc,
@@ -159,6 +136,7 @@ class HomeScreen extends React.Component {
       post,
       posts = [];
 
+    // fetch tutorials related to each recent creator
     for (creator of interests.creators) {
       docs = await firebase
         .firestore()
@@ -173,6 +151,7 @@ class HomeScreen extends React.Component {
       });
     }
 
+    // fetch tutorials related to each recent topic
     for (var topic of interests.topics) {
       docs = await firebase
         .firestore()
@@ -202,6 +181,33 @@ class HomeScreen extends React.Component {
     this.props.navigation.navigate("Learning");
   };
 
+  changeModalVisibility = (visible) => {
+    this.setState({ isModalVisible: visible });
+  };
+
+  offModal = () => {
+    this.setState({ isModalVisible: false });
+  };
+
+  shuffle = (array) => {
+    var currentIndex = array.length,
+      temporaryValue,
+      randomIndex;
+
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+    return array;
+  };
+
   render() {
     var width = Dimensions.get("window").width;
     return (
@@ -217,7 +223,7 @@ class HomeScreen extends React.Component {
             title={this.state.alertTitle}
             message={this.state.alertMessage}
             isModalVisible={this.state.isModalVisible}
-            onDismiss={() => this.changeModalVisibility(false)}
+            onDismiss={this.offModal}
           />
           {this.state.isLoading ? (
             <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
@@ -225,7 +231,7 @@ class HomeScreen extends React.Component {
             <View>
               <View style={{ alignItems: "center", marginVertical: 3 }}>
                 <AdMobBanner
-                  adUnitID="ca-app-pub-3262091936426324/7558442816"
+                  adUnitID="ca-app-pub-3800661518525298/6229842172"
                   onDidFailToReceiveAdWithError={() =>
                     console.log("banner ad not loading")
                   }
@@ -245,31 +251,30 @@ class HomeScreen extends React.Component {
                     <TouchableOpacity
                       key={index}
                       onPress={() => this.handlePress(image)}
-                      style={{ margin: 5 }}
+                      style={{
+                        margin: 5,
+                        backgroundColor: "white",
+                        elevation: 5,
+                        borderRadius: 5,
+                      }}
                     >
-                      <View
+                      <Image
+                        resizeMode={"cover"}
                         style={{
-                          elevation: 1,
-                          borderColor: "transparent",
-                          borderWidth: 0.01,
+                          width: width / 2 - 20,
+                          height: 200,
+                          borderTopLeftRadius: 5,
+                          borderTopRightRadius: 5,
                         }}
-                      >
-                        <Image
-                          resizeMode={"cover"}
-                          style={{
-                            width: width / 2 - 20,
-                            height: 200,
-                            borderRadius: 3,
-                          }}
-                          source={{ uri: image.thumbnail }}
-                        />
-                      </View>
+                        source={{ uri: image.thumbnail }}
+                      />
                       <Text
                         numberOfLines={1}
                         style={[
                           human.subhead,
                           systemWeights.semibold,
                           {
+                            padding: 5,
                             textAlign: "center",
                             marginTop: 3,
                             color: "#2274A5",

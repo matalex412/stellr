@@ -19,6 +19,7 @@ import Modal from "react-native-modal";
 import Carousel, { Pagination } from "react-native-snap-carousel";
 import { human, systemWeights } from "react-native-typography";
 
+import ProfileBanner from "./components/ProfileBanner";
 import ModalAlert from "./components/ModalAlert";
 import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
@@ -58,6 +59,18 @@ class TutorialScreen extends React.Component {
         .get();
       this.setState({ minas: doc.data().minas });
     }
+
+    var doc0 = await firebase
+      .firestore()
+      .collection("users")
+      .doc(this.props.tutorials.current.uid)
+      .get();
+    var data = doc0.data();
+    var creatorProfile = {
+      profilePic: data.profilePic,
+      username: data.username,
+    };
+    this.setState({ creatorProfile });
 
     if (this.props.tutorials.current) {
       if (this.props.tutorials.current.topic == "/topics/Meta") {
@@ -118,7 +131,7 @@ class TutorialScreen extends React.Component {
 
       // Display an interstitial
       await AdMobInterstitial.setAdUnitID(
-        "ca-app-pub-3262091936426324/1869093284"
+        "ca-app-pub-3800661518525298/2568980529"
       );
 
       await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
@@ -237,7 +250,7 @@ class TutorialScreen extends React.Component {
       .doc(this.props.tutorials.current.uid)
       .update({
         weeklyStars: Firebase.firestore.FieldValue.increment(rating),
-        shekels: Firebase.firestore.FieldValue.increment(5),
+        minas: Firebase.firestore.FieldValue.increment(5),
       });
 
     this.props.navigation.navigate("Search");
@@ -319,56 +332,49 @@ class TutorialScreen extends React.Component {
   _renderItem = ({ item, index }) => {
     var width = Dimensions.get("window").width;
     return (
-      <View style={{ alignItems: "center" }}>
-        <View
-          style={{
-            borderRadius: 5,
-            backgroundColor: "#fff",
-            elevation: 3,
-            width: width - 100,
-            marginBottom: 25,
-            alignItems: "center",
-            padding: 20,
-          }}
-          key={index}
-        >
-          <Text style={styles.heading}>Step {index + 1}</Text>
-          {item.Images && (
-            <Image
-              source={{ uri: item.Images }}
-              style={{ margin: 10, width: 200, height: 200, borderRadius: 1 }}
-            />
-          )}
-          {item.Videos && (
-            <Video
-              onPlaybackStatusUpdate={(playbackStatus) =>
-                this._onPlaybackStatusUpdate(playbackStatus, index)
-              }
-              ref={(component) => (this.vids[index] = component)}
-              source={{ uri: item.Videos }}
-              rate={1.0}
-              volume={1.0}
-              isMuted={false}
-              resizeMode={Video.RESIZE_MODE_CONTAIN}
-              useNativeControls
-              style={{ margin: 10, width: 200, height: 200 }}
-            />
-          )}
-          <Text
+      <View key={index} style={{ paddingVertical: 10 }}>
+        {item.Images && (
+          <Image
+            source={{ uri: item.Images }}
             style={{
-              color: "#2274A5",
-              fontSize: 16,
-              textAlign: "center",
+              marginBottom: 10,
+              width: width,
+              height: 300,
             }}
-          >
-            {item.step}
-          </Text>
-        </View>
+          />
+        )}
+        {item.Videos && (
+          <Video
+            onPlaybackStatusUpdate={(playbackStatus) =>
+              this._onPlaybackStatusUpdate(playbackStatus, index)
+            }
+            ref={(component) => (this.vids[index] = component)}
+            source={{ uri: item.Videos }}
+            rate={1.0}
+            volume={1.0}
+            isMuted={false}
+            resizeMode={Video.RESIZE_MODE_CONTAIN}
+            useNativeControls
+            style={{ margin: 10, width: 200, height: 200 }}
+          />
+        )}
+        <Text
+          style={{
+            color: "#2274A5",
+            fontSize: 16,
+            textAlign: "center",
+            paddingHorizontal: 10,
+          }}
+        >
+          {item.step}
+        </Text>
       </View>
     );
   };
 
   render() {
+    var width = Dimensions.get("window").width;
+
     this.vids = [];
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
@@ -391,7 +397,7 @@ class TutorialScreen extends React.Component {
           <View>
             <View style={{ alignItems: "center" }}>
               <AdMobBanner
-                adUnitID="ca-app-pub-3262091936426324/2933794374"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onDidFailToReceiveAdWithError={() =>
                   console.log("banner ad not loading")
                 }
@@ -435,7 +441,7 @@ class TutorialScreen extends React.Component {
               <Text style={styles.title}>
                 {this.props.tutorials.current.title}
               </Text>
-              <Text style={{ color: "white" }}>
+              {/*<Text style={{ color: "#2274A5" }}>
                 by {this.props.tutorials.current.username}
               </Text>
               <View
@@ -445,7 +451,9 @@ class TutorialScreen extends React.Component {
                   alignItems: "center",
                 }}
               >
-                <Text style={[human.calloutWhite, { marginRight: 10 }]}>
+                <Text
+                  style={[human.callout, { marginRight: 10, color: "#2274A5" }]}
+                >
                   Learns:{" "}
                   {this.props.tutorials.current.learns -
                     this.props.tutorials.current.incomplete}
@@ -466,17 +474,18 @@ class TutorialScreen extends React.Component {
               {this.props.tutorials.current.info ? (
                 <Text
                   style={[
-                    human.calloutWhite,
+                    human.callout,
                     {
                       marginHorizontal: 40,
                       marginVertical: 10,
                       textAlign: "center",
+                      color: "#2274A5",
                     },
                   ]}
                 >
                   {this.props.tutorials.current.info}
                 </Text>
-              ) : null}
+              ) : null}*/}
 
               {!this.state.paid ? (
                 <View style={{ margin: 15, flexDirection: "row" }}>
@@ -504,7 +513,7 @@ class TutorialScreen extends React.Component {
                 </View>
               ) : (
                 <View style={{ alignItems: "center" }}>
-                  <Pagination
+                  {/*<Pagination
                     dotsLength={this.props.tutorials.current.steps.length}
                     containerStyle={{
                       paddingTop: 10,
@@ -512,7 +521,7 @@ class TutorialScreen extends React.Component {
                     }}
                     animatedDuration={50}
                     activeDotIndex={this.state.activeIndex}
-                    dotColor="#fff"
+                    dotColor="#2274A5"
                     inactiveDotColor="dimgray"
                     dotStyle={{
                       width: 10,
@@ -522,13 +531,19 @@ class TutorialScreen extends React.Component {
                     }}
                     inactiveDotOpacity={0.4}
                     inactiveDotScale={0.6}
-                  />
+                  />*/}
+                  <View style={styles.pagination}>
+                    <Text style={{ color: "#fff" }}>
+                      {this.state.activeIndex + 1}/
+                      {this.props.tutorials.current.steps.length}
+                    </Text>
+                  </View>
                   <Carousel
                     layout={"default"}
                     ref={(ref) => (this.carousel = ref)}
                     data={this.props.tutorials.current.steps}
-                    sliderWidth={300}
-                    itemWidth={300}
+                    sliderWidth={width}
+                    itemWidth={width}
                     renderItem={this._renderItem}
                     onSnapToItem={(index) =>
                       this.setState({ activeIndex: index })
@@ -539,24 +554,55 @@ class TutorialScreen extends React.Component {
                   />
                   <View
                     style={{
-                      marginBottom: 15,
                       flexDirection: "row",
+                      borderTopWidth: 1,
+                      borderColor: "lightgray",
+                      width: width,
+                      justifyContent: "space-evenly",
+                      padding: 10,
+                      alignItems: "center",
                     }}
                   >
+                    <AirbnbRating
+                      isDisabled
+                      defaultRating={
+                        this.props.tutorials.current.stars /
+                        (this.props.tutorials.current.learns +
+                          this.props.tutorials.current.incomplete)
+                      }
+                      selectedColor="#ffb52b"
+                      showRating={false}
+                      type="custom"
+                      size={20}
+                    />
                     {this.state.currentUser.isAnonymous ? null : this.state
                         .added ? null : (
                       <TouchableOpacity onPress={this.addHome}>
-                        <View style={[styles.button, { marginRight: 10 }]}>
-                          <Ionicons
-                            name="md-bookmark"
-                            size={25}
-                            color="#ffb52b"
-                          />
-                        </View>
+                        <Ionicons
+                          name="md-bookmark"
+                          size={25}
+                          color="#2274A5"
+                        />
                       </TouchableOpacity>
                     )}
                     <LearnModal added={this.state.added} learnt={this.learnt} />
                   </View>
+                  <ProfileBanner
+                    imageStyle={{
+                      width: 40,
+                      height: 40,
+                    }}
+                    font={22}
+                    user={this.state.creatorProfile}
+                    viewStyle={{
+                      borderWidth: 1,
+                      borderColor: "lightgray",
+                      width: width,
+                      paddingLeft: 20,
+                      alignItems: "center",
+                    }}
+                    size={35}
+                  />
                 </View>
               )}
             </View>
@@ -582,9 +628,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    ...human.title2WhiteObject,
+    ...human.title2Object,
     ...systemWeights.light,
     fontStyle: "italic",
+    color: "#2274A5",
   },
   button: {
     justifyContent: "center",
@@ -594,6 +641,15 @@ const styles = StyleSheet.create({
     elevation: 1,
     padding: 7,
     borderRadius: 2,
+  },
+  pagination: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    borderRadius: 20,
+    padding: 3,
+    backgroundColor: "#2275A5",
+    zIndex: 999,
   },
 });
 

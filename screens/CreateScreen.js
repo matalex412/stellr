@@ -232,7 +232,7 @@ class CreateScreen extends React.Component {
 
         //  this.props.navigation.navigate("Home");
 
-        /*// get topic route
+        // get topic route
         var topic_route = tutorial.create_topic;
         var route;
         var topic = "";
@@ -361,7 +361,7 @@ class CreateScreen extends React.Component {
             },
             { merge: true }
           );
-        await store.dispatch(updateTutorials({ unread: true }));*/
+        await store.dispatch(updateTutorials({ unread: true }));
       }
     }
   };
@@ -458,20 +458,20 @@ class CreateScreen extends React.Component {
             />
             <View style={{ flex: 1, alignItems: "center" }}>
               <ProgressSteps
-                activeStepIconBorderColor="white"
-                completedProgressBarColor="white"
-                completedStepIconColor="white"
-                activeLabelColor="white"
-                activeStepNumColor="white"
-                completedCheckColor="#2274A5"
-                completedLabelColor="white"
+                activeStepIconBorderColor="#2274A5"
+                completedProgressBarColor="#2274A5"
+                completedStepIconColor="#2274A5"
+                activeLabelColor="#2274A5"
+                activeStepNumColor="#2274A5"
+                completedCheckColor="#ffb52b"
+                completedLabelColor="#2274A5"
               >
                 <ProgressStep
                   scrollViewProps={this.defaultScrollViewProps}
                   label="What Tutorial?"
                   previousBtnTextStyle={styles.toggleProgress}
                   nextBtnTextStyle={styles.toggleProgress}
-                  onNext={() => this.handleSubmit()}
+                  onNext={() => this.validateForm(0)}
                   errors={this.state.errors}
                 >
                   <View
@@ -479,14 +479,7 @@ class CreateScreen extends React.Component {
                       alignItems: "flex-start",
                     }}
                   >
-                    <Text
-                      style={{
-                        ...human.calloutWhiteObject,
-                        ...systemWeights.bold,
-                      }}
-                    >
-                      Title*
-                    </Text>
+                    <Text style={styles.heading}>Title*</Text>
                     <TextInput
                       placeholderTextColor="grey"
                       value={this.props.tutorials.title}
@@ -536,14 +529,7 @@ class CreateScreen extends React.Component {
                       alignItems: "flex-start",
                     }}
                   >
-                    <Text
-                      style={{
-                        ...human.calloutWhiteObject,
-                        ...systemWeights.bold,
-                      }}
-                    >
-                      Description
-                    </Text>
+                    <Text style={styles.heading}>Description</Text>
                     <TextInput
                       placeholderTextColor="grey"
                       multiline={true}
@@ -884,6 +870,11 @@ const styles = StyleSheet.create({
   },
   toggleProgress: {
     ...human.headlineObject,
+    color: "#2274A5",
+  },
+  heading: {
+    ...human.calloutObject,
+    ...systemWeights.bold,
     color: "#2274A5",
   },
 });

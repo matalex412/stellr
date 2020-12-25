@@ -119,13 +119,13 @@ class AskScreen extends React.Component {
             <MaterialCommunityIcons
               name="android-messages"
               size={35}
-              color="white"
+              color="#2274A5"
             />
             <Text
               style={{
                 width: 70,
                 marginLeft: 5,
-                color: "white",
+                color: "#2274A5",
                 fontSize: 15,
               }}
             >
@@ -137,7 +137,7 @@ class AskScreen extends React.Component {
           <TouchableOpacity
             onPress={() => this.setState({ isModalVisible: false })}
           >
-            <Ionicons name="md-close" size={20} color="white" />
+            <Ionicons name="md-close" size={20} color="#2274A5" />
           </TouchableOpacity>
           <ScrollView contentContainerStyle={styles.contentContainer}>
             <Text style={styles.heading}>Requested Tutorials</Text>
@@ -157,13 +157,13 @@ class AskScreen extends React.Component {
                       onPress={() => this.makePost(request)}
                       style={{ alignItems: "center" }}
                     >
-                      <Text style={{ fontSize: 18, color: "white" }}>
+                      <Text style={{ fontSize: 18, color: "#2274A5" }}>
                         {request}
                       </Text>
                     </TouchableOpacity>
                   ) : (
                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                      <Text style={{ fontSize: 18, color: "white" }}>
+                      <Text style={{ fontSize: 18, color: "#2274A5" }}>
                         {request} -{" "}
                       </Text>
                       <TouchableOpacity
@@ -202,7 +202,7 @@ class AskScreen extends React.Component {
                 onChangeText={(value) => this.setState({ request: value })}
                 style={{
                   padding: 5,
-                  color: "white",
+                  color: "#2274A5",
                   fontSize: 15,
                   margin: 5,
                 }}
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 18,
-    color: "white",
+    color: "#2274A5",
     fontWeight: "bold",
   },
 });

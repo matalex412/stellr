@@ -16,11 +16,13 @@
       "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": ["**/*"],
+    "androidStatusBar": {
+      "barStyle": "light-content"
+    },
     "android": {
       "splash": {
         "statusBar": {
-          "visible": false,
-          "barStyle": "light-content"
+          "visible": false
         },
         "resizeMode": "cover",
         "image": "./assets/splash.png"

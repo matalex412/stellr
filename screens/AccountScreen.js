@@ -13,8 +13,10 @@ import {
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import * as Permissions from "expo-permissions";
+import InstagramLogin from "react-native-instagram-login";
 import Modal from "react-native-modal";
 
+import Firebase from "firebase";
 import Background from "./components/Background";
 import LinkSection from "./components/LinkSection";
 import ProfileBanner from "./components/ProfileBanner";
@@ -96,6 +98,15 @@ export default class AccountScreen extends React.Component {
     await Share.share({
       message: "http://matthewalex.com/skoach",
     });
+
+    // update user's weekly stars
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(this.state.currentUser.uid)
+      .update({
+        weeklyStars: Firebase.firestore.FieldValue.increment(5),
+      });
   };
 
   getPermissionAsync = async () => {
@@ -159,6 +170,22 @@ export default class AccountScreen extends React.Component {
         console.log(E);
       }
     }
+  };
+
+  setIg = () => {
+    // update firebase
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(this.state.currentUser.uid)
+      .update({
+        ig: this.state.ig,
+      });
+
+    // update bio
+    var { user } = this.state;
+    user.ig = this.state.ig;
+    this.setState({ user });
   };
 
   render() {
@@ -239,7 +266,9 @@ export default class AccountScreen extends React.Component {
                       size={30}
                       color="#ffb52b"
                     />
-                    <Text>{this.state.user.stars}</Text>
+                    <Text style={{ color: "#ffb52b" }}>
+                      {this.state.user.stars}
+                    </Text>
                   </View>
                   <View
                     style={{
@@ -254,13 +283,14 @@ export default class AccountScreen extends React.Component {
                       onChangeText={(query) => this.setState({ bio: query })}
                       multiline={true}
                       style={{
+                        backgroundColor: "#bcd4e6",
                         textAlign: "center",
                         borderRadius: 5,
-                        color: "black",
+                        color: "white",
                         padding: 5,
-                        backgroundColor: "white",
                         width: 200,
                       }}
+                      placeholderTextColor="white"
                     />
                     <TouchableOpacity
                       style={{ padding: 5 }}
@@ -273,6 +303,76 @@ export default class AccountScreen extends React.Component {
                       />
                     </TouchableOpacity>
                   </View>
+                  {this.state.user.ig ? (
+                    <View
+                      style={{
+                        justifyContent: "center",
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name="instagram"
+                        size={30}
+                        style={{ marginRight: 20 }}
+                        color="#ffb52b"
+                      />
+                      <MaterialCommunityIcons
+                        name="at"
+                        size={20}
+                        color="#ffb52b"
+                      />
+                      <Text style={{ fontSize: 20, color: "#ffb52b" }}>
+                        {this.state.user.ig}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View
+                      style={{
+                        justifyContent: "center",
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name="at"
+                        size={30}
+                        color="#ffb52b"
+                      />
+                      <TextInput
+                        value={this.state.ig}
+                        placeholder="Add Instagram username"
+                        onChangeText={(query) => this.setState({ ig: query })}
+                        maxLength={20}
+                        style={{
+                          textAlign: "left",
+                          borderRadius: 5,
+                          color: "#ffb52b",
+                          padding: 5,
+                          backgroundColor: "white",
+                        }}
+                      />
+                      <TouchableOpacity
+                        onPress={this.setIg}
+                        style={{ padding: 5 }}
+                      >
+                        <MaterialCommunityIcons
+                          name="send"
+                          size={30}
+                          color="#ffb52b"
+                        />
+                      </TouchableOpacity>
+                      <InstagramLogin
+                        ref={(ref) => (this.instagramLogin = ref)}
+                        appId="your-app-id"
+                        appSecret="your-app-secret"
+                        redirectUrl="your-redirect-Url"
+                        scopes={["user_profile", "user_media"]}
+                        onLoginSuccess={this.setIgToken}
+                        onLoginFailure={(data) => console.log(data)}
+                      />
+                    </View>
+                  )}
                 </View>
               </View>
             </Modal>

@@ -15,6 +15,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import Carousel, { Pagination } from "react-native-snap-carousel";
 import { human } from "react-native-typography";
 
+import { shuffle } from "./../functions";
 import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import ProfileBanner from "./components/ProfileBanner";
@@ -128,29 +129,9 @@ class PeopleScreen extends React.Component {
     if (toAdd.length < 9) {
       this.getOtherUsers(9 - this.state.toAdd.length);
     } else {
-      await this.setState({ toAdd: this.shuffle(toAdd) });
+      await this.setState({ toAdd: shuffle(toAdd) });
       this.setState({ toAddLoading: false });
     }
-  };
-
-  shuffle = (array) => {
-    var currentIndex = array.length,
-      temporaryValue,
-      randomIndex;
-
-    // While there remain elements to shuffle...
-    while (0 !== currentIndex) {
-      // Pick a remaining element...
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex -= 1;
-
-      // And swap it with the current element.
-      temporaryValue = array[currentIndex];
-      array[currentIndex] = array[randomIndex];
-      array[randomIndex] = temporaryValue;
-    }
-
-    return array;
   };
 
   clickedUser = async (user) => {
@@ -387,12 +368,13 @@ class PeopleScreen extends React.Component {
             <View style={{ alignItems: "center", flexDirection: "row" }}>
               <TextInput
                 value={this.state.usernameQuery}
-                placeholder="Your friends username"
+                placeholder="Your friend's username"
                 onChangeText={(query) => {
                   this.setState({ searched: false });
                   this.setState({ usernameQuery: query });
                 }}
                 style={{
+                  elevation: 3,
                   borderRadius: 5,
                   color: "black",
                   padding: 5,
@@ -454,7 +436,7 @@ class PeopleScreen extends React.Component {
               }}
               animatedDuration={50}
               activeDotIndex={this.state.activeIndex}
-              dotColor="#fff"
+              dotColor="#2274A5"
               inactiveDotColor="dimgray"
               dotStyle={{
                 width: 10,

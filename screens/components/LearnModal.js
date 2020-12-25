@@ -31,8 +31,8 @@ export default class LearnModal extends React.Component {
           onPress={() => this.setState({ isModalVisible: true })}
         >
           <View style={styles.button}>
-            <Ionicons name="md-school" size={25} color="#ffb52b" />
-            <Text style={{ marginLeft: 5, color: "#ffb52b" }}>Learnt</Text>
+            <Ionicons name="md-school" size={25} color="#2274A5" />
+            <Text style={{ marginLeft: 5, color: "#2274A5" }}>Learnt</Text>
           </View>
         </TouchableOpacity>
         <Modal isVisible={this.state.isModalVisible}>
@@ -109,9 +109,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
-    backgroundColor: "#2274A5",
-    elevation: 1,
-    padding: 7,
-    borderRadius: 2,
   },
 });

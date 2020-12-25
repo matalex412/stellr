@@ -13,6 +13,7 @@ import {
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import Background from "./components/Background";
 import AskScreen from "./AskScreen";
@@ -197,15 +198,6 @@ class SearchScreen extends React.Component {
                 }}
               >
                 <View
-                  style={
-                    this.props.tutorials.current_topic.length < 1
-                      ? { alignItems: "center" }
-                      : { position: "absolute", top: 0, right: 5 }
-                  }
-                >
-                  <AskScreen />
-                </View>
-                <View
                   style={{
                     position: "absolute",
                     top: 0,
@@ -223,12 +215,12 @@ class SearchScreen extends React.Component {
                         }}
                       >
                         <Ionicons
-                          color="white"
+                          color="#2274A5"
                           style={{ margin: 10 }}
                           name="md-arrow-back"
                           size={25}
                         />
-                        <Text style={{ fontSize: 15, color: "white" }}>
+                        <Text style={{ fontSize: 15, color: "#2274A5" }}>
                           Go Back
                         </Text>
                       </View>
@@ -249,14 +241,14 @@ class SearchScreen extends React.Component {
                     {topics.map((topic, index) => {
                       return (
                         <TouchableOpacity
-                          style={styles.square}
                           key={index}
                           onPress={() => this.clickedTopic(topic)}
+                          style={styles.square}
                         >
                           <MaterialCommunityIcons
                             name={this.state.topics[topic].icon}
                             size={40}
-                            color="#ffb52b"
+                            color="#2274A5"
                           />
                           <View>
                             <Text style={styles.text}>{topic}</Text>
@@ -301,7 +293,6 @@ class SearchScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
@@ -317,13 +308,13 @@ const styles = StyleSheet.create({
     height: Dimensions.get("window").width / 3 - 30,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 10,
-    borderRadius: 2,
-    backgroundColor: "#2274A5",
+    elevation: 5,
+    borderRadius: 5,
+    backgroundColor: "#fff",
   },
   text: {
     textAlign: "center",
-    color: "white",
+    color: "#2274A5",
     fontSize: 15,
   },
   heading: {

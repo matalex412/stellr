@@ -17,7 +17,6 @@ class StarCount extends React.Component {
     }
 
     var stars = this.props.tutorials.stars;
-
     return (
       <View>
         {isAnonymous ? null : (

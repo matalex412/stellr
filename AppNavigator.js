@@ -9,8 +9,10 @@ import { Transition } from "react-native-reanimated";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { Text, TouchableOpacity, View } from "react-native";
+import Shimmer from "react-native-shimmer";
 import React from "react";
 import { human } from "react-native-typography";
+import { LinearGradient } from "expo-linear-gradient";
 
 import StarCount from "./screens/components/StarCount";
 import AppHeader from "./screens/components/AppHeader";
@@ -56,7 +58,7 @@ const HomeTabs = createMaterialTopTabNavigator(
       labelStyle: { ...human.headlineObject, color: "#2274A5" },
       tabStyle: { alignItems: "flex-start" },
       style: {
-        backgroundColor: "#bcd4e6",
+        backgroundColor: "#fff",
       },
       indicatorStyle: {
         backgroundColor: "#2274A5",
@@ -190,9 +192,19 @@ const AppStack = createStackNavigator(
   },
   {
     defaultNavigationOptions: {
-      headerStyle: { backgroundColor: "#2274A5" },
+      headerBackground: () => (
+        <LinearGradient
+          colors={["#2274A5", "#10356c"]}
+          style={{ flex: 1 }}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        />
+      ),
       headerTitleStyle: {
         color: "white",
+      },
+      headerStyle: {
+        height: 75,
       },
       headerBackImage: () => (
         <Ionicons
@@ -240,7 +252,8 @@ HomeTabs.navigationOptions = {
 
 CreateStack.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
-    <View
+    <LinearGradient
+      colors={["#2274A5", "#10356c"]}
       style={{
         position: "absolute",
         bottom: 10,
@@ -252,6 +265,8 @@ CreateStack.navigationOptions = {
         justifyContent: "center",
         alignItems: "center",
       }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
     >
       <MaterialCommunityIcons
         style={{ alignSelf: "center", padding: 10 }}
@@ -259,7 +274,7 @@ CreateStack.navigationOptions = {
         size={35}
         color={tintColor == "#2274A5" ? "#ffb52b" : "white"}
       />
-    </View>
+    </LinearGradient>
   ),
 };
 

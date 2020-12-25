@@ -34,8 +34,11 @@ export default class ProfileBanner extends React.Component {
                 {
                   fontSize: this.props.font ? this.props.font : 20,
                   textAlign: "center",
+                  maxWidth: 130,
+                  color: "#2274A5",
                 },
               ]}
+              numberOfLines={1}
             >
               {this.props.user.username}
             </Text>
@@ -64,10 +67,9 @@ const styles = StyleSheet.create({
     height: 30,
     width: 30,
     borderRadius: 40,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "black",
+    backgroundColor: "#2274A5",
   },
 });
 

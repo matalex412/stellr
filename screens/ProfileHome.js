@@ -98,7 +98,6 @@ class ProfileHome extends React.Component {
           ) : (
             <View style={{ width: "100%", alignItems: "center" }}>
               <ProfileBanner
-                imageStyle={{ width: 100, height: 100, borderRadius: 5 }}
                 bio={this.state.user.bio}
                 user={this.state.user}
                 size={100}
