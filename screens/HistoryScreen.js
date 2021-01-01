@@ -81,7 +81,6 @@ class UserPosts extends React.Component {
       .get();
 
     // send user to tutorial screen
-    await store.dispatch(updateTutorials({tutorial_topic: postref.topic}));
     await store.dispatch(updateTutorials({current: doc.data()}));
     await store.dispatch(updateTutorials({current_key: key}));
 

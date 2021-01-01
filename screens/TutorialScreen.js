@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import VideoPlayer from 'react-native-video-controls';
 import {connect} from 'react-redux';
 import {AdMobBanner, AdMobInterstitial} from 'react-native-admob';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -16,9 +15,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Firebase from 'firebase';
 import {AirbnbRating} from 'react-native-ratings';
 import Modal from 'react-native-modal';
-import Carousel, {Pagination} from 'react-native-snap-carousel';
+import Carousel from 'react-native-snap-carousel';
 import {human, systemWeights} from 'react-native-typography';
 
+import ProfileBanner from './components/ProfileBanner';
 import Step from './components/Step';
 import ModalAlert from './components/ModalAlert';
 import Background from './components/Background';
@@ -33,8 +33,6 @@ class TutorialScreen extends React.Component {
     isModalVisible: false,
     isLoading: true,
     posts: {},
-    added: false,
-    paid: false,
     activeIndex: 0,
     minas: 0,
   };
@@ -51,99 +49,51 @@ class TutorialScreen extends React.Component {
     // get currentuser data
     const {currentUser} = firebase.auth();
 
-    if (!currentUser.isAnonymous) {
-      var doc = await firebase
-        .firestore()
-        .collection('users')
-        .doc(currentUser.uid)
-        .get();
-      this.setState({minas: doc.data().minas});
-    }
+    var doc = await firebase
+      .firestore()
+      .collection('users')
+      .doc(this.props.tutorials.current.uid)
+      .get();
+    var data = doc.data();
+    var creatorProfile = {
+      profilePic: data.profilePic,
+      username: data.username,
+    };
+    this.setState({creatorProfile});
 
     if (this.props.tutorials.current) {
-      if (this.props.tutorials.current.topic == '/topics/Meta') {
-        this.setState({paid: true});
-      }
-
-      // get tutorials user has added
-      var ids;
-      var doc1 = await firebase
-        .firestore()
-        .collection('users/' + currentUser.uid + '/data')
-        .doc('learning')
-        .get();
-
-      if (doc1.exists) {
-        ids = Object.keys(doc1.data());
-        if (ids.includes(this.props.tutorials.current_key)) {
-          this.setState({added: true});
-          this.setState({paid: true});
-        }
-      }
       this.setState({currentUser});
       this.setState({isLoading: false});
 
       // Load an interstitial
-      AdMobInterstitial.setAdUnitID('ca-app-pub-3262091936426324/1869093284');
-      AdMobInterstitial.requestAd();
+      AdMobInterstitial.setAdUnitID('ca-app-pub-3800661518525298/2568980529');
+      await AdMobInterstitial.requestAd();
+      AdMobInterstitial.showAd();
     }
   };
 
-  addHome = async () => {
+  learnt = async (rating, complete) => {
     const {currentUser} = await firebase.auth();
+    var alreadyLearnt = false;
 
-    // add tutorial to user's learning section
-    await firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc('learning')
-      .set(
-        {
-          [this.props.tutorials.current_key]: {
-            topic: this.props.tutorials.current.topic,
-            title: this.props.tutorials.current.title,
-            thumbnail: this.props.tutorials.current.thumbnail,
-          },
-        },
-        {merge: true},
-      );
-
-    // redirect user
-    this.setState({alertIcon: 'md-add-circle'});
-    this.setState({alertTitle: 'Added'});
-    this.setState({
-      alertMessage: `The tutorial "${this.props.tutorials.current.title}" has been added to your home page`,
-    });
-    this.setState({isModalVisible: true});
-  };
-
-  learnt = async (rating, complete, added) => {
-    const {currentUser} = firebase.auth();
-
-    if (added) {
-      // remove post from learning object for user
-      var postRef = firebase
+    // update user's history
+    if (!currentUser.isAnonymous) {
+      // get users history
+      var doc = await firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
-        .doc('learning');
-      postRef.update({
-        [this.props.tutorials
-          .current_key]: Firebase.firestore.FieldValue.delete(),
-      });
-    }
+        .doc('history')
+        .get();
 
-    if (!currentUser.isAnonymous) {
-      var alreadyLearnt = false;
-      var historyRef = firebase
+      var historyRef = await firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
         .doc('history');
 
-      // get users history
-      var doc = historyRef.get();
       // check if tutorial has previously been learnt by user
       if (doc.exists) {
         var learnt = doc.data();
+        var key;
         var keys = Object.keys(learnt);
         for (key of keys) {
           if (key == this.props.tutorials.current_key) {
@@ -154,8 +104,30 @@ class TutorialScreen extends React.Component {
       }
 
       if (alreadyLearnt == true) {
+        var newRating = rating;
+        // calculate overall rating change
+        if (data.rating) {
+          rating -= data.rating;
+        }
+        // store if learnt or not
+        if (data.complete) {
+          var oldField = 'learns';
+        } else {
+          var oldField = 'incomplete';
+        }
+        // update tutorial stats
+        await firebase
+          .firestore()
+          .collection(`${this.props.tutorials.current.topic}/posts`)
+          .doc(this.props.tutorials.current_key)
+          .update({
+            [oldField]: Firebase.firestore.FieldValue.increment(-1),
+          });
+
+        // update history if previously learnt
         data.time = Date.now();
         data.complete = complete;
+        data.rating = newRating;
         historyRef.update({
           [this.props.tutorials.current_key]: data,
         });
@@ -169,6 +141,7 @@ class TutorialScreen extends React.Component {
               thumbnail: this.props.tutorials.current.thumbnail,
               time: Date.now(),
               complete: complete,
+              rating: rating,
             },
           },
           {merge: true},
@@ -176,23 +149,34 @@ class TutorialScreen extends React.Component {
       }
     }
 
+    // store if learnt or not
     if (complete) {
       var field = 'learns';
     } else {
       var field = 'incomplete';
     }
 
-    if (!alreadyLearnt) {
-      // update tutorial stats
+    if (!currentUser.isAnonymous && !alreadyLearnt) {
+      // update current user stats for adding review
       await firebase
         .firestore()
-        .collection(`${this.props.tutorials.current.topic}/posts`)
-        .doc(this.props.tutorials.current_key)
+        .collection('users')
+        .doc(currentUser.uid)
         .update({
-          stars: Firebase.firestore.FieldValue.increment(rating),
-          [field]: Firebase.firestore.FieldValue.increment(1),
+          stars: Firebase.firestore.FieldValue.increment(1),
+          weeklyStars: Firebase.firestore.FieldValue.increment(1),
         });
     }
+
+    // update tutorial stats
+    await firebase
+      .firestore()
+      .collection(`${this.props.tutorials.current.topic}/posts`)
+      .doc(this.props.tutorials.current_key)
+      .update({
+        stars: Firebase.firestore.FieldValue.increment(rating),
+        [field]: Firebase.firestore.FieldValue.increment(1),
+      });
 
     // update creator's weekly stars
     await firebase
@@ -200,11 +184,9 @@ class TutorialScreen extends React.Component {
       .collection('users')
       .doc(this.props.tutorials.current.uid)
       .update({
+        stars: Firebase.firestore.FieldValue.increment(rating),
         weeklyStars: Firebase.firestore.FieldValue.increment(rating),
-        shekels: Firebase.firestore.FieldValue.increment(5),
       });
-
-    this.props.navigation.navigate('Search');
   };
 
   _onPlaybackStatusUpdate = (playbackStatus, index) => {
@@ -213,102 +195,8 @@ class TutorialScreen extends React.Component {
     }
   };
 
-  buy = async (ad) => {
-    var {currentUser} = await firebase.auth();
-
-    if (ad) {
-      AdMobInterstitial.showAd();
-      this.setState({paid: true});
-
-      if (currentUser.uid != this.props.tutorials.current.uid) {
-        firebase
-          .firestore()
-          .collection('users')
-          .doc(this.props.tutorials.current.uid)
-          .update({
-            minas: Firebase.firestore.FieldValue.increment(5),
-          });
-      }
-
-      this.setState({paid: true});
-    } else if (!currentUser.isAnonymous) {
-      var userRef = firebase
-        .firestore()
-        .collection('users')
-        .doc(currentUser.uid);
-
-      firebase.firestore().runTransaction((transaction) => {
-        return transaction.get(userRef).then((doc) => {
-          var minas = doc.data().minas - 5;
-          if (minas >= 0) {
-            transaction.update(userRef, {minas});
-            firebase
-              .firestore()
-              .collection('users')
-              .doc(this.props.tutorials.current.uid)
-              .update({
-                minas: Firebase.firestore.FieldValue.increment(5),
-              });
-            this.setState({paid: true});
-          } else {
-            // redirect user
-            this.setState({alertIcon: 'md-cash'});
-            this.setState({alertTitle: 'Earn Minas'});
-            this.setState({
-              alertMessage:
-                "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials",
-            });
-            this.setState({isModalVisible: true});
-          }
-        });
-      });
-    } else {
-      // redirect user
-      this.setState({alertIcon: 'md-add-circle'});
-      this.setState({alertTitle: 'Earn Minas'});
-      this.setState({
-        alertMessage:
-          "Sorry, you don't have enough Minas right now. You can earn them by creating tutorials (account needed)",
-      });
-      this.setState({isModalVisible: true});
-    }
-
-    if (!currentUser.isAnonymous) {
-      // update users interests
-      var doc = await firebase
-        .firestore()
-        .collection('users')
-        .doc(currentUser.uid)
-        .get();
-      var data = doc.data();
-      var interests = data.interests;
-      interests.creators = Object.values(interests.creators);
-      interests.topics = Object.values(interests.topics);
-      if (!interests.creators.includes(this.props.tutorials.current.uid)) {
-        interests.creators.push(this.props.tutorials.current.uid);
-        if (interests.creators.length > 5) {
-          interests.creators.shift();
-        }
-      }
-      if (!interests.topics.includes(this.props.tutorials.current.topic)) {
-        interests.topics.push(this.props.tutorials.current.topic);
-        if (interests.topics.length > 5) {
-          interests.topics.shift();
-        }
-      }
-
-      firebase.firestore().collection('users').doc(currentUser.uid).update({
-        interests: interests,
-      });
-    }
-  };
-
   changeModalVisibility = (visible) => {
     this.setState({isModalVisible: visible});
-  };
-
-  _finishedVideo = (index) => {
-    console.log(index);
   };
 
   _renderItem = ({item, index}) => {
@@ -317,7 +205,16 @@ class TutorialScreen extends React.Component {
   };
 
   render() {
+    var rating = (
+      this.props.tutorials.current.stars /
+      (this.props.tutorials.current.learns +
+        this.props.tutorials.current.incomplete)
+    ).toFixed(1);
+    if (rating == 'NaN') {
+      rating = 0;
+    }
     this.vids = [];
+    var width = Dimensions.get('window').width;
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Background />
@@ -340,7 +237,7 @@ class TutorialScreen extends React.Component {
             <View style={{minHeight: 50, alignItems: 'center'}}>
               <AdMobBanner
                 adSize="smartBanner"
-                adUnitID="ca-app-pub-3262091936426324/2933794374"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onAdFailedtoLoad={() => console.log('banner ad not loading')}
               />
             </View>
@@ -352,154 +249,84 @@ class TutorialScreen extends React.Component {
                 justifyContent: 'center',
                 alignItems: 'center',
               }}>
-              {this.state.paid ? null : (
-                <View
-                  style={{
-                    alignItems: 'center',
-                    top: 5,
-                    right: 20,
-                    position: 'absolute',
-                  }}>
-                  <MaterialCommunityIcons
-                    name="sack"
-                    size={30}
-                    color="#ffb52b"
-                  />
-                  <Text
-                    style={{
-                      color: 'white',
-                      top: 10,
-                      position: 'absolute',
-                    }}>
-                    {this.state.minas}
-                  </Text>
-                </View>
-              )}
-
               <Text style={styles.title}>
                 {this.props.tutorials.current.title}
               </Text>
-              <Text style={{color: '#2274A5'}}>
-                by {this.props.tutorials.current.username}
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  padding: 5,
-                  alignItems: 'center',
-                }}>
-                <Text
-                  style={[human.callout, {marginRight: 10, color: '#2274A5'}]}>
-                  Learns:{' '}
-                  {this.props.tutorials.current.learns -
-                    this.props.tutorials.current.incomplete}
-                </Text>
-                <AirbnbRating
-                  isDisabled
-                  defaultRating={
-                    this.props.tutorials.current.stars /
-                    (this.props.tutorials.current.learns +
-                      this.props.tutorials.current.incomplete)
-                  }
-                  selectedColor="#ffb52b"
-                  showRating={false}
-                  type="custom"
-                  size={20}
+              <View style={{alignItems: 'center'}}>
+                <View style={styles.pagination}>
+                  <Text style={{color: '#fff'}}>
+                    {this.state.activeIndex + 1}/
+                    {this.props.tutorials.current.steps.length}
+                  </Text>
+                </View>
+                <Carousel
+                  layout={'default'}
+                  ref={(ref) => (this.carousel = ref)}
+                  data={this.props.tutorials.current.steps}
+                  sliderWidth={width}
+                  itemWidth={width}
+                  renderItem={this._renderItem}
+                  onSnapToItem={(index) => this.setState({activeIndex: index})}
+                  containerCustomStyle={{
+                    flexGrow: 0,
+                  }}
                 />
-              </View>
-              {this.props.tutorials.current.info ? (
-                <Text
-                  style={[
-                    human.callout,
-                    {
-                      color: '#2274A5',
-                      marginHorizontal: 40,
-                      marginVertical: 10,
-                      textAlign: 'center',
-                    },
-                  ]}>
-                  {this.props.tutorials.current.info}
-                </Text>
-              ) : null}
-
-              {!this.state.paid ? (
-                <View style={{margin: 15, flexDirection: 'row'}}>
-                  <TouchableOpacity
-                    onPress={() => this.buy(false)}
-                    style={[
-                      styles.button,
-                      {paddingVertical: 0, marginRight: 5},
-                    ]}>
-                    <MaterialCommunityIcons
-                      name="cash-usd"
-                      size={40}
-                      color="#ffb52b"
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    borderTopWidth: 1,
+                    borderBottomWidth:
+                      this.props.tutorials.current.topic == '/topics/Meta'
+                        ? 1
+                        : 0,
+                    borderColor: 'lightgray',
+                    width: width,
+                    justifyContent: 'space-evenly',
+                    padding: 10,
+                    alignItems: 'center',
+                  }}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons
+                      name="md-eye"
+                      size={25}
+                      color="#2274A5"
+                      style={{marginRight: 3}}
                     />
-                    <Text style={{color: 'white'}}> Use 5 Minas</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => this.buy(true)}
-                    style={[styles.button, {paddingTop: 0, paddingBottom: 0}]}>
-                    <Ionicons name="md-play-circle" size={25} color="#ffb52b" />
-                    <Text style={{color: 'white'}}> Play ad </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={{alignItems: 'center'}}>
-                  <Pagination
-                    dotsLength={this.props.tutorials.current.steps.length}
-                    containerStyle={{
-                      paddingTop: 10,
-                      paddingBottom: 15,
-                    }}
-                    animatedDuration={50}
-                    activeDotIndex={this.state.activeIndex}
-                    dotColor="#fff"
-                    inactiveDotColor="dimgray"
-                    dotStyle={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      marginHorizontal: 4,
-                    }}
-                    inactiveDotOpacity={0.4}
-                    inactiveDotScale={0.6}
-                  />
-                  <Carousel
-                    layout={'default'}
-                    ref={(ref) => (this.carousel = ref)}
-                    data={this.props.tutorials.current.steps}
-                    sliderWidth={300}
-                    itemWidth={300}
-                    renderItem={this._renderItem}
-                    onSnapToItem={(index) =>
-                      this.setState({activeIndex: index})
-                    }
-                    containerCustomStyle={{
-                      flexGrow: 0,
-                    }}
-                  />
-                  <View
-                    style={{
-                      marginBottom: 15,
-                      flexDirection: 'row',
-                    }}>
-                    {this.state.currentUser.isAnonymous ? null : this.state
-                        .added ? null : (
-                      <TouchableOpacity onPress={this.addHome}>
-                        <View style={[styles.button, {marginRight: 10}]}>
-                          <Ionicons
-                            name="md-bookmark"
-                            size={25}
-                            color="#ffb52b"
-                          />
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                    <LearnModal added={this.state.added} learnt={this.learnt} />
+                    <Text>
+                      {this.props.tutorials.current.learns +
+                        this.props.tutorials.current.incomplete}
+                    </Text>
                   </View>
+
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons
+                      name="md-star"
+                      size={25}
+                      color="#2274A5"
+                      style={{marginRight: 3}}
+                    />
+                    <Text>{rating}</Text>
+                  </View>
+                  <LearnModal learnt={this.learnt} />
                 </View>
-              )}
+                {!(this.props.tutorials.current.topic == '/topics/Meta') && (
+                  <ProfileBanner
+                    imageStyle={{
+                      width: 40,
+                      height: 40,
+                    }}
+                    font={22}
+                    user={this.state.creatorProfile}
+                    viewStyle={{
+                      borderWidth: 1,
+                      borderColor: 'lightgray',
+                      width: width,
+                      justifyContent: 'center',
+                    }}
+                    size={32}
+                  />
+                )}
+              </View>
             </View>
           </View>
         )}
@@ -536,6 +363,15 @@ const styles = StyleSheet.create({
     elevation: 1,
     padding: 7,
     borderRadius: 2,
+  },
+  pagination: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    borderRadius: 20,
+    padding: 3,
+    backgroundColor: '#2275A5',
+    zIndex: 999,
   },
 });
 

@@ -11,7 +11,10 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {Text, TouchableOpacity, View} from 'react-native';
 import React from 'react';
 import {human} from 'react-native-typography';
+import LinearGradient from 'react-native-linear-gradient';
 
+import ProfileHome from './screens/ProfileHome';
+import ProfileMade from './screens/ProfileMade';
 import LoginScreen from './screens/LoginScreen';
 import LoadingScreen from './screens/LoadingScreen';
 import SignUp from './screens/SignUp';
@@ -22,7 +25,6 @@ import AddedScreen from './screens/AddedScreen';
 import CreateScreen from './screens/CreateScreen';
 import SearchScreen from './screens/SearchScreen';
 import TutorialScreen from './screens/TutorialScreen';
-import LearningScreen from './screens/LearningScreen';
 import AccountScreen from './screens/AccountScreen';
 import TopicScreen from './screens/TopicScreen';
 import UserPosts from './screens/UserPosts';
@@ -32,7 +34,6 @@ import AskScreen from './screens/AskScreen';
 import ForgotScreen from './screens/ForgotScreen';
 import MessageScreen from './screens/MessageScreen';
 import PeopleScreen from './screens/PeopleScreen';
-import ProfileScreen from './screens/ProfileScreen';
 import LeaderboardScreen from './screens/LeaderboardScreen';
 
 const CreateStack = createSwitchNavigator(
@@ -56,7 +57,7 @@ const HomeTabs = createMaterialTopTabNavigator(
       labelStyle: {...human.headlineObject, color: '#2274A5'},
       tabStyle: {alignItems: 'flex-start'},
       style: {
-        backgroundColor: '#bcd4e6',
+        backgroundColor: '#fff',
       },
       indicatorStyle: {
         backgroundColor: '#2274A5',
@@ -99,7 +100,7 @@ const LoginStack = createStackNavigator(
 
 const AppTabs = createBottomTabNavigator(
   {
-    Home: HomeTabs,
+    Home: HomeScreen,
     Search: SearchScreen,
     Create: CreateStack,
     Users: PeopleScreen,
@@ -114,6 +115,25 @@ const AppTabs = createBottomTabNavigator(
         backgroundColor: '#fff',
         borderTopColor: 'transparent',
         elevation: 5,
+      },
+    },
+  },
+);
+
+const ProfileTabs = createMaterialTopTabNavigator(
+  {
+    Home: ProfileHome,
+    Tutorials: ProfileMade,
+  },
+  {
+    tabBarOptions: {
+      activeTintColor: '#2274A5',
+      inactiveTintColor: 'gray',
+      style: {
+        backgroundColor: '#fff',
+      },
+      indicatorStyle: {
+        backgroundColor: '#2274A5',
       },
     },
   },
@@ -181,8 +201,7 @@ const AppStack = createStackNavigator(
       screen: UserPosts,
       navigationOptions: {title: 'Your Posts'},
     },
-    Profile: {screen: ProfileScreen, navigationOptions: {title: ''}},
-    Learning: {screen: LearningScreen, navigationOptions: {title: ''}},
+    Profile: {screen: ProfileTabs, navigationOptions: {title: ''}},
     Tutorial: {screen: TutorialScreen, navigationOptions: {title: ''}},
     UserTopic: {screen: TopicScreen, navigationOptions: {title: 'Topic'}},
     UserTutorial: {screen: UserPostScreen, navigationOptions: {title: ''}},
@@ -190,7 +209,23 @@ const AppStack = createStackNavigator(
   },
   {
     defaultNavigationOptions: {
-      headerStyle: {backgroundColor: '#2274A5'},
+      headerBackground: () => (
+        <LinearGradient
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          colors={['#2274A5', '#10356c']}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: '100%',
+          }}
+        />
+      ),
+      headerStyle: {
+        height: 50,
+      },
       headerTitleStyle: {
         color: 'white',
       },
@@ -227,7 +262,7 @@ const AppNavigator = createAnimatedSwitchNavigator(
   },
 );
 
-HomeTabs.navigationOptions = {
+HomeScreen.navigationOptions = {
   tabBarIcon: ({tintColor}) => (
     <MaterialCommunityIcons
       style={{alignSelf: 'center', padding: 10}}
@@ -240,7 +275,8 @@ HomeTabs.navigationOptions = {
 
 CreateStack.navigationOptions = {
   tabBarIcon: ({tintColor}) => (
-    <View
+    <LinearGradient
+      colors={['#2274A5', '#10356c']}
       style={{
         position: 'absolute',
         bottom: 10,
@@ -251,14 +287,16 @@ CreateStack.navigationOptions = {
         backgroundColor: '#2274A5',
         justifyContent: 'center',
         alignItems: 'center',
-      }}>
+      }}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 0}}>
       <MaterialCommunityIcons
         style={{alignSelf: 'center', padding: 10}}
         name="pencil"
         size={35}
         color={tintColor == '#2274A5' ? '#ffb52b' : 'white'}
       />
-    </View>
+    </LinearGradient>
   ),
 };
 

@@ -78,6 +78,8 @@ class SearchScreen extends React.Component {
 
     // removes icon key
     delete new_topics.icon;
+    delete new_topics.count;
+    delete new_topics.color;
 
     if (Object.keys(new_topics).length == 0) {
       var post = this.props.tutorials.userpost;
@@ -162,7 +164,7 @@ class SearchScreen extends React.Component {
                       <MaterialCommunityIcons
                         name={this.state.topics[topic].icon}
                         size={40}
-                        color="#ffb52b"
+                        color="#2274A5"
                       />
                       <View>
                         <Text style={styles.text}>{topic}</Text>
@@ -174,7 +176,9 @@ class SearchScreen extends React.Component {
                   {this.state.current_topic.length < 1 ? null : (
                     <TouchableOpacity onPress={() => this.pickTopic()}>
                       <View>
-                        <Text style={{fontSize: 16}}>Select Current Topic</Text>
+                        <Text style={{color: '#2274A5', fontSize: 16}}>
+                          Select Current Topic
+                        </Text>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -195,7 +199,7 @@ const styles = StyleSheet.create({
   },
   text: {
     textAlign: 'center',
-    color: 'white',
+    color: '#2274A5',
     fontSize: 16,
   },
   contentContainer: {
@@ -210,12 +214,9 @@ const styles = StyleSheet.create({
     height: Dimensions.get('window').width / 3 - 30,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 10,
-    backgroundColor: '#2274A5',
+    elevation: 5,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
   heading: {
     fontSize: 18,

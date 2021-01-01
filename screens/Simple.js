@@ -9,9 +9,16 @@ import {
 
 export default class Simple extends React.Component {
   render() {
+
+    fixImage = () => {
+      console.log("hi")
+    }
+
     return (
       <View>
-        <Text>Something else here</Text>
+        <TextInput placeholder="topic"/>
+        <TextInput placeholder="id"/>
+        <Button onPress={this.fixImage}/>
       </View>
     );
   }

@@ -18,13 +18,13 @@ const ProfileTabs = createMaterialTopTabNavigator(
   },
   {
     tabBarOptions: {
-      activeTintColor: '#ffb52b',
-      inactiveTintColor: 'white',
+      activeTintColor: '#2274A5',
+      inactiveTintColor: 'gray',
       style: {
-        backgroundColor: '#2274A5',
+        backgroundColor: '#fff',
       },
       indicatorStyle: {
-        backgroundColor: '#ffb52b',
+        backgroundColor: '#2274A5',
       },
     },
   },
@@ -69,11 +69,6 @@ class ProfileScreen extends React.Component {
   render() {
     return (
       <View style={{flex: 1}}>
-        <Background />
-        <ProfileBanner
-          style={{alignSelf: 'center', margin: 10}}
-          user={this.props.tutorials.profile}
-        />
         <ProfileNav />
       </View>
     );

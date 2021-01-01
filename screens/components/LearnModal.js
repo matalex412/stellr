@@ -29,8 +29,8 @@ export default class LearnModal extends React.Component {
       <View>
         <TouchableOpacity onPress={() => this.setState({isModalVisible: true})}>
           <View style={styles.button}>
-            <Ionicons name="md-school" size={25} color="#ffb52b" />
-            <Text style={{marginLeft: 5, color: '#ffb52b'}}>Learnt</Text>
+            <Ionicons name="md-school" size={25} color="#2274A5" />
+            <Text style={{color: '#2274A5', marginLeft: 5}}>Learnt</Text>
           </View>
         </TouchableOpacity>
         <Modal isVisible={this.state.isModalVisible}>
@@ -75,20 +75,18 @@ export default class LearnModal extends React.Component {
               />
             </View>
             <TouchableOpacity
-              style={{marginBottom: 30}}
-              onPress={() => {
+              style={{marginTop: 19}}
+              onPress={async () => {
                 if (!this.state.dontClick) {
                   this.setState({dontClick: true});
-                  this.props.learnt(
-                    this.state.rating,
-                    this.state.learnt,
-                    this.props.added,
-                  );
+                  this.setState({isModalVisible: false});
+                  await this.props.learnt(this.state.rating, this.state.learnt);
+                  this.setState({dontClick: false});
                 }
               }}>
               <View style={styles.button}>
-                <Ionicons name="md-checkmark" size={25} color="#ffb52b" />
-                <Text style={{marginLeft: 5, color: '#ffb52b'}}>Finish</Text>
+                <Ionicons name="md-checkmark" size={25} color="#2274A5" />
+                <Text style={{marginLeft: 5, color: '#2274A5'}}>Finish</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -103,9 +101,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    backgroundColor: '#2274A5',
-    elevation: 1,
-    padding: 7,
+    backgroundColor: '#fff',
+    padding: 5,
     borderRadius: 2,
   },
 });

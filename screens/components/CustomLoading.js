@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, ActivityIndicator, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import {PacmanIndicator} from 'react-native-indicators';
 
 export default class CustomLoading extends React.Component {

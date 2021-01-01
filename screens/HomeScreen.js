@@ -77,20 +77,6 @@ class HomeScreen extends React.Component {
       });
       this.changeModalVisibility(true);
       store.dispatch(updateTutorials({newAccount: false}));
-    } else {
-      try {
-        var doc = await firebase
-          .firestore()
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-        var data = doc.data();
-        if (data.stars) {
-          store.dispatch(updateTutorials({stars: data.stars}));
-        }
-      } catch (err) {
-        console.log(err);
-      }
     }
 
     if (!currentUser) {
@@ -210,10 +196,10 @@ class HomeScreen extends React.Component {
   };
 
   handlePress = async (post) => {
-    // redirect user to learning page with post info
-    await store.dispatch(updateTutorials({learn_key: post.key}));
-    await store.dispatch(updateTutorials({added: post}));
-    this.props.navigation.navigate('Learning');
+    // store clicked post and go to tutorial page
+    await store.dispatch(updateTutorials({current_key: post.key}));
+    await store.dispatch(updateTutorials({current: post}));
+    this.props.navigation.navigate('Tutorial');
   };
 
   render() {
@@ -242,7 +228,7 @@ class HomeScreen extends React.Component {
               <View style={{alignItems: 'center', marginBottom: 5}}>
                 <AdMobBanner
                   adSize="smartBanner"
-                  adUnitID="ca-app-pub-3262091936426324/7558442816"
+                  adUnitID="ca-app-pub-3800661518525298/6229842172"
                   onAdFailedtoLoad={() => console.log('banner ad not loading')}
                 />
               </View>
@@ -258,29 +244,29 @@ class HomeScreen extends React.Component {
                     <TouchableOpacity
                       key={index}
                       onPress={() => this.handlePress(image)}
-                      style={{margin: 5}}>
-                      <View
+                      style={{
+                        margin: 5,
+                        backgroundColor: 'white',
+                        elevation: 5,
+                        borderRadius: 5,
+                      }}>
+                      <Image
+                        resizeMode={'cover'}
                         style={{
-                          elevation: 1,
-                          borderColor: 'transparent',
-                          borderWidth: 0.01,
-                        }}>
-                        <Image
-                          resizeMode={'cover'}
-                          style={{
-                            width: width / 2 - 20,
-                            height: 200,
-                            borderRadius: 5,
-                          }}
-                          source={{uri: image.thumbnail}}
-                        />
-                      </View>
+                          width: width / 2 - 20,
+                          height: 200,
+                          borderTopLeftRadius: 5,
+                          borderTopRightRadius: 5,
+                        }}
+                        source={{uri: image.thumbnail}}
+                      />
                       <Text
                         numberOfLines={1}
                         style={[
                           human.subhead,
                           systemWeights.semibold,
                           {
+                            padding: 5,
                             textAlign: 'center',
                             marginTop: 3,
                             color: '#2274A5',

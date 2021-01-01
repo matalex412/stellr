@@ -9,13 +9,15 @@ import {
   Image,
   BackHandler,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
 import {connect} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {human, systemWeights} from 'react-native-typography';
 
 import Background from './components/Background';
-import AskScreen from './AskScreen';
+import LinearGradient from 'react-native-linear-gradient';
 import CustomLoading from './components/CustomLoading';
 import TutorialCover from './components/TutorialCover';
 import {store} from './../redux/store';
@@ -74,8 +76,17 @@ class SearchScreen extends React.Component {
     }
 
     // removes icon key
-    if (topics['icon'] != null) {
+    if (topics['icon']) {
       delete topics.icon;
+    }
+
+    // removes color key
+    if (topics['color']) {
+      delete topics.color;
+    }
+    // removes color key
+    if (topics['count']) {
+      delete topics.count;
     }
 
     await this.setState({topics});
@@ -113,6 +124,18 @@ class SearchScreen extends React.Component {
       this.setState({contents: {}});
       this.setState({postids: []});
     }
+
+    var counts = [];
+    for (topic of Object.keys(topics)) {
+      var doc = await firebase
+        .firestore()
+        .collection('topics')
+        .doc(topic)
+        .get();
+      var data = doc.data();
+      counts.push(data.tutorialCount);
+    }
+    this.setState({counts});
 
     // page finished loading
     this.setState({isLoading: false});
@@ -192,14 +215,6 @@ class SearchScreen extends React.Component {
                     this.props.tutorials.current_topic.length < 1 ? 0 : 45,
                 }}>
                 <View
-                  style={
-                    this.props.tutorials.current_topic.length < 1
-                      ? {alignItems: 'center'}
-                      : {position: 'absolute', top: 0, right: 5}
-                  }>
-                  <AskScreen />
-                </View>
-                <View
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -228,33 +243,43 @@ class SearchScreen extends React.Component {
                   )}
                 </View>
               </View>
-
               {topics.length < 1 ? null : (
                 <View>
-                  <View
-                    style={{
-                      justifyContent: 'center',
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                    }}>
-                    {topics.map((topic, index) => {
-                      return (
-                        <TouchableOpacity
-                          style={styles.square}
-                          key={index}
-                          onPress={() => this.clickedTopic(topic)}>
-                          <MaterialCommunityIcons
-                            name={this.state.topics[topic].icon}
-                            size={40}
-                            color="#ffb52b"
-                          />
-                          <View>
-                            <Text style={styles.text}>{topic}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                  {topics.map((topic, index) => {
+                    switch (topic) {
+                      case 'Art':
+                        var image = require('../assets/Art-cover.jpg');
+                        break;
+                      case 'Health & beauty':
+                        var image = require('../assets/Health-cover.jpg');
+                        break;
+                      case 'Other':
+                        var image = require('../assets/Other-cover.jpg');
+                        break;
+                      case 'Sport':
+                        var image = require('../assets/Sport-cover.jpg');
+                        break;
+                      default:
+                        var image = require('../assets/Cooking-cover.jpg');
+                    }
+
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => this.clickedTopic(topic)}>
+                        <ImageBackground style={styles.topic} source={image}>
+                          <LinearGradient
+                            style={styles.topic}
+                            colors={['#2274A5', 'transparent']}>
+                            <Text style={styles.topicTitle}>{topic}</Text>
+                            <Text style={styles.tutorialCount}>
+                              {this.state.counts[index]} Tutorials
+                            </Text>
+                          </LinearGradient>
+                        </ImageBackground>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
               {postids.length < 1 ? (
@@ -301,20 +326,18 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderColor: '#0b5c87',
   },
-  square: {
-    margin: 10,
-    width: Dimensions.get('window').width / 3 - 30,
-    height: Dimensions.get('window').width / 3 - 30,
+  topic: {
+    width: Dimensions.get('window').width,
+    height: 170,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 10,
-    borderRadius: 2,
-    backgroundColor: '#2274A5',
   },
-  text: {
-    textAlign: 'center',
-    color: 'white',
-    fontSize: 15,
+  topicTitle: {
+    ...human.title1WhiteObject,
+    ...systemWeights.semibold,
+  },
+  tutorialCount: {
+    ...human.headlineWhiteObject,
   },
   heading: {
     fontSize: 22,

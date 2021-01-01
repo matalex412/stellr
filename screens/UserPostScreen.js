@@ -15,12 +15,18 @@ import ImagePicker from 'react-native-image-picker';
 import {connect} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Firebase from 'firebase';
+import RNFetchBlob from 'rn-fetch-blob';
 
 import Background from './components/Background';
 import CustomLoading from './components/CustomLoading';
 import {store} from './../redux/store';
 import {updateTutorials} from './../redux/actions';
 import {firebase} from './../src/config';
+
+const Blob = RNFetchBlob.polyfill.Blob;
+const fs = RNFetchBlob.fs;
+window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest;
+window.Blob = Blob;
 
 class UserPostScreen extends React.Component {
   state = {
@@ -40,6 +46,33 @@ class UserPostScreen extends React.Component {
   componentWillUnmount = async () => {
     await store.dispatch(updateTutorials({vids: this.vids}));
   };
+
+  uploadImage(uri, mime = 'image/jpeg', refName) {
+    return new Promise((resolve, reject) => {
+      const {currentUser} = firebase.auth();
+      const ref = firebase.storage().ref(refName);
+      let uploadBlob = null;
+
+      fs.readFile(uri, 'base64')
+        .then((data) => {
+          return Blob.build(data, {type: `${mime};BASE64`});
+        })
+        .then((blob) => {
+          uploadBlob = blob;
+          return ref.put(blob, {contentType: mime});
+        })
+        .then(() => {
+          uploadBlob.close();
+          return ref.getDownloadURL();
+        })
+        .then((url) => {
+          resolve(url);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  }
 
   setup = async () => {
     // format topic string
@@ -67,7 +100,19 @@ class UserPostScreen extends React.Component {
     } else {
       var mediaType = 'photo';
     }
-    var options = {mediaType: mediaType, tintColor: '#fff', durationLimit: 60};
+    if (this.state.pickThumbnail) {
+      var options = {
+        mediaType: mediaType,
+        quality: 0.6,
+      };
+    } else {
+      var options = {
+        mediaType: mediaType,
+        quality: 0.6,
+        maxWidth: 500,
+        maxHeight: 500,
+      };
+    }
     try {
       ImagePicker.launchImageLibrary(options, (result) => {
         if (!result.cancelled) {
@@ -75,33 +120,35 @@ class UserPostScreen extends React.Component {
             var post = this.props.tutorials.userpost;
             post.thumbnail = result.uri;
             store.dispatch(updateTutorials({userpost: post}));
-          }
-        } else {
-          // store media and update post data
-          var post = this.props.tutorials.userpost;
-
-          // remove previous errors
-          if (post.steps[index].error) {
-            delete post.steps[index].error;
-          }
-
-          if (type == 'Images') {
-            post.steps[index][type] = result.uri;
-            post.steps[index].Videos = null;
-
-            // remove video ref
-            if (this.vids[index]) {
-              this.vids.slice(index, 1);
-            }
-          } else if (result.duration <= 60000) {
-            post.steps[index][type] = result.uri;
-            post.steps[index].Images = null;
+            this.setState({thumb_change: true});
+            this.setState({pickThumbnail: false});
           } else {
-            post.steps[index].Videos = null;
-            post.steps[index].error = 'Videos cannot be longer than 1 minute';
+            // store media and update post data
+            var post = this.props.tutorials.userpost;
+
+            // remove previous errors
+            if (post.steps[index].error) {
+              delete post.steps[index].error;
+            }
+
+            if (type == 'Images') {
+              post.steps[index][type] = result.uri;
+              post.steps[index].Videos = null;
+
+              // remove video ref
+              if (this.vids[index]) {
+                this.vids.slice(index, 1);
+              }
+            } else if (result.duration <= 60000) {
+              post.steps[index][type] = result.uri;
+              post.steps[index].Images = null;
+            } else {
+              post.steps[index].Videos = null;
+              post.steps[index].error = 'Videos cannot be longer than 1 minute';
+            }
+            post.steps[index].changed = true;
+            store.dispatch(updateTutorials({userpost: post}));
           }
-          post.steps[index].changed = true;
-          store.dispatch(updateTutorials({userpost: post}));
         }
       });
     } catch (E) {
@@ -206,6 +253,7 @@ class UserPostScreen extends React.Component {
         id = doc.id;
       }
 
+      console.log('0');
       // iterate over steps and store all media in Firebase Storage
       var i;
       for (i = 0; i < steps.length; i++) {
@@ -215,43 +263,37 @@ class UserPostScreen extends React.Component {
         // check if step has been changed
         if (steps[i].changed) {
           if (steps[i].Images != null) {
-            const response = await fetch(steps[i].Images);
-            const blob = await response.blob();
-
-            var ref = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${id}/steps/${i}/Image`);
-            await ref.put(blob);
-
-            var url = await ref.getDownloadURL();
+            var refName = `${topic}/${id}/steps/${i}/Image`;
+            var url = await this.uploadImage(
+              steps[i].Images,
+              'image/jpeg',
+              refName,
+            );
             steps[i].Images = url;
           } else if (steps[i].Videos != null) {
-            const response = await fetch(steps[i].Videos);
-            const blob = await response.blob();
-
-            var ref = firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${id}/steps/${i}/Video`);
-            await ref.put(blob);
-
-            var url = await ref.getDownloadURL();
+            var refName = `${topic}/${id}/steps/${i}/Video`;
+            var url = await this.uploadImage(
+              steps[i].Videos,
+              'video/mp4',
+              refName,
+            );
             steps[i].Videos = url;
           }
         }
         delete steps[i].changed;
       }
+      console.log('1');
 
       var thumbnail = this.props.tutorials.userpost.thumbnail;
       // if thumbnail was changed
       if (this.state.thumb_change) {
         // store thumbnail and get reference
-        const response = await fetch(this.props.tutorials.userpost.thumbnail);
-        const blob = await response.blob();
-        ref = await firebase.storage().ref().child(`${topic}/${id}/Thumbnail`);
-        await ref.put(blob);
-        thumbnail = await ref.getDownloadURL();
+        var refName = `${topic}/${id}/Thumbnail`;
+        thumbnail = await this.uploadImage(
+          this.props.tutorials.userpost.thumbnail,
+          'image/jpeg',
+          refName,
+        );
 
         await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
           thumbnail: thumbnail,
@@ -280,6 +322,23 @@ class UserPostScreen extends React.Component {
           },
           {merge: true},
         );
+
+      // notify user that tutorial has been updated
+      const message = `You're tutorial "${this.props.tutorials.userpost.title}" has been updated!`;
+      firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc('messages')
+        .set(
+          {
+            [Date.now()]: {
+              message: message,
+              status: 'unread',
+            },
+          },
+          {merge: true},
+        );
+      await store.dispatch(updateTutorials({unread: true}));
 
       Alert.alert(
         'Posted',
@@ -397,8 +456,6 @@ class UserPostScreen extends React.Component {
   thumbnail = async () => {
     await this.setState({pickThumbnail: true});
     await this._pickMedia('Images');
-    await this.setState({thumb_change: true});
-    await this.setState({pickThumbnail: false});
   };
 
   removeMedia = (index, type) => {
@@ -505,7 +562,6 @@ class UserPostScreen extends React.Component {
                   {step.Videos && (
                     <VideoPlayer
                       ref={(component) => this.addRef}
-                      onEnd={() => this._finishedVideo(index)}
                       source={{uri: step.Videos}}
                       rate={1.0}
                       volume={1.0}

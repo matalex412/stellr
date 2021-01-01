@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import {connect} from 'react-redux';
@@ -28,7 +27,37 @@ class ProfileHome extends React.Component {
   };
 
   componentDidMount = () => {
+    this.updateProfilePic;
     this.setup();
+  };
+
+  updateProfilePic = async () => {
+    // get friends data from firestore
+    var {currentUser} = await firebase.auth();
+    var doc = await firebase
+      .firestore()
+      .collection('users')
+      .doc(this.props.tutorials.profile.uid)
+      .get();
+    var data = doc.data();
+
+    // check if friends data has changed
+    if (data.profilePic != this.props.tutorials.profile.profilePic) {
+      var update = {...this.props.tutorials.profile};
+      update.profilePic = data.profilePic;
+
+      delete update['uid'];
+      await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc('people')
+        .update({
+          [this.props.tutorials.profile.uid]: update,
+        });
+
+      update.uid = this.props.tutorials.profile.uid;
+      await store.dispatch(updateTutorials({profile: update}));
+    }
   };
 
   setup = async () => {
@@ -148,7 +177,7 @@ const styles = StyleSheet.create({
   },
   text: {
     textAlign: 'center',
-    color: 'white',
+    color: '#ffb52b',
     fontSize: 15,
   },
   contentContainer: {
@@ -159,8 +188,10 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   heading: {
-    fontSize: 20,
     alignSelf: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2274A5',
   },
   square: {
     margin: 10,
@@ -168,14 +199,9 @@ const styles = StyleSheet.create({
     height: Dimensions.get('window').width / 3 - 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'black',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 10,
-    backgroundColor: 'black',
+    elevation: 5,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
 });
 

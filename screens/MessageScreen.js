@@ -1,12 +1,12 @@
-import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { connect } from "react-redux";
+import React from 'react';
+import {View, Text, ScrollView, StyleSheet} from 'react-native';
+import {connect} from 'react-redux';
 
-import Background from "./components/Background";
-import CustomLoading from "./components/CustomLoading";
-import { updateTutorials } from "./../redux/actions";
-import { store } from "./../redux/store";
-import { firebase } from "./../src/config";
+import Background from './components/Background';
+import CustomLoading from './components/CustomLoading';
+import {updateTutorials} from './../redux/actions';
+import {store} from './../redux/store';
+import {firebase} from './../src/config';
 
 class MessageScreen extends React.Component {
   state = {
@@ -33,56 +33,88 @@ class MessageScreen extends React.Component {
     var time;
     var data = this.state.data;
     for (time of Object.keys(data)) {
-      if (data[time].status != "read") {
-        data[time].status = "read";
+      if (data[time].status != 'read') {
+        data[time].status = 'read';
       }
     }
 
     // update database
-    const { currentUser } = firebase.auth();
+    const {currentUser} = firebase.auth();
     firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("messages")
+      .doc('messages')
       .update(data);
   };
 
+  timeDifference(current, previous) {
+    var msPerMinute = 60 * 1000;
+    var msPerHour = msPerMinute * 60;
+    var msPerDay = msPerHour * 24;
+    var msPerMonth = msPerDay * 30;
+    var msPerYear = msPerDay * 365;
+
+    var elapsed = current - previous;
+
+    if (elapsed < msPerMinute) {
+      return Math.round(elapsed / 1000) + ' seconds ago';
+    } else if (elapsed < msPerHour) {
+      return Math.round(elapsed / msPerMinute) + ' minutes ago';
+    } else if (elapsed < msPerDay) {
+      return Math.round(elapsed / msPerHour) + ' hours ago';
+    } else if (elapsed < msPerMonth) {
+      return Math.round(elapsed / msPerDay) + ' days ago';
+    } else if (elapsed < msPerYear) {
+      return Math.round(elapsed / msPerMonth) + ' months ago';
+    } else {
+      return Math.round(elapsed / msPerYear) + ' years ago';
+    }
+  }
+
   getMessages = async () => {
-    const { currentUser } = firebase.auth();
+    const {currentUser} = firebase.auth();
 
     // get user's messages
     var doc = await firebase
       .firestore()
       .collection(`users/${currentUser.uid}/data`)
-      .doc("messages")
+      .doc('messages')
       .get();
 
-    this.setState({ isLoading: true });
+    this.setState({isLoading: true});
     // check if user has messages
     if (doc.exists) {
       // store messages in state
       if (doc.data()) {
-        this.setState({ data: doc.data() });
+        this.setState({data: doc.data()});
         var keys = Object.keys(doc.data());
-        var d;
-        var time,
+        var d,
+          time,
           times = [];
+
+        // sort messages chronologically
+        keys.sort(function (a, b) {
+          return a - b;
+        });
+        this.setState({keys});
+
+        // calculate time ago from now
         for (time of keys) {
           time = Number(time);
           d = new Date(time);
-          var mins = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-          times.push(`${d.getDate()}/${d.getMonth()}  ${d.getHours()}:${mins}`);
+          var timeAgo = this.timeDifference(Date.now(), d);
+          times.push(timeAgo);
         }
-        this.setState({ times });
+        this.setState({times});
       } else {
         alert("Sorry, you aren't connected to internet. Don't Panic");
       }
     }
 
-    this.setState({ isLoading: false });
+    this.setState({isLoading: false});
 
     // update messagebox status
-    await store.dispatch(updateTutorials({ unread: false }));
+    await store.dispatch(updateTutorials({unread: false}));
   };
 
   render() {
@@ -93,38 +125,34 @@ class MessageScreen extends React.Component {
           {this.state.isLoading ? (
             <CustomLoading verse="Your word is a lamp to my feet and a light to my path" />
           ) : this.state.times.length == 0 ? (
-            <Text style={{ color: "white" }}>No Messages</Text>
+            <Text style={{color: '#2274A5'}}>No Messages</Text>
           ) : (
-            <View style={{ width: "100%", flexDirection: "column-reverse" }}>
-              {Object.keys(this.state.data).map((time, index) => {
+            <View style={styles.messageList}>
+              {this.state.keys.map((time, index) => {
                 return (
                   <View style={styles.message} key={index}>
                     <Text
                       style={{
-                        fontWeight: "bold",
-                        textAlign: "left",
+                        flex: 1,
+                        flexWrap: 'wrap',
                         fontSize: 20,
                         color:
-                          this.state.data[time].status == "unread"
-                            ? "#ffb52b"
-                            : "black",
-                      }}
-                    >
-                      {this.state.times[index]} -
+                          this.state.data[time].status == 'unread'
+                            ? '#ffb52b'
+                            : 'black',
+                      }}>
+                      {this.state.data[time].message}
                     </Text>
                     <Text
                       style={{
-                        flex: 1,
-                        flexWrap: "wrap",
-                        fontSize: 20,
-                        marginLeft: 5,
+                        textAlign: 'left',
+                        fontSize: 18,
                         color:
-                          this.state.data[time].status == "unread"
-                            ? "#ffb52b"
-                            : "black",
-                      }}
-                    >
-                      {this.state.data[time].message}
+                          this.state.data[time].status == 'unread'
+                            ? '#ffb52b'
+                            : 'grey',
+                      }}>
+                      {this.state.times[index]}
                     </Text>
                   </View>
                 );
@@ -140,22 +168,23 @@ class MessageScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: 'white',
   },
+  messageList: {width: '100%', flexDirection: 'column-reverse'},
   message: {
-    padding: 5,
-    marginVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginVertical: 1,
     marginHorizontal: 20,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderRadius: 3,
     elevation: 2,
-    flexDirection: "row",
   },
 });
 

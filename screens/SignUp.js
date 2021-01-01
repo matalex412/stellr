@@ -10,8 +10,8 @@ import {
 import {connect} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {human, systemWeights} from 'react-native-typography';
+import LinearGradient from 'react-native-linear-gradient';
 
-import Background from './components/Background';
 import {store} from './../redux/store';
 import {updateTutorials} from './../redux/actions';
 import {firebase} from './../src/config';
@@ -100,7 +100,7 @@ class SignUp extends React.Component {
             .doc('learning')
             .set({
               '2fJyrGMwyU8bKKImOtb2': {
-                title: 'Using Skoach',
+                title: 'Using Stellr',
                 thumbnail:
                   'https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/topics%2FMeta%2F2fJyrGMwyU8bKKImOtb2%2FThumbnail?alt=media&token=59e43224-67f6-49ec-8e74-e15688a4c9f5',
                 topic: 'topics/Meta',
@@ -172,8 +172,17 @@ class SignUp extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Background />
-        <Text style={[human.title1, systemWeights.bold, {color: '#2274A5'}]}>
+        <LinearGradient
+          colors={['#2274A5', '#fff']}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: '100%',
+          }}
+        />
+        <Text style={[human.title1, systemWeights.bold, {color: '#fff'}]}>
           Sign Up
         </Text>
         <View
@@ -184,7 +193,7 @@ class SignUp extends React.Component {
             width: '80%',
             marginTop: 10,
             borderRadius: 5,
-            elevation: 1,
+            elevation: 3,
           }}>
           <View
             style={{
@@ -302,7 +311,7 @@ class SignUp extends React.Component {
               padding: 4,
               backgroundColor: 'white',
               borderRadius: 4,
-              elevation: 1,
+              elevation: 3,
             }}
             onPress={() => this.props.navigation.navigate('Login')}>
             <Text style={{color: '#2274A5'}}>Login</Text>
@@ -313,7 +322,7 @@ class SignUp extends React.Component {
               padding: 4,
               backgroundColor: 'white',
               borderRadius: 4,
-              elevation: 1,
+              elevation: 3,
             }}
             onPress={() => this.props.navigation.navigate('App')}>
             <Text style={{color: '#2274A5'}}>Continue Anonymously</Text>

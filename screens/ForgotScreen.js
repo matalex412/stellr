@@ -55,7 +55,7 @@ export default class ForgotScreen extends React.Component {
             marginTop: 5,
             marginBottom: 10,
             borderRadius: 5,
-            elevation: 1,
+            elevation: 3,
           }}>
           <View
             style={{
@@ -84,7 +84,7 @@ export default class ForgotScreen extends React.Component {
             padding: 4,
             backgroundColor: 'white',
             borderRadius: 4,
-            elevation: 1,
+            elevation: 3,
           }}
           onPress={() => this.props.navigation.navigate('Login')}>
           <Text style={{color: '#2274A5'}}>Back to Login</Text>

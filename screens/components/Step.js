@@ -27,55 +27,52 @@ export default class Step extends React.Component {
 
   render() {
     return (
-      <View style={{alignItems: 'center'}}>
-        <View
-          style={{
-            borderRadius: 5,
-            backgroundColor: '#fff',
-            elevation: 3,
-            width: this.props.width - 100,
-            marginBottom: 25,
-            alignItems: 'center',
-            padding: 20,
-          }}>
-          <Text style={styles.heading}>Step {this.props.index + 1}</Text>
-          {this.props.item.Images && (
-            <View>
-              <Image
-                source={{uri: this.props.item.Images}}
-                style={{margin: 10, width: 200, height: 200, borderRadius: 1}}
-                onLoadEnd={this.imageLoaded}
-              />
-              {this.state.loading && (
-                <ActivityIndicator
-                  size="large"
-                  style={{position: 'absolute', left: 90, top: 90}}
-                  color="#2274A5"
-                />
-              )}
-            </View>
-          )}
-          {this.props.item.Videos && (
-            <VideoPlayer
-              source={{uri: this.props.item.Videos}}
-              rate={1.0}
-              volume={1.0}
-              paused={this.state.paused}
-              resizeMode="cover"
-              disableVolume
-              disableBack
-              style={{margin: 10}}
+      <View style={{paddingVertical: 10}}>
+        {this.props.item.Images && (
+          <View>
+            <Image
+              source={{uri: this.props.item.Images}}
+              style={{
+                marginBottom: 10,
+                width: this.props.width,
+                height: 300,
+              }}
+              onLoadEnd={this.imageLoaded}
             />
-          )}
-          <Text
-            style={{
-              color: '#2274A5',
-              fontSize: 16,
-              textAlign: 'center',
-            }}>
-            {this.props.item.step}
-          </Text>
-        </View>
+            {this.state.loading && (
+              <ActivityIndicator
+                size="large"
+                style={{
+                  position: 'absolute',
+                  left: this.props.width / 2 - 10,
+                  top: 140,
+                }}
+                color="#2274A5"
+              />
+            )}
+          </View>
+        )}
+        {this.props.item.Videos && (
+          <VideoPlayer
+            source={{uri: this.props.item.Videos}}
+            rate={1.0}
+            volume={1.0}
+            paused={this.state.paused}
+            resizeMode="cover"
+            disableVolume
+            disableBack
+            style={{margin: 10}}
+          />
+        )}
+        <Text
+          style={{
+            color: '#2274A5',
+            fontSize: 16,
+            textAlign: 'center',
+            margin: 10,
+          }}>
+          {this.props.item.step}
+        </Text>
       </View>
     );
   }

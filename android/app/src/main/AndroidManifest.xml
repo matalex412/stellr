@@ -10,7 +10,7 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme">
-      <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3262091936426324~4886429471"/>
+      <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3800661518525298~2824131392"/>
 
       <activity
         android:screenOrientation="portrait"

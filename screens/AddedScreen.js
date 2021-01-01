@@ -119,7 +119,7 @@ class HomeScreen extends React.Component {
         ) : (
           <View
             style={{
-              paddingVertical: 10,
+              paddingVertical: 15,
               justifyContent: 'center',
               alignItems: 'center',
             }}>

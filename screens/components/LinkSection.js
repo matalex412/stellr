@@ -13,13 +13,13 @@ export default class LinkSection extends React.Component {
         <View style={{alignItems: 'center', flexDirection: 'row'}}>
           <MaterialCommunityIcons
             name={this.props.icon}
-            size={30}
+            size={35}
             style={{margin: 10, marginLeft: 0}}
             color={this.props.color ? this.props.color : '#2274A5'}
           />
           <Text
             style={{
-              fontSize: 15,
+              fontSize: 17,
               color: this.props.color ? this.props.color : '#2274A5',
             }}>
             {this.props.text}

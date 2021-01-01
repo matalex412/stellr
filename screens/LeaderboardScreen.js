@@ -10,6 +10,7 @@ import {firebase} from './../src/config';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {connect} from 'react-redux';
 import {AdMobBanner} from 'react-native-admob';
+import {human, systemWeights} from 'react-native-typography';
 
 import Background from './components/Background';
 import ProfileBanner from './components/ProfileBanner';
@@ -92,13 +93,21 @@ class LeaderboardScreen extends React.Component {
             <View
               style={{marginVertical: 5, minHeight: 50, alignItems: 'center'}}>
               <AdMobBanner
-                adUnitID="ca-app-pub-3262091936426324/7558442816"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onDidFailToReceiveAdWithError={() =>
                   console.log('banner ad not loading')
                 }
                 adSize="smartBanner"
               />
             </View>
+            <Text
+              style={[
+                human.title1,
+                systemWeights.bold,
+                {marginTop: 5, color: '#2274A5'},
+              ]}>
+              Weekly Stars
+            </Text>
             <View
               style={{
                 alignItems: 'flex-end',
@@ -115,14 +124,16 @@ class LeaderboardScreen extends React.Component {
                     onPress={() => this.clickedUser(this.state.users[2])}
                   />
                 ) : (
-                  <Ionicons
-                    color="white"
-                    name="md-help-outline"
-                    style={{alignSelf: 'center', marginBottom: 5}}
-                    size={50}
-                  />
+                  <View style={styles.questionCircle}>
+                    <Ionicons
+                      color="#2274A5"
+                      name="md-help-outline"
+                      style={{alignSelf: 'center', marginBottom: 5}}
+                      size={50}
+                    />
+                  </View>
                 )}
-                <View style={[styles.bar, {height: 100}]} />
+                <View style={[styles.bar, {height: 25}]} />
               </View>
               <View style={styles.podium}>
                 {this.state.showLeaderboard && this.state.users[0] ? (
@@ -134,14 +145,16 @@ class LeaderboardScreen extends React.Component {
                     onPress={() => this.clickedUser(this.state.users[0])}
                   />
                 ) : (
-                  <Ionicons
-                    color="white"
-                    name="md-help-outline"
-                    style={{alignSelf: 'center', marginBottom: 5}}
-                    size={50}
-                  />
+                  <View style={styles.questionCircle}>
+                    <Ionicons
+                      color="#2274A5"
+                      name="md-help-outline"
+                      style={{alignSelf: 'center', marginBottom: 5}}
+                      size={50}
+                    />
+                  </View>
                 )}
-                <View style={[styles.bar, {height: 200}]} />
+                <View style={[styles.bar, {height: 75}]} />
               </View>
               <View style={styles.podium}>
                 {this.state.showLeaderboard && this.state.users[1] ? (
@@ -153,55 +166,69 @@ class LeaderboardScreen extends React.Component {
                     onPress={() => this.clickedUser(this.state.users[1])}
                   />
                 ) : (
-                  <Ionicons
-                    color="white"
-                    name="md-help-outline"
-                    style={{alignSelf: 'center', marginBottom: 5}}
-                    size={50}
-                  />
+                  <View style={styles.questionCircle}>
+                    <Ionicons
+                      color="#2274A5"
+                      name="md-help-outline"
+                      style={{alignSelf: 'center', marginBottom: 5}}
+                      size={50}
+                    />
+                  </View>
                 )}
-                <View style={[styles.bar, {height: 150}]} />
+                <View style={[styles.bar, {height: 50}]} />
               </View>
             </View>
             {this.state.users.map((user, index) => {
               return (
-                <TouchableOpacity
-                  onPress={() => this.clickedUser(user)}
+                <View
                   key={index}
-                  style={{
-                    paddingHorizontal: 10,
-                    justifyContent: 'flex-start',
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                    width: '80%',
-                    elevation: 1,
-                    backgroundColor:
-                      user.uid == this.state.current.uid
-                        ? '#ffb52b'
-                        : index % 2 == 0
-                        ? '#2274A5'
-                        : 'white',
-                  }}>
-                  <Text style={{color: 'black', fontSize: 15, margin: 5}}>
-                    Rank {index + 1}{' '}
-                  </Text>
-                  <ProfileBanner
-                    style={styles.profile}
-                    user={user}
+                  style={{alignItems: 'center', flexDirection: 'row'}}>
+                  <View
+                    style={[
+                      styles.rank,
+                      {
+                        backgroundColor:
+                          user.uid == this.state.current.uid
+                            ? '#ffb52b'
+                            : '#fff',
+                      },
+                    ]}>
+                    <Text>{index + 1}</Text>
+                  </View>
+                  <TouchableOpacity
                     onPress={() => this.clickedUser(user)}
-                  />
-                  <Ionicons
-                    name="md-star"
-                    size={20}
-                    style={{margin: 3}}
-                    color={
-                      user.uid == this.state.current.uid ? '#000' : '#ffb52b'
-                    }
-                  />
-                  <Text style={{color: 'black', fontSize: 15}}>
-                    {user.weeklyStars}
-                  </Text>
-                </TouchableOpacity>
+                    style={{
+                      width: '70%',
+                      marginVertical: 7,
+                      padding: 8,
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexDirection: 'row',
+                      elevation: 5,
+                      backgroundColor:
+                        user.uid == this.state.current.uid ? '#ffb52b' : '#fff',
+                      borderRadius: 40,
+                    }}>
+                    <ProfileBanner
+                      style={styles.profile}
+                      user={user}
+                      onPress={() => this.clickedUser(user)}
+                    />
+                    <View style={{alignItems: 'center', flexDirection: 'row'}}>
+                      <Ionicons
+                        name="md-star"
+                        size={25}
+                        style={{margin: 3}}
+                        color={
+                          user.uid == this.state.current.uid
+                            ? '#000'
+                            : '#ffb52b'
+                        }
+                      />
+                      <Text style={{fontSize: 15}}>{user.weeklyStars}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               );
             })}
             {this.state.users.some((e) => e.uid == this.state.current.uid) ||
@@ -248,6 +275,7 @@ const styles = StyleSheet.create({
   bar: {
     backgroundColor: 'white',
     elevation: 3,
+    marginTop: 5,
   },
   text: {
     fontSize: 13,
@@ -258,6 +286,19 @@ const styles = StyleSheet.create({
   podium: {
     margin: 5,
     flex: 1,
+  },
+  rank: {
+    backgroundColor: 'white',
+    elevation: 3,
+    marginHorizontal: 10,
+    padding: 10,
+    borderRadius: 50,
+  },
+  questionCircle: {
+    backgroundColor: 'white',
+    elevation: 3,
+    borderRadius: 100,
+    marginHorizontal: 25,
   },
 });
 

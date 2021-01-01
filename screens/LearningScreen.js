@@ -15,10 +15,11 @@ import Firebase from 'firebase';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {AirbnbRating} from 'react-native-ratings';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Carousel, {Pagination} from 'react-native-snap-carousel';
+import Carousel from 'react-native-snap-carousel';
 import {human, systemWeights} from 'react-native-typography';
 import VideoPlayer from 'react-native-video-controls';
 
+import ProfileBanner from './components/ProfileBanner';
 import Step from './components/Step';
 import ModalAlert from './components/ModalAlert';
 import Background from './components/Background';
@@ -30,11 +31,10 @@ import {firebase} from './../src/config';
 
 class LearningScreen extends React.Component {
   state = {
-    paid: false,
+    paid: true,
     isLoading: true,
     posts: {},
     activeIndex: 0,
-    added: false,
     isModalVisible: false,
     minas: 0,
   };
@@ -65,7 +65,7 @@ class LearningScreen extends React.Component {
       .doc(this.props.tutorials.learn_key)
       .get();
 
-    if (!currentUser.isAnonymous) {
+    /*  if (!currentUser.isAnonymous) {
       // check if user has bookmarked tutorial
       var ids;
       var doc2 = await firebase
@@ -81,7 +81,7 @@ class LearningScreen extends React.Component {
           this.setState({paid: true});
         }
       }
-    }
+    }*/
     this.setState({currentUser});
 
     // check if post exists
@@ -132,16 +132,28 @@ class LearningScreen extends React.Component {
       }
     }
 
+    var doc0 = await firebase
+      .firestore()
+      .collection('users')
+      .doc(post.uid)
+      .get();
+    var data = doc0.data();
+    var creatorProfile = {
+      profilePic: data.profilePic,
+      username: data.username,
+    };
+    this.setState({creatorProfile});
+
     // Display an interstitial
-    AdMobInterstitial.setAdUnitID('ca-app-pub-3262091936426324/1869093284');
-    AdMobInterstitial.requestAd();
+    //    AdMobInterstitial.setAdUnitID('ca-app-pub-3800661518525298/2568980529');
+    //  AdMobInterstitial.requestAd();
   };
 
   changeModalVisibility = (visible) => {
     this.setState({isModalVisible: visible});
   };
 
-  learnt = async (rating, complete, added) => {
+  /* learnt = async (rating, complete, added) => {
     const {currentUser} = firebase.auth();
 
     if (added) {
@@ -158,13 +170,18 @@ class LearningScreen extends React.Component {
 
     if (!currentUser.isAnonymous) {
       var alreadyLearnt = false;
-      var historyRef = firebase
+      // get users history
+      var doc = await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc('history')
+        .get();
+
+      var historyRef = await firebase
         .firestore()
         .collection(`users/${currentUser.uid}/data`)
         .doc('history');
 
-      // get users history
-      var doc = historyRef.get();
       // check if tutorial has previously been learnt by user
       if (doc.exists) {
         var learnt = doc.data();
@@ -206,15 +223,27 @@ class LearningScreen extends React.Component {
       var field = 'incomplete';
     }
 
-    // update tutorial stats
-    await firebase
-      .firestore()
-      .collection(`${this.props.tutorials.added.topic}/posts`)
-      .doc(this.props.tutorials.learn_key)
-      .update({
-        stars: Firebase.firestore.FieldValue.increment(rating),
-        [field]: Firebase.firestore.FieldValue.increment(1),
-      });
+    if (!alreadyLearnt) {
+      // update tutorial stats
+      await firebase
+        .firestore()
+        .collection(`${this.props.tutorials.added.topic}/posts`)
+        .doc(this.props.tutorials.learn_key)
+        .update({
+          stars: Firebase.firestore.FieldValue.increment(rating),
+          [field]: Firebase.firestore.FieldValue.increment(1),
+        });
+
+      // update current user stats
+      await firebase
+        .firestore()
+        .collection('users')
+        .doc(currentUser.uid)
+        .update({
+          stars: Firebase.firestore.FieldValue.increment(1),
+          weeklyStars: Firebase.firestore.FieldValue.increment(1),
+        });
+    }
 
     // update creator's stars
     await firebase
@@ -230,7 +259,7 @@ class LearningScreen extends React.Component {
     this.props.navigation.navigate('Home');
   };
 
-  addHome = async () => {
+  /* addHome = async () => {
     const {currentUser} = await firebase.auth();
 
     // add tutorial to user's learning section
@@ -258,7 +287,7 @@ class LearningScreen extends React.Component {
     this.setState({isModalVisible: true});
 
     this.setState({added: true});
-  };
+  };*/
 
   _onPlaybackStatusUpdate = (playbackStatus, index) => {
     if (playbackStatus.didJustFinish) {
@@ -266,11 +295,11 @@ class LearningScreen extends React.Component {
     }
   };
 
-  buy = async (ad) => {
+  /* buy = async (ad) => {
     var {currentUser} = await firebase.auth();
 
     if (ad) {
-      AdMobInterstitial.showAd();
+      //    AdMobInterstitial.showAd();
       this.setState({paid: true});
 
       if (currentUser.uid != this.state.post.uid) {
@@ -323,7 +352,7 @@ class LearningScreen extends React.Component {
       });
       this.setState({isModalVisible: true});
     }
-  };
+  };*/
 
   _renderItem = ({item, index}) => {
     var width = Dimensions.get('window').width;
@@ -349,7 +378,7 @@ class LearningScreen extends React.Component {
             <View style={{minHeight: 50, alignItems: 'center'}}>
               <AdMobBanner
                 adSize="smartBanner"
-                adUnitID="ca-app-pub-3262091936426324/2933794374"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onAdFailedtoLoad={() => console.log('banner ad not loading')}
               />
             </View>
@@ -386,7 +415,7 @@ class LearningScreen extends React.Component {
               )}
 
               <Text style={styles.title}>{this.state.post.title}</Text>
-              <Text style={{color: '#2274A5'}}>
+              {/*<Text style={{color: '#2274A5'}}>
                 by {this.state.post.username}
               </Text>
 
@@ -426,7 +455,7 @@ class LearningScreen extends React.Component {
                   ]}>
                   {this.state.post.info}
                 </Text>
-              ) : null}
+              ) : null}*/}
 
               {!this.state.paid ? (
                 <View style={{margin: 15, flexDirection: 'row'}}>
@@ -452,31 +481,18 @@ class LearningScreen extends React.Component {
                 </View>
               ) : (
                 <View style={{alignItems: 'center'}}>
-                  <Pagination
-                    dotsLength={this.state.post.steps.length}
-                    containerStyle={{
-                      paddingTop: 10,
-                      paddingBottom: 15,
-                    }}
-                    animatedDuration={50}
-                    activeDotIndex={this.state.activeIndex}
-                    dotColor="#fff"
-                    inactiveDotColor="dimgray"
-                    dotStyle={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      marginHorizontal: 4,
-                    }}
-                    inactiveDotOpacity={0.4}
-                    inactiveDotScale={0.6}
-                  />
+                  <View style={styles.pagination}>
+                    <Text style={{color: '#fff'}}>
+                      {this.state.activeIndex + 1}/
+                      {this.state.post.steps.length}
+                    </Text>
+                  </View>
                   <Carousel
                     layout={'default'}
                     ref={(ref) => (this.carousel = ref)}
                     data={this.state.post.steps}
-                    sliderWidth={300}
-                    itemWidth={300}
+                    sliderWidth={width}
+                    itemWidth={width}
                     renderItem={this._renderItem}
                     onSnapToItem={(index) =>
                       this.setState({activeIndex: index})
@@ -488,22 +504,63 @@ class LearningScreen extends React.Component {
                   <View
                     style={{
                       flexDirection: 'row',
-                      marginBottom: 15,
+                      borderTopWidth: 1,
+                      borderColor: 'lightgray',
+                      width: width,
+                      justifyContent: 'space-evenly',
+                      padding: 10,
+                      alignItems: 'center',
                     }}>
-                    {this.state.currentUser.isAnonymous ? null : this.state
-                        .added ? null : (
-                      <TouchableOpacity onPress={this.addHome}>
-                        <View style={[styles.button, {marginRight: 10}]}>
-                          <Ionicons
-                            name="md-bookmark"
-                            size={25}
-                            color="#ffb52b"
-                          />
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                    <LearnModal added={this.state.added} learnt={this.learnt} />
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Ionicons
+                        name="md-eye"
+                        size={25}
+                        color="#2274A5"
+                        style={{marginRight: 3}}
+                      />
+                      <Text>
+                        {this.state.post.learns + this.state.post.incomplete}
+                      </Text>
+                    </View>
+                    <AirbnbRating
+                      onFinishRating={(rating) => this.setState({rating})}
+                      selectedColor="#ffb52b"
+                      showRating={false}
+                      type="custom"
+                      size={20}
+                    />
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Ionicons
+                        name="md-star"
+                        size={25}
+                        color="#2274A5"
+                        style={{marginRight: 3}}
+                      />
+                      <Text>
+                        {(
+                          this.state.post.stars /
+                          (this.state.post.learns + this.state.post.incomplete)
+                        ).toFixed(1)}
+                      </Text>
+                    </View>
                   </View>
+                  {this.state.creatorProfile && (
+                    <ProfileBanner
+                      imageStyle={{
+                        width: 40,
+                        height: 40,
+                      }}
+                      font={22}
+                      user={this.state.creatorProfile}
+                      viewStyle={{
+                        borderWidth: 1,
+                        borderColor: 'lightgray',
+                        width: width,
+                        justifyContent: 'center',
+                      }}
+                      size={32}
+                    />
+                  )}
                 </View>
               )}
             </View>
@@ -541,6 +598,15 @@ const styles = StyleSheet.create({
     elevation: 1,
     padding: 7,
     borderRadius: 2,
+  },
+  pagination: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    borderRadius: 20,
+    padding: 3,
+    backgroundColor: '#2275A5',
+    zIndex: 999,
   },
 });
 

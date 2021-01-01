@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Share,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -13,11 +12,19 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImagePicker from 'react-native-image-picker';
 import Modal from 'react-native-modal';
+import RNFetchBlob from 'rn-fetch-blob';
 
+import Share from 'react-native-share';
+import Firebase from 'firebase';
 import Background from './components/Background';
 import LinkSection from './components/LinkSection';
 import ProfileBanner from './components/ProfileBanner';
 import {firebase} from './../src/config';
+
+const Blob = RNFetchBlob.polyfill.Blob;
+const fs = RNFetchBlob.fs;
+window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest;
+window.Blob = Blob;
 
 export default class AccountScreen extends React.Component {
   state = {
@@ -91,30 +98,76 @@ export default class AccountScreen extends React.Component {
   };
 
   share = async () => {
-    // let user share app website
-    await Share.share({
-      message: 'http://matthewalex.com/skoach',
-    });
+    try {
+      var options = {
+        message:
+          'Stellr is an Android learning platform to teach, learn and share skills',
+        title: 'Check out Stellr',
+        url: 'https://play.google.com/store/apps/details?id=com.iam.skoach',
+      };
+      const response = await Share.open(options);
+
+      // update user's weekly stars
+      firebase
+        .firestore()
+        .collection('users')
+        .doc(this.state.currentUser.uid)
+        .update({
+          stars: Firebase.firestore.FieldValue.increment(5),
+          weeklyStars: Firebase.firestore.FieldValue.increment(5),
+        });
+    } catch (err) {
+      console.log(err);
+    }
   };
+
+  uploadImage(uri, mime = 'image/jpeg', refName) {
+    return new Promise((resolve, reject) => {
+      const {currentUser} = firebase.auth();
+      const ref = firebase.storage().ref(refName);
+
+      fs.readFile(uri, 'base64')
+        .then((data) => {
+          return Blob.build(data, {type: `${mime};BASE64`});
+        })
+        .then((blob) => {
+          uploadBlob = blob;
+          return ref.put(blob, {contentType: mime});
+        })
+        .then(() => {
+          uploadBlob.close();
+          return ref.getDownloadURL();
+        })
+        .then((url) => {
+          resolve(url);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  }
 
   changeProfilePic = async () => {
     // get permissions
     try {
-      var options = {mediaType: 'image', tintColor: '#fff'};
+      var options = {
+        mediaType: 'image',
+        quality: 0.5,
+        maxWidth: 100,
+        maxHeight: 100,
+      };
 
       ImagePicker.launchImageLibrary(options, async (result) => {
         if (!result.didCancel) {
           var {currentUser} = firebase.auth();
 
-          // store thumbnail and get route
-          const response = await fetch(result.uri);
-          const blob = await response.blob();
-          var ref = await firebase
-            .storage()
-            .ref()
-            .child(`users/${currentUser.uid}/profilePic`);
-          await ref.put(blob);
-          var picture = await ref.getDownloadURL();
+          // store profile pic and get route
+          var refName = `users/${currentUser.uid}/profilePic`;
+          var picture = await this.uploadImage(
+            result.uri,
+            'image/jpeg',
+            refName,
+          );
 
           await firebase
             .firestore()
@@ -137,6 +190,40 @@ export default class AccountScreen extends React.Component {
     }
   };
 
+  setIg = () => {
+    // update firebase
+    firebase
+      .firestore()
+      .collection('users')
+      .doc(this.state.currentUser.uid)
+      .update({
+        ig: this.state.ig,
+      });
+
+    // update bio
+    var {user} = this.state;
+    user.ig = this.state.ig;
+    this.setState({user});
+  };
+
+  hideModal = () => {
+    this.setState({isModalVisible: false});
+  };
+
+  showModal = async () => {
+    var doc = await firebase
+      .firestore()
+      .collection('users')
+      .doc(this.state.currentUser.uid)
+      .get();
+    var user = doc.data();
+    this.setState({user});
+    if (user.bio) {
+      this.setState({bio: user.bio});
+    }
+    this.setState({isModalVisible: true});
+  };
+
   render() {
     return (
       <View style={styles.container}>
@@ -144,104 +231,92 @@ export default class AccountScreen extends React.Component {
         {this.state.isLoading ? (
           <ActivityIndicator size="large" />
         ) : (
-          <View
-            style={{
-              alignItems: 'center',
-              backgroundColor: 'white',
-              padding: 20,
-              width: '70%',
-              marginTop: 10,
-              borderRadius: 5,
-              elevation: 1,
-            }}>
+          <View style={styles.subContainer}>
             <Modal isVisible={this.state.isModalVisible}>
-              <TouchableOpacity
-                onPress={() => this.setState({isModalVisible: false})}>
+              <TouchableOpacity onPress={this.hideModal}>
                 <MaterialCommunityIcons
                   name="close"
                   size={30}
                   color="#ffb52b"
                 />
               </TouchableOpacity>
-              <View
-                style={{
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  flex: 1,
-                }}>
-                <View
-                  style={{
-                    borderRadius: 5,
-                    padding: 20,
-                    backgroundColor: '#fff',
-                  }}>
-                  <ProfileBanner
-                    imageStyle={{
-                      marginRight: 0,
-                      marginBottom: 5,
-                      width: 120,
-                      height: 120,
-                      borderRadius: 60,
-                    }}
-                    viewStyle={{flexDirection: 'column'}}
-                    user={this.state.user}
-                    size={100}
-                    onPress={this.changeProfilePic}
-                  />
+              <View style={styles.modalBox}>
+                <ProfileBanner
+                  imageStyle={styles.profileImageStyle}
+                  viewStyle={{flexDirection: 'column'}}
+                  user={this.state.user}
+                  size={100}
+                  onPress={this.changeProfilePic}
+                />
+                <View style={styles.centerRow}>
                   <View
                     style={{
-                      justifyContent: 'center',
-                      flexDirection: 'row',
                       alignItems: 'center',
                     }}>
-                    <View
-                      style={{
-                        alignItems: 'center',
-                      }}>
-                      <MaterialCommunityIcons
-                        name="sack"
-                        size={30}
-                        color="#ffb52b"
-                      />
-                      <Text
-                        style={{
-                          color: '#fff',
-                          top: 10,
-                          position: 'absolute',
-                        }}>
-                        {this.state.user.minas}
-                      </Text>
-                    </View>
-                    <View style={styles.dot} />
                     <MaterialCommunityIcons
-                      name="star"
+                      name="sack"
+                      size={35}
+                      color="#ffb52b"
+                    />
+                    <Text style={styles.minasText}>
+                      {this.state.user.minas}
+                    </Text>
+                  </View>
+                  <View style={styles.dot} />
+                  <MaterialCommunityIcons
+                    name="star"
+                    size={30}
+                    color="#ffb52b"
+                  />
+                  <Text style={styles.starsText}>{this.state.user.stars}</Text>
+                </View>
+                <View style={[styles.centerRow, {padding: 5}]}>
+                  <TextInput
+                    value={this.state.bio}
+                    placeholder="Update Your Profile Bio"
+                    onChangeText={(query) => this.setState({bio: query})}
+                    multiline={true}
+                    placeholderTextColor="white"
+                    style={styles.bioBox}
+                  />
+                  <TouchableOpacity style={{padding: 5}} onPress={this.editBio}>
+                    <MaterialCommunityIcons
+                      name="send"
                       size={30}
                       color="#ffb52b"
                     />
-                    <Text>{this.state.user.stars}</Text>
-                  </View>
-                  <View
-                    style={{
-                      padding: 10,
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                    }}>
-                    <TextInput
-                      value={this.state.bio}
-                      placeholder="Update Your Profile Bio"
-                      onChangeText={(query) => this.setState({bio: query})}
-                      multiline={true}
-                      style={{
-                        textAlign: 'center',
-                        borderRadius: 5,
-                        color: 'black',
-                        padding: 5,
-                        width: 200,
-                      }}
+                  </TouchableOpacity>
+                </View>
+                {this.state.user.ig ? (
+                  <View style={styles.centerRow}>
+                    <MaterialCommunityIcons
+                      name="instagram"
+                      size={30}
+                      style={{marginRight: 20}}
+                      color="#ffb52b"
                     />
-                    <TouchableOpacity
-                      style={{padding: 5}}
-                      onPress={this.editBio}>
+                    <MaterialCommunityIcons
+                      name="at"
+                      size={20}
+                      color="#ffb52b"
+                    />
+                    <Text style={styles.starsText}>{this.state.user.ig}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.centerRow}>
+                    <MaterialCommunityIcons
+                      name="at"
+                      size={30}
+                      color="#ffb52b"
+                    />
+                    <TextInput
+                      value={this.state.ig}
+                      placeholder="Add Instagram username"
+                      onChangeText={(query) => this.setState({ig: query})}
+                      maxLength={20}
+                      style={styles.instaText}
+                    />
+                    <TouchableOpacity onPress={this.setIg} style={{padding: 5}}>
                       <MaterialCommunityIcons
                         name="send"
                         size={30}
@@ -249,25 +324,13 @@ export default class AccountScreen extends React.Component {
                       />
                     </TouchableOpacity>
                   </View>
-                </View>
+                )}
               </View>
             </Modal>
-            <View style={{alignItems: 'center', flexDirection: 'row'}}>
+            <View style={styles.centerRow}>
               <TouchableOpacity
-                style={{marginRight: 5}}
-                onPress={async () => {
-                  var doc = await firebase
-                    .firestore()
-                    .collection('users')
-                    .doc(this.state.currentUser.uid)
-                    .get();
-                  var user = doc.data();
-                  this.setState({user});
-                  if (user.bio) {
-                    this.setState({bio: user.bio});
-                  }
-                  this.setState({isModalVisible: true});
-                }}>
+                style={{marginRight: 5, alignItems: 'center'}}
+                onPress={this.showModal}>
                 {this.state.currentUser.photoURL ? (
                   <Image
                     style={[styles.profilePic, styles.image]}
@@ -282,33 +345,28 @@ export default class AccountScreen extends React.Component {
                     />
                   </View>
                 )}
-                <Text
-                  style={{textAlign: 'center', fontSize: 12, color: '#2274A5'}}>
-                  Edit
-                </Text>
+                <Text style={[styles.text, {fontWeight: 'normal'}]}>Edit</Text>
               </TouchableOpacity>
               <View style={{alignItems: 'center'}}>
-                <Text style={{color: '#2274A5'}}>
-                  <Text style={{color: '#2274A5', fontWeight: 'bold'}}>
+                <Text style={[styles.text, {fontWeight: 'normal'}]}>
+                  <Text style={styles.text}>
                     {this.state.currentUser.displayName}
                   </Text>
                   's Account
                 </Text>
                 <View style={{alignItems: 'center'}}>
-                  <Text style={{color: '#2274A5', fontWeight: 'bold'}}>
+                  <Text style={styles.text}>
                     {this.state.currentUser.email}
                   </Text>
                   {!this.state.currentUser.emailVerified && (
                     <TouchableOpacity onPress={this.verifyEmail}>
-                      <Text style={{color: '#e3242b', fontWeight: 'bold'}}>
-                        (unverified email)
-                      </Text>
+                      <Text style={styles.unverified}>(unverified email)</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
             </View>
-            <View style={{justifyContent: 'center', alignItems: 'flex-start'}}>
+            <View style={styles.leftContainer}>
               <LinkSection
                 onPress={() => this.props.navigation.navigate('UserPosts')}
                 text="Your Posts"
@@ -337,9 +395,7 @@ export default class AccountScreen extends React.Component {
               />
             </View>
             {this.state.errorMessage && (
-              <Text style={{marginLeft: 50, marginRight: 50, color: 'black'}}>
-                {this.state.errorMessage}
-              </Text>
+              <Text style={styles.error}>{this.state.errorMessage}</Text>
             )}
           </View>
         )}
@@ -351,13 +407,45 @@ export default class AccountScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  subContainer: {
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 20,
+    width: '80%',
+    marginTop: 10,
+    borderRadius: 5,
+    elevation: 3,
+  },
+  modalBox: {
+    borderRadius: 5,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  minasText: {
+    color: '#fff',
+    bottom: 4,
+    position: 'absolute',
+  },
+  starsText: {fontSize: 20, color: '#ffb52b'},
+  bioBox: {
+    backgroundColor: '#bcd4e6',
+    textAlign: 'center',
+    borderRadius: 5,
+    padding: 5,
+    width: 200,
+  },
+  instaText: {
+    textAlign: 'left',
+    color: '#ffb52b',
+    padding: 5,
+    backgroundColor: 'white',
+  },
   image: {
-    width: 30,
-    height: 30,
+    width: 50,
+    height: 50,
   },
   dot: {
     width: 5,
@@ -373,4 +461,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'black',
   },
+  text: {
+    fontSize: 15,
+    color: '#2274A5',
+    fontWeight: 'bold',
+  },
+  profileImageStyle: {
+    marginRight: 0,
+    marginBottom: 5,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  centerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  unverified: {color: '#e3242b', fontWeight: 'bold'},
+  leftContainer: {justifyContent: 'center', alignItems: 'flex-start'},
+  error: {marginLeft: 50, marginRight: 50, color: 'black'},
 });

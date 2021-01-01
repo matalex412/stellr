@@ -9,37 +9,37 @@ export default class TutorialCover extends React.Component {
 
   render() {
     return (
-      <TouchableOpacity onPress={this.props.onPress}>
+      <TouchableOpacity
+        onPress={this.props.onPress}
+        style={{
+          borderColor: '#fff',
+          marginVertical: 5,
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          elevation: 3,
+        }}>
+        <Image
+          resizeMode={'cover'}
+          style={{
+            width: '100%',
+            height: 200,
+          }}
+          source={{
+            uri: this.props.tutorial.thumbnail,
+          }}
+        />
         <View
           style={{
-            borderColor: '#fff',
-            marginVertical: 5,
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            elevation: 3,
+            padding: 5,
+            paddingLeft: 15,
+            width: '100%',
+            backgroundColor: 'white',
+            alignSelf: 'center',
           }}>
-          <Image
-            resizeMode={'cover'}
-            style={{
-              width: '100%',
-              height: 200,
-            }}
-            source={{
-              uri: this.props.tutorial.thumbnail,
-            }}
-          />
-          <View
-            style={{
-              padding: 5,
-              width: '100%',
-              backgroundColor: 'white',
-              alignSelf: 'center',
-            }}>
-            <Text style={{color: '#2274A5', fontSize: 20}}>
-              {this.props.tutorial.title}
-            </Text>
-          </View>
+          <Text style={{color: '#2274A5', fontSize: 20}}>
+            {this.props.tutorial.title}
+          </Text>
         </View>
       </TouchableOpacity>
     );

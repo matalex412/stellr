@@ -134,8 +134,8 @@ android {
         applicationId "com.iam.skoach"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 20
-        versionName "1.1.4"
+        versionCode 24
+        versionName "1.1.6"
     }
     splits {
         abi {
@@ -163,7 +163,7 @@ android {
     }
 
     buildTypes {
-      /*  debug {
+       /* debug {
             signingConfig signingConfigs.debug
         }*/
         release {

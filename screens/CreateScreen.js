@@ -18,6 +18,8 @@ import {human, systemWeights} from 'react-native-typography';
 import {ProgressSteps, ProgressStep} from 'react-native-progress-steps';
 import VideoPlayer from 'react-native-video-controls';
 import MediaMeta from 'react-native-media-meta';
+import RNFetchBlob from 'rn-fetch-blob';
+import Firebase from 'firebase';
 
 import ModalAlert from './components/ModalAlert';
 import Background from './components/Background';
@@ -25,6 +27,11 @@ import CustomLoading from './components/CustomLoading';
 import {store} from './../redux/store';
 import {updateTutorials} from './../redux/actions';
 import {firebase} from './../src/config';
+
+const Blob = RNFetchBlob.polyfill.Blob;
+const fs = RNFetchBlob.fs;
+window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest;
+window.Blob = Blob;
 
 class CreateScreen extends React.Component {
   state = {
@@ -49,6 +56,33 @@ class CreateScreen extends React.Component {
     // store video references (when users chooses topic)
     await store.dispatch(updateTutorials({vids: this.vids}));
   };
+
+  uploadImage(uri, mime = 'image/jpeg', refName) {
+    return new Promise((resolve, reject) => {
+      const {currentUser} = firebase.auth();
+      const ref = firebase.storage().ref(refName);
+      let uploadBlob = null;
+
+      fs.readFile(uri, 'base64')
+        .then((data) => {
+          return Blob.build(data, {type: `${mime};BASE64`});
+        })
+        .then((blob) => {
+          uploadBlob = blob;
+          return ref.put(blob, {contentType: mime});
+        })
+        .then(() => {
+          uploadBlob.close();
+          return ref.getDownloadURL();
+        })
+        .then((url) => {
+          resolve(url);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  }
 
   makeTopic = async () => {
     await store.dispatch(updateTutorials({userpost: null}));
@@ -92,7 +126,20 @@ class CreateScreen extends React.Component {
     } else {
       var mediaType = 'photo';
     }
-    var options = {mediaType: mediaType, tintColor: '#fff'};
+
+    if (this.state.pickThumbnail) {
+      var options = {
+        mediaType: mediaType,
+        quality: 0.5,
+      };
+    } else {
+      var options = {
+        mediaType: mediaType,
+        quality: 0.5,
+        maxWidth: 500,
+        maxHeight: 500,
+      };
+    }
     try {
       ImagePicker.launchImageLibrary(options, async (result) => {
         if (!result.didCancel) {
@@ -251,15 +298,12 @@ class CreateScreen extends React.Component {
             info: info,
           });
 
-        // store thumbnail and get route
-        const response = await fetch(tutorial.thumbnail);
-        const blob = await response.blob();
-        var ref = await firebase
-          .storage()
-          .ref()
-          .child(`${topic}/${docRef.id}/Thumbnail`);
-        await ref.put(blob);
-        var thumbnail = await ref.getDownloadURL();
+        var refName = `${topic}/${docRef.id}/Thumbnail`;
+        var thumbnail = await this.uploadImage(
+          tutorial.thumbnail,
+          'image/jpeg',
+          refName,
+        );
 
         // iterate over steps and store all media in Firebase Storage
         var i;
@@ -268,36 +312,21 @@ class CreateScreen extends React.Component {
           delete steps[i].error;
 
           if (steps[i].Images != null) {
-            const response = await fetch(steps[i].Images);
-            const blob = await response.blob();
+            var refName = `${topic}/${docRef.id}/steps/${i}/Image`;
+            var url = await this.uploadImage(
+              steps[i].Images,
+              'image/jpeg',
+              refName,
+            );
 
-            ref = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Image`);
-            await ref.put(blob);
-
-            var url = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Image`)
-              .getDownloadURL();
             steps[i].Images = url;
           } else if (steps[i].Videos != null) {
-            const response = await fetch(steps[i].Videos);
-            const blob = await response.blob();
-
-            ref = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Video`);
-            await ref.put(blob);
-
-            var url = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Video`)
-              .getDownloadURL();
+            var refName = `${topic}/${docRef.id}/steps/${i}/Video`;
+            var url = await this.uploadImage(
+              steps[i].Videos,
+              'video/mp4',
+              refName,
+            );
             steps[i].Videos = url;
           }
         }
@@ -341,6 +370,14 @@ class CreateScreen extends React.Component {
               },
             });
         }
+
+        await firebase()
+          .firestore()
+          .collection('topics')
+          .doc(this.props.tutorials.create_topic_string)
+          .update({
+            tutorialCount: Firebase.firestore.FieldValue.increment(1),
+          });
 
         // notify user that tutorial has been made
         const message = `You're tutorial "${tutorial.title}" has been made!`;
@@ -432,7 +469,7 @@ class CreateScreen extends React.Component {
           <View>
             <View style={{minHeight: 50, alignItems: 'center'}}>
               <AdMobBanner
-                adUnitID="ca-app-pub-3262091936426324/7558442816"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onDidFailToReceiveAdWithError={() =>
                   console.log('banner ad not loading')
                 }
@@ -464,7 +501,7 @@ class CreateScreen extends React.Component {
                   label="Display"
                   previousBtnTextStyle={styles.toggleProgress}
                   nextBtnTextStyle={styles.toggleProgress}
-                  onNext={() => this.validateForm(0)}
+                  onNext={() => this.validate(0)}
                   errors={this.state.errors}>
                   <TouchableOpacity onPress={this.changeTopic}>
                     <View
@@ -475,7 +512,7 @@ class CreateScreen extends React.Component {
                             ? 2
                             : 0,
                         borderColor: '#c21807',
-                        elevation: 1,
+                        elevation: 3,
                         borderRadius: 5,
                         backgroundColor: 'white',
                         alignItems: 'center',
@@ -521,7 +558,7 @@ class CreateScreen extends React.Component {
                       borderColor: '#c21807',
                       marginVertical: 10,
                       backgroundColor: 'white',
-                      elevation: 1,
+                      elevation: 3,
                       borderRadius: 5,
                       padding: 5,
                     }}
@@ -563,8 +600,9 @@ class CreateScreen extends React.Component {
                     }}>
                     <Text
                       style={{
-                        ...human.calloutWhiteObject,
+                        ...human.calloutObject,
                         ...systemWeights.bold,
+                        color: '#2274A5',
                       }}>
                       Title*
                     </Text>
@@ -581,7 +619,7 @@ class CreateScreen extends React.Component {
                       style={{
                         borderRadius: 4,
                         backgroundColor: 'white',
-                        elevation: 2,
+                        elevation: 3,
                         borderWidth: this.state.errors ? 1 : 0,
                         borderColor: '#c21807',
                         color: '#2274A5',
@@ -616,8 +654,9 @@ class CreateScreen extends React.Component {
                     }}>
                     <Text
                       style={{
-                        ...human.calloutWhiteObject,
+                        ...human.calloutObject,
                         ...systemWeights.bold,
+                        color: '#2274A5',
                       }}>
                       Description
                     </Text>
@@ -636,7 +675,7 @@ class CreateScreen extends React.Component {
                         fontSize: 17,
                         borderRadius: 4,
                         backgroundColor: 'white',
-                        elevation: 2,
+                        elevation: 3,
                         color: '#2274A5',
                       }}
                     />
