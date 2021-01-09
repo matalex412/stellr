@@ -10,8 +10,8 @@ import {
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { human, systemWeights } from "react-native-typography";
+import { LinearGradient } from "expo-linear-gradient";
 
-import Background from "./components/Background";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -107,7 +107,7 @@ class SignUp extends React.Component {
             .doc("learning")
             .set({
               "2fJyrGMwyU8bKKImOtb2": {
-                title: "Using Skoach",
+                title: "Using Stellr",
                 thumbnail:
                   "https://firebasestorage.googleapis.com/v0/b/skoach-7d39b.appspot.com/o/topics%2FMeta%2F2fJyrGMwyU8bKKImOtb2%2FThumbnail?alt=media&token=59e43224-67f6-49ec-8e74-e15688a4c9f5",
                 topic: "topics/Meta",
@@ -182,7 +182,16 @@ class SignUp extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Background />
+        <LinearGradient
+          colors={["#2274A5", "#fff"]}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: "100%",
+          }}
+        />
         <Text style={[human.title1White, systemWeights.bold]}>Sign Up</Text>
         <View
           style={{
@@ -192,7 +201,11 @@ class SignUp extends React.Component {
             width: "80%",
             marginTop: 10,
             borderRadius: 5,
-            elevation: 1,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.5,
+            shadowRadius: 2,
           }}
         >
           <View
@@ -274,15 +287,19 @@ class SignUp extends React.Component {
               />
             </TouchableOpacity>
           </View>
-          <View style={styles.submitButton}>
-            {!this.state.isLoading ? (
-              <TouchableOpacity activeOpacity={0.5} onPress={this.handleSignUp}>
-                <Text style={{ color: "white", fontSize: 20 }}>Sign Up</Text>
-              </TouchableOpacity>
-            ) : (
+          {!this.state.isLoading ? (
+            <TouchableOpacity
+              style={styles.submitButton}
+              activeOpacity={0.5}
+              onPress={this.handleSignUp}
+            >
+              <Text style={{ color: "white", fontSize: 20 }}>Sign Up</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.submitButton}>
               <ActivityIndicator color="white" />
-            )}
-          </View>
+            </View>
+          )}
         </View>
         {this.state.errorMessage ? (
           <Text
@@ -316,7 +333,11 @@ class SignUp extends React.Component {
               padding: 4,
               backgroundColor: "white",
               borderRadius: 4,
-              elevation: 1,
+              elevation: 3,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 2,
             }}
             onPress={() => this.props.navigation.navigate("Login")}
           >
@@ -328,7 +349,11 @@ class SignUp extends React.Component {
               padding: 4,
               backgroundColor: "white",
               borderRadius: 4,
-              elevation: 1,
+              elevation: 3,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 2,
             }}
             onPress={() => this.props.navigation.navigate("App")}
           >

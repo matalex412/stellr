@@ -10,7 +10,6 @@ import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { AdMobBanner } from "expo-ads-admob";
 
-import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -64,13 +63,12 @@ class ProfileMade extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Love is patient, love is kind" />
           ) : (
             <View>
               {this.state.keys.length < 1 && (
-                <Text style={{ padding: 20, fontSize: 20, color: "white" }}>
+                <Text style={{ padding: 20, fontSize: 20, color: "#2274A5" }}>
                   {this.props.tutorials.profile.username} hasn't made any
                   tutorials yet
                 </Text>

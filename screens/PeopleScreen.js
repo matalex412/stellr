@@ -6,6 +6,7 @@ import {
   RefreshControl,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
   Image,
   TextInput,
   ActivityIndicator,
@@ -16,7 +17,6 @@ import Carousel, { Pagination } from "react-native-snap-carousel";
 import { human } from "react-native-typography";
 
 import { shuffle } from "./../functions";
-import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import ProfileBanner from "./components/ProfileBanner";
 import { store } from "./../redux/store";
@@ -245,6 +245,8 @@ class PeopleScreen extends React.Component {
           marginTop: 5,
           padding: 5,
           paddingBottom: 40,
+          alignItems: "center",
+          justifyContent: "center",
         }}
         refreshControl={
           <RefreshControl
@@ -271,6 +273,7 @@ class PeopleScreen extends React.Component {
         ) : this.state[item].length > 0 ? (
           <View
             style={{
+              paddingTop: 10,
               justifyContent: "center",
               flexDirection: "row",
               flexWrap: "wrap",
@@ -284,11 +287,15 @@ class PeopleScreen extends React.Component {
                   style={{
                     justifyContent: "center",
                     backgroundColor: "white",
-                    elevation: 2,
-                    borderRadius: 10,
+                    elevation: 5,
+                    borderRadius: 20,
                     margin: 5,
                     paddingVertical: 5,
                     width: 85,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 2,
                   }}
                 >
                   <ProfileBanner
@@ -308,13 +315,14 @@ class PeopleScreen extends React.Component {
                     item != "toAdd" ? null : (
                       <View
                         style={{
-                          backgroundColor: "grey",
-                          borderRadius: 20,
-                          padding: 5,
                           alignSelf: "center",
                         }}
                       >
-                        <Text>Added</Text>
+                        <Ionicons
+                          color="#ffb52b"
+                          name="md-checkmark"
+                          size={35}
+                        />
                       </View>
                     )
                   ) : this.state.currentUser.isAnonymous ||
@@ -322,13 +330,14 @@ class PeopleScreen extends React.Component {
                     <TouchableOpacity
                       onPress={() => this.follow(user)}
                       style={{
-                        backgroundColor: "#ffb52b",
-                        borderRadius: 20,
-                        padding: 5,
                         alignSelf: "center",
                       }}
                     >
-                      <Text style={human.subhead}>Add User</Text>
+                      <Ionicons
+                        color="#2274A5"
+                        name="md-add-circle"
+                        size={35}
+                      />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -350,11 +359,12 @@ class PeopleScreen extends React.Component {
   };
 
   render() {
+    var width = Dimensions.get("window").width;
+
     return (
       <View style={styles.container}>
         {this.state.isLoading ? (
           <View style={styles.contentContainer}>
-            <Background />
             <CustomLoading verse="Therefore encourage one another and build one another up" />
           </View>
         ) : (
@@ -364,7 +374,6 @@ class PeopleScreen extends React.Component {
               { paddingTop: 20, paddingBottom: 10 },
             ]}
           >
-            <Background />
             <View style={{ alignItems: "center", flexDirection: "row" }}>
               <TextInput
                 value={this.state.usernameQuery}
@@ -380,6 +389,10 @@ class PeopleScreen extends React.Component {
                   padding: 5,
                   backgroundColor: "white",
                   width: 200,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.5,
+                  shadowRadius: 2,
                 }}
               />
               <TouchableOpacity style={{ padding: 5 }} onPress={this.search}>
@@ -433,6 +446,7 @@ class PeopleScreen extends React.Component {
               containerStyle={{
                 paddingBottom: 0,
                 paddingTop: 10,
+                marginBottom: 10,
               }}
               animatedDuration={50}
               activeDotIndex={this.state.activeIndex}
@@ -451,100 +465,11 @@ class PeopleScreen extends React.Component {
               layout={"default"}
               ref={(ref) => (this.carousel = ref)}
               data={this.state.carouselItems}
-              sliderWidth={300}
-              itemWidth={300}
+              sliderWidth={width}
+              itemWidth={width}
               renderItem={this._renderItem}
               onSnapToItem={(index) => this.setState({ activeIndex: index })}
             />
-            {/*<Text style={styles.heading}>New Users</Text>*/}
-            {/*this.state.toAddLoading ? (
-              <ActivityIndicator
-                style={{ margin: 5 }}
-                color="#000"
-                size="large"
-              />
-            ) : (
-              this.state.toAdd.map((user, index) => {
-                return (
-                  <View
-                    key={index}
-                    style={{
-                      width: "100%",
-                      justifyContent: "center",
-                      flexDirection: "row",
-                    }}
-                  >
-                    <ProfileBanner
-                      style={styles.profile}
-                      user={user}
-                      onPress={() => this.clickedUser(user)}
-                    />
-                    {user.added ? (
-                      <View
-                        style={{
-                          backgroundColor: "grey",
-                          borderRadius: 20,
-                          padding: 5,
-                          alignSelf: "center",
-                        }}
-                      >
-                        <Text>Added</Text>
-                      </View>
-                    ) : this.state.currentUser.isAnonymous ? null : (
-                      <TouchableOpacity
-                        onPress={() => this.follow(user)}
-                        style={{
-                          backgroundColor: "#ffb52b",
-                          borderRadius: 20,
-                          padding: 5,
-                          alignSelf: "center",
-                        }}
-                      >
-                        <Text>Add User</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              })
-            )*/}
-            {/*!(this.state.added.friends.length > 0) ? null : (
-              <View>
-                <Text style={styles.heading}>Friends</Text>
-                {this.state.added.friends.map((user, index) => {
-                  return (
-                    <View key={index}>
-                      <ProfileBanner
-                        style={styles.profile}
-                        user={user}
-                        onPress={() => this.clickedUser(user)}
-                      />
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-            {!(this.state.added.following.length > 0) ? null : (
-              <View style={{ width: "100%" }}>
-                <Text style={styles.heading}>Following</Text>
-                {this.state.added.following.map((user, index) => {
-                  return (
-                    <View
-                      key={index}
-                      style={{
-                        width: "100%",
-                        alignItems: "center",
-                      }}
-                    >
-                      <ProfileBanner
-                        style={styles.profile}
-                        user={user}
-                        onPress={() => this.clickedUser(user)}
-                      />
-                    </View>
-                  );
-                })}
-              </View>
-            )*/}
           </View>
         )}
       </View>

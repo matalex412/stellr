@@ -17,7 +17,6 @@ import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Firebase from "firebase";
 
-import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -97,6 +96,8 @@ class UserPostScreen extends React.Component {
             var post = this.props.tutorials.userpost;
             post.thumbnail = result.uri;
             await store.dispatch(updateTutorials({ userpost: post }));
+            await this.setState({ thumb_change: true });
+            await this.setState({ pickThumbnail: false });
           } else {
             // store media and update post data
             var post = this.props.tutorials.userpost;
@@ -437,8 +438,6 @@ class UserPostScreen extends React.Component {
   thumbnail = async () => {
     await this.setState({ pickThumbnail: true });
     await this._pickMedia("Images");
-    await this.setState({ thumb_change: true });
-    await this.setState({ pickThumbnail: false });
   };
 
   removeMedia = (index, type) => {
@@ -458,7 +457,6 @@ class UserPostScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="For everything there is a season, and a time for every matter" />
           ) : (
@@ -468,20 +466,17 @@ class UserPostScreen extends React.Component {
                 placeholder="Enter Title"
                 onChangeText={(title) => this.handleTitleChange(title)}
                 style={{
-                  color: "white",
+                  color: "#2274A5",
                   padding: 10,
                   fontSize: 23,
                   fontStyle: "italic",
                 }}
               />
-              <View>
-                <View style={styles.line} />
-              </View>
               <Image
                 source={{ uri: this.props.tutorials.userpost.thumbnail }}
                 style={{ margin: 10, width: width, height: 200 }}
               />
-              <Text style={{ padding: 10, color: "white" }}>
+              <Text style={{ padding: 10, color: "#2274A5" }}>
                 Topic: {this.props.tutorials.usertopic_string}
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -494,9 +489,11 @@ class UserPostScreen extends React.Component {
                       name="md-image"
                       size={20}
                       style={{ margin: 3 }}
-                      color="#ffb52b"
+                      color="#2274A5"
                     />
-                    <Text style={{ margin: 3, color: "white" }}>Thumbnail</Text>
+                    <Text style={{ margin: 3, color: "#2274A5" }}>
+                      Thumbnail
+                    </Text>
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -508,27 +505,26 @@ class UserPostScreen extends React.Component {
                       name="ios-folder"
                       size={20}
                       style={{ margin: 3 }}
-                      color="#ffb52b"
+                      color="#2274A5"
                     />
-                    <Text style={{ margin: 3, color: "white" }}>Topic</Text>
+                    <Text style={{ margin: 3, color: "#2274A5" }}>Topic</Text>
                   </View>
                 </TouchableOpacity>
-              </View>
-              <View>
-                <View style={styles.line} />
               </View>
               {Object.values(post.steps).map((step, index) => (
                 <View
                   style={{
                     alignItems: "center",
-                    backgroundColor: "#2274A5",
+                    backgroundColor: "#fff",
+                    elevation: 3,
                     width: width - 100,
                     padding: 10,
                     margin: 10,
                     borderRadius: 5,
-                    shadowOffset: { width: 10, height: 10 },
-                    shadowColor: "black",
-                    shadowOpacity: 1.0,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 2,
                   }}
                   key={index}
                 >
@@ -554,27 +550,16 @@ class UserPostScreen extends React.Component {
                     </TouchableOpacity>
                   </View>
                   {step.Videos && (
-                    <View>
-                      <Video
-                        onPlaybackStatusUpdate={(playbackStatus) =>
-                          this._onPlaybackStatusUpdate(playbackStatus, index)
-                        }
-                        ref={(component) => this.addRef(component, index)}
-                        source={{ uri: step.Videos }}
-                        rate={1.0}
-                        volume={1.0}
-                        isMuted={false}
-                        resizeMode={Video.RESIZE_MODE_CONTAIN}
-                        useNativeControls
-                        style={{ margin: 10, width: 200, height: 200 }}
-                      />
-                      <TouchableOpacity
-                        style={[styles.button, styles.corner]}
-                        onPress={() => this.removeMedia(index, "Videos")}
-                      >
-                        <Ionicons name="md-close" size={20} color="#2274A5" />
-                      </TouchableOpacity>
-                    </View>
+                    <VideoPlayer
+                      ref={(component) => this.addRef}
+                      source={{ uri: step.Videos }}
+                      rate={1.0}
+                      volume={1.0}
+                      resizeMode="cover"
+                      disableVolume
+                      disableBack
+                      style={{ margin: 10 }}
+                    />
                   )}
                   {step.Images && (
                     <View>
@@ -586,7 +571,7 @@ class UserPostScreen extends React.Component {
                         style={[styles.button, styles.corner]}
                         onPress={() => this.removeMedia(index, "Images")}
                       >
-                        <Ionicons name="md-close" size={20} color="#2274A5" />
+                        <Ionicons name="md-close" size={20} color="white" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -613,8 +598,8 @@ class UserPostScreen extends React.Component {
                       color: this.state.checked
                         ? step.step.length < 4
                           ? "#ffb52b"
-                          : "black"
-                        : "black",
+                          : "#2274A5"
+                        : "#2274A5",
                       width: width,
                       paddingLeft: 60,
                       paddingRight: 60,
@@ -663,7 +648,7 @@ class UserPostScreen extends React.Component {
               </TouchableOpacity>
               <TouchableOpacity onPress={this.deletePost}>
                 <Text
-                  style={{ padding: 10, color: "#ffb52b", fontWeight: "bold" }}
+                  style={{ padding: 10, color: "#e3242b", fontWeight: "bold" }}
                 >
                   Delete Post
                 </Text>
@@ -681,7 +666,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     margin: 10,
-    color: "white",
+    color: "#2274A5",
   },
   contentContainer: {
     flexGrow: 1,
@@ -707,16 +692,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 40,
     height: 40,
-    backgroundColor: "black",
+    backgroundColor: "#2274A5",
     borderRadius: 40,
+    borderColor: "white",
     margin: 5,
-  },
-  line: {
-    borderBottomColor: "white",
-    borderBottomWidth: 1,
-    alignSelf: "stretch",
-    margin: 10,
-    width: 200,
   },
 });
 

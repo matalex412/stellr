@@ -15,7 +15,6 @@ import Firebase from "firebase";
 import { AdMobBanner } from "expo-ads-admob";
 import { human, systemWeights } from "react-native-typography";
 
-import Background from "./components/Background";
 import ModalAlert from "./components/ModalAlert";
 import CustomLoading from "./components/CustomLoading";
 import { updateTutorials } from "./../redux/actions";
@@ -50,7 +49,7 @@ class HomeScreen extends React.Component {
     if (this.props.tutorials.newAccount) {
       this.setState({ alertTitle: "Welcome!" });
       this.setState({
-        alertMessage: `Hi and welcome to Skoach! To get started, why not try out the "Using Skoach" tutorials on the "Added" page`,
+        alertMessage: `Hi and welcome to Stellr! To get started, why not try out the "Using Stellr" tutorials`,
       });
       this.setState({ isModalVisible: true });
       store.dispatch(updateTutorials({ newAccount: false }));
@@ -135,14 +134,16 @@ class HomeScreen extends React.Component {
       docs,
       post,
       posts = [];
+    if (interests.topics.length > 0) {
+      var x = Math.ceil(5 / interests.creators.length);
+    }
 
-    // fetch tutorials related to each recent creator
     for (creator of interests.creators) {
       docs = await firebase
         .firestore()
         .collectionGroup("posts")
         .where("uid", "==", creator)
-        .limit(5)
+        .limit(x)
         .get();
       docs.forEach((doc) => {
         post = doc.data();
@@ -151,13 +152,16 @@ class HomeScreen extends React.Component {
       });
     }
 
-    // fetch tutorials related to each recent topic
+    if (interests.topics.length > 0) {
+      var y = Math.ceil(5 / interests.topics.length);
+    }
+
     for (var topic of interests.topics) {
       docs = await firebase
         .firestore()
         .collectionGroup("posts")
         .where("topic", "==", topic)
-        .limit(5)
+        .limit(y)
         .get();
       docs.forEach((doc) => {
         post = doc.data();
@@ -176,9 +180,9 @@ class HomeScreen extends React.Component {
 
   handlePress = async (post) => {
     // redirect user to learning page with post info
-    await store.dispatch(updateTutorials({ learn_key: post.key }));
-    await store.dispatch(updateTutorials({ added: post }));
-    this.props.navigation.navigate("Learning");
+    await store.dispatch(updateTutorials({ current_key: post.key }));
+    await store.dispatch(updateTutorials({ current: post }));
+    this.props.navigation.navigate("Tutorial");
   };
 
   changeModalVisibility = (visible) => {
@@ -218,7 +222,6 @@ class HomeScreen extends React.Component {
             <RefreshControl refreshing={false} onRefresh={this.getPosts} />
           }
         >
-          <Background />
           <ModalAlert
             title={this.state.alertTitle}
             message={this.state.alertMessage}
@@ -254,7 +257,11 @@ class HomeScreen extends React.Component {
                       style={{
                         margin: 5,
                         backgroundColor: "white",
-                        elevation: 5,
+                        elevation: 3,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.5,
+                        shadowRadius: 1,
                         borderRadius: 5,
                       }}
                     >

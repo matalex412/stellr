@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
   Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Video } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
@@ -69,7 +71,6 @@ class CreateScreen extends React.Component {
   thumbnail = async () => {
     await this.setState({ pickThumbnail: true });
     await this._pickMedia("Images");
-    await this.setState({ pickThumbnail: false });
   };
 
   getPermissionAsync = async () => {
@@ -96,13 +97,13 @@ class CreateScreen extends React.Component {
       if (this.state.pickThumbnail) {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
-          quality: 0.8,
+          quality: 0.7,
           allowsEditing: true,
         };
       } else {
         var options = {
           mediaTypes: ImagePicker.MediaTypeOptions[type],
-          quality: 0.8,
+          quality: 0.7,
           aspect: [1, 1],
           allowsEditing: true,
         };
@@ -112,6 +113,7 @@ class CreateScreen extends React.Component {
         if (!result.cancelled) {
           if (this.state.pickThumbnail) {
             await store.dispatch(updateTutorials({ thumbnail: result.uri }));
+            await this.setState({ pickThumbnail: false });
           } else {
             var steps = this.props.tutorials.steps;
             if (steps[index].error) {
@@ -145,18 +147,18 @@ class CreateScreen extends React.Component {
   validateForm = async (page) => {
     // check tutorial requirements
     if (page == 0) {
-      if (!(this.props.tutorials.title.length > 3)) {
-        this.setState({ errors: true });
-      } else {
-        this.setState({ errors: false });
-      }
-    } else if (page == 1) {
       if (
         !(
           this.props.tutorials.thumbnail &&
           this.props.tutorials.create_topic.length > 0
         )
       ) {
+        this.setState({ errors: true });
+      } else {
+        this.setState({ errors: false });
+      }
+    } else if (page == 1) {
+      if (!(this.props.tutorials.title.length > 3)) {
         this.setState({ errors: true });
       } else {
         this.setState({ errors: false });
@@ -439,10 +441,10 @@ class CreateScreen extends React.Component {
         {this.state.isLoading ? (
           <CustomLoading verse="Do you see a man skillful in his work? He will stand before kings" />
         ) : (
-          <View>
+          <KeyboardAvoidingView behavior="padding">
             <View style={{ alignItems: "center" }}>
               <AdMobBanner
-                adUnitID="ca-app-pub-3262091936426324/7558442816"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onDidFailToReceiveAdWithError={() =>
                   console.log("banner ad not loading")
                 }
@@ -458,105 +460,24 @@ class CreateScreen extends React.Component {
             />
             <View style={{ flex: 1, alignItems: "center" }}>
               <ProgressSteps
+                disabledStepIconColor="grey"
+                labelColor="grey"
+                progressBarColor="grey"
                 activeStepIconBorderColor="#2274A5"
                 completedProgressBarColor="#2274A5"
                 completedStepIconColor="#2274A5"
                 activeLabelColor="#2274A5"
                 activeStepNumColor="#2274A5"
-                completedCheckColor="#ffb52b"
+                completedCheckColor="white"
                 completedLabelColor="#2274A5"
               >
-                <ProgressStep
-                  scrollViewProps={this.defaultScrollViewProps}
-                  label="What Tutorial?"
-                  previousBtnTextStyle={styles.toggleProgress}
-                  nextBtnTextStyle={styles.toggleProgress}
-                  onNext={() => this.validateForm(0)}
-                  errors={this.state.errors}
-                >
-                  <View
-                    style={{
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <Text style={styles.heading}>Title*</Text>
-                    <TextInput
-                      placeholderTextColor="grey"
-                      value={this.props.tutorials.title}
-                      placeholder="How to make a tutorial"
-                      onChangeText={(title) => {
-                        store.dispatch(updateTutorials({ title: title }));
-                        if (title.length > 3) {
-                          this.setState({ errors: false });
-                        }
-                      }}
-                      style={{
-                        borderRadius: 4,
-                        backgroundColor: "white",
-                        elevation: 2,
-                        borderWidth: this.state.errors ? 1 : 0,
-                        borderColor: "#c21807",
-                        color: "#2274A5",
-                        padding: 5,
-                        fontSize: 20,
-                        fontStyle: "italic",
-                      }}
-                    />
-                    {this.state.errors ? (
-                      <Text
-                        style={[
-                          human.footnote,
-                          { color: "#e3242b", ...systemWeights.bold },
-                        ]}
-                      >
-                        The title must be long enough
-                      </Text>
-                    ) : (
-                      <Text
-                        style={[
-                          human.footnote,
-                          { color: "#e3242b", ...systemWeights.bold },
-                        ]}
-                      >
-                        {"  "}
-                      </Text>
-                    )}
-                  </View>
-                  <View
-                    style={{
-                      marginHorizontal: 20,
-                      marginTop: 5,
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <Text style={styles.heading}>Description</Text>
-                    <TextInput
-                      placeholderTextColor="grey"
-                      multiline={true}
-                      value={this.props.tutorials.info}
-                      placeholder="Write a short description of what the tutorial is about"
-                      onChangeText={(info) =>
-                        store.dispatch(updateTutorials({ info: info }))
-                      }
-                      style={{
-                        color: "#2274A5",
-                        padding: 5,
-                        fontSize: 17,
-                        borderRadius: 4,
-                        backgroundColor: "white",
-                        elevation: 2,
-                        color: "#2274A5",
-                      }}
-                    />
-                  </View>
-                </ProgressStep>
                 <ProgressStep
                   onPrevious={() => this.setState({ errors: false })}
                   scrollViewProps={this.defaultScrollViewProps}
                   label="Display"
                   previousBtnTextStyle={styles.toggleProgress}
                   nextBtnTextStyle={styles.toggleProgress}
-                  onNext={() => this.validateForm(1)}
+                  onNext={() => this.validateForm(0)}
                   errors={this.state.errors}
                 >
                   <TouchableOpacity onPress={this.changeTopic}>
@@ -582,7 +503,7 @@ class CreateScreen extends React.Component {
                         name="ios-folder"
                         size={30}
                         style={{ margin: 3 }}
-                        color="#6da0c0"
+                        color="#2274A5"
                       />
                       <Text
                         style={{
@@ -649,6 +570,93 @@ class CreateScreen extends React.Component {
                   )}
                 </ProgressStep>
                 <ProgressStep
+                  scrollViewProps={this.defaultScrollViewProps}
+                  label="What Tutorial?"
+                  previousBtnTextStyle={styles.toggleProgress}
+                  nextBtnTextStyle={styles.toggleProgress}
+                  onNext={() => this.validateForm(1)}
+                  errors={this.state.errors}
+                >
+                  <View
+                    style={{
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={styles.heading}>Title*</Text>
+                    <TextInput
+                      placeholderTextColor="grey"
+                      value={this.props.tutorials.title}
+                      placeholder="How to make a tutorial"
+                      onChangeText={(title) => {
+                        store.dispatch(updateTutorials({ title: title }));
+                        if (title.length > 3) {
+                          this.setState({ errors: false });
+                        }
+                      }}
+                      style={{
+                        borderRadius: 4,
+                        backgroundColor: "white",
+                        elevation: 2,
+                        borderWidth: this.state.errors ? 1 : 0,
+                        borderColor: "#c21807",
+                        color: "#2274A5",
+                        padding: 5,
+                        fontSize: 20,
+                        fontStyle: "italic",
+                      }}
+                    />
+                    {this.state.errors ? (
+                      <Text
+                        style={[
+                          human.footnote,
+                          { color: "#e3242b", ...systemWeights.bold },
+                        ]}
+                      >
+                        The title must be long enough
+                      </Text>
+                    ) : (
+                      <Text
+                        style={[
+                          human.footnote,
+                          { color: "#e3242b", ...systemWeights.bold },
+                        ]}
+                      >
+                        {"  "}
+                      </Text>
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      marginHorizontal: 20,
+                      marginTop: 5,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={styles.heading}>Description</Text>
+                    <TextInput
+                      placeholderTextColor="grey"
+                      multiline={true}
+                      value={this.props.tutorials.info}
+                      placeholder="Write a short description of what the tutorial is about"
+                      onChangeText={(info) =>
+                        store.dispatch(updateTutorials({ info: info }))
+                      }
+                      onSubmitEditing={() => {
+                        Keyboard.dismiss();
+                      }}
+                      style={{
+                        color: "#2274A5",
+                        padding: 5,
+                        fontSize: 17,
+                        borderRadius: 4,
+                        backgroundColor: "white",
+                        elevation: 2,
+                        color: "#2274A5",
+                      }}
+                    />
+                  </View>
+                </ProgressStep>
+                <ProgressStep
                   scrollViewProps={{
                     contentContainerStyle: {
                       flexGrow: 1,
@@ -713,9 +721,10 @@ class CreateScreen extends React.Component {
                           padding: 10,
                           margin: 10,
                           borderRadius: 5,
-                          shadowOffset: { width: 10, height: 10 },
-                          shadowColor: "black",
-                          shadowOpacity: 1.0,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.5,
+                          shadowRadius: 2,
                         }}
                       >
                         <Text style={styles.heading}>Step {index + 1}</Text>
@@ -827,7 +836,7 @@ class CreateScreen extends React.Component {
                 </ProgressStep>
               </ProgressSteps>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         )}
       </ScrollView>
     );

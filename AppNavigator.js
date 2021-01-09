@@ -14,6 +14,8 @@ import React from "react";
 import { human } from "react-native-typography";
 import { LinearGradient } from "expo-linear-gradient";
 
+import ProfileHome from "./screens/ProfileHome";
+import ProfileMade from "./screens/ProfileMade";
 import StarCount from "./screens/components/StarCount";
 import AppHeader from "./screens/components/AppHeader";
 import HomeScreen from "./screens/HomeScreen";
@@ -24,7 +26,6 @@ import LoginScreen from "./screens/LoginScreen";
 import LoadingScreen from "./screens/LoadingScreen";
 import SignUp from "./screens/SignUp";
 import TutorialScreen from "./screens/TutorialScreen";
-import LearningScreen from "./screens/LearningScreen";
 import AccountScreen from "./screens/AccountScreen";
 import TopicScreen from "./screens/TopicScreen";
 import UserPosts from "./screens/UserPosts";
@@ -47,16 +48,15 @@ const CreateStack = createSwitchNavigator(
   }
 );
 
-const HomeTabs = createMaterialTopTabNavigator(
+const ProfileTabs = createMaterialTopTabNavigator(
   {
-    Home: { screen: HomeScreen, navigationOptions: { title: "Recommended" } },
-    Added: { screen: AddedScreen, navigationOptions: { title: "Added" } },
+    Home: ProfileHome,
+    Tutorials: ProfileMade,
   },
   {
     tabBarOptions: {
-      upperCaseLabel: false,
-      labelStyle: { ...human.headlineObject, color: "#2274A5" },
-      tabStyle: { alignItems: "flex-start" },
+      activeTintColor: "#2274A5",
+      inactiveTintColor: "gray",
       style: {
         backgroundColor: "#fff",
       },
@@ -101,7 +101,7 @@ const LoginStack = createStackNavigator(
 
 const AppTabs = createBottomTabNavigator(
   {
-    Home: HomeTabs,
+    Home: HomeScreen,
     Search: SearchScreen,
     Create: CreateStack,
     Users: PeopleScreen,
@@ -116,6 +116,10 @@ const AppTabs = createBottomTabNavigator(
         backgroundColor: "#fff",
         borderTopColor: "transparent",
         elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 2,
       },
     },
   }
@@ -145,7 +149,6 @@ const AppStack = createStackNavigator(
         title: "Stellr",
         headerTitleAlign: "center",
         headerTitleStyle: {
-          fontFamily: "Roboto",
           fontSize: 23,
           color: "white",
         },
@@ -183,8 +186,7 @@ const AppStack = createStackNavigator(
       screen: UserPosts,
       navigationOptions: { title: "Your Posts" },
     },
-    Profile: { screen: ProfileScreen, navigationOptions: { title: "" } },
-    Learning: { screen: LearningScreen, navigationOptions: { title: "" } },
+    Profile: { screen: ProfileTabs, navigationOptions: { title: "" } },
     Tutorial: { screen: TutorialScreen, navigationOptions: { title: "" } },
     UserTopic: { screen: TopicScreen, navigationOptions: { title: "Topic" } },
     UserTutorial: { screen: UserPostScreen, navigationOptions: { title: "" } },
@@ -200,20 +202,10 @@ const AppStack = createStackNavigator(
           end={{ x: 1, y: 0 }}
         />
       ),
-      headerTitleStyle: {
-        color: "white",
-      },
+      headerTintColor: "#fff",
       headerStyle: {
         height: 75,
       },
-      headerBackImage: () => (
-        <Ionicons
-          color="white"
-          style={{ margin: 10 }}
-          name="md-arrow-back"
-          size={25}
-        />
-      ),
     },
     initialRouteName: "Tabs",
   }
@@ -239,7 +231,7 @@ const AppNavigator = createAnimatedSwitchNavigator(
   }
 );
 
-HomeTabs.navigationOptions = {
+HomeScreen.navigationOptions = {
   tabBarIcon: ({ tintColor }) => (
     <MaterialCommunityIcons
       style={{ alignSelf: "center", padding: 10 }}
@@ -258,9 +250,8 @@ CreateStack.navigationOptions = {
         position: "absolute",
         bottom: 10,
         height: 58,
-        elevation: 7,
         width: 58,
-        borderRadius: 58,
+        borderRadius: 29,
         backgroundColor: "#2274A5",
         justifyContent: "center",
         alignItems: "center",

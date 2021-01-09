@@ -10,8 +10,8 @@ import { firebase } from "./../src/config";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { connect } from "react-redux";
 import { AdMobBanner } from "expo-ads-admob";
+import { human, systemWeights } from "react-native-typography";
 
-import Background from "./components/Background";
 import ProfileBanner from "./components/ProfileBanner";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -79,22 +79,30 @@ class LeaderboardScreen extends React.Component {
   render() {
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Background />
         {this.state.isLoading ? (
           <CustomLoading verse="I can do all things through him who strengthens me" />
         ) : (
           <View
-            style={{ width: "100%", alignItems: "center", paddingBottom: 30 }}
+            style={{ width: "100%", alignItems: "center", marginBottom: 20 }}
           >
             <View style={{ marginVertical: 5, alignItems: "center" }}>
               <AdMobBanner
-                adUnitID="ca-app-pub-3262091936426324/7558442816"
+                adUnitID="ca-app-pub-3800661518525298/6229842172"
                 onDidFailToReceiveAdWithError={() =>
                   console.log("banner ad not loading")
                 }
                 servePersonalizedAds
               />
             </View>
+            <Text
+              style={[
+                human.title1,
+                systemWeights.bold,
+                { marginTop: 5, color: "#2274A5" },
+              ]}
+            >
+              Weekly Stars
+            </Text>
             <View
               style={{
                 alignItems: "flex-end",
@@ -198,6 +206,10 @@ class LeaderboardScreen extends React.Component {
                       backgroundColor:
                         user.uid == this.state.current.uid ? "#ffb52b" : "#fff",
                       borderRadius: 40,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 2,
                     }}
                   >
                     <ProfileBanner
@@ -265,10 +277,15 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
     alignItems: "center",
+    backgroundColor: "white",
   },
   bar: {
     backgroundColor: "white",
     elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
     marginTop: 5,
   },
   text: {
@@ -287,6 +304,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     padding: 10,
     borderRadius: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
   },
   questionCircle: {
     backgroundColor: "white",

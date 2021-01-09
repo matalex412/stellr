@@ -40,7 +40,7 @@ export default class ForgotScreen extends React.Component {
             textAlign: "center",
             fontSize: 15,
             margin: 20,
-            color: "white",
+            color: "#2274A5",
           }}
         >
           Enter your email address below and we'll send you a link to reset your
@@ -55,6 +55,11 @@ export default class ForgotScreen extends React.Component {
             marginTop: 5,
             marginBottom: 10,
             borderRadius: 5,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.5,
+            shadowRadius: 2,
+            elevation: 2,
           }}
         >
           <View

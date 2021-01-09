@@ -9,14 +9,14 @@ import {
   Image,
   BackHandler,
   Dimensions,
+  ImageBackground,
 } from "react-native";
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
+import { human, systemWeights } from "react-native-typography";
 
-import Background from "./components/Background";
-import AskScreen from "./AskScreen";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -78,8 +78,17 @@ class SearchScreen extends React.Component {
     }
 
     // removes icon key
-    if (topics["icon"] != null) {
+    if (topics["icon"]) {
       delete topics.icon;
+    }
+
+    // removes color key
+    if (topics["color"]) {
+      delete topics.color;
+    }
+    // removes color key
+    if (topics["count"]) {
+      delete topics.count;
     }
 
     await this.setState({ topics });
@@ -117,6 +126,18 @@ class SearchScreen extends React.Component {
       this.setState({ contents: {} });
       this.setState({ postids: [] });
     }
+
+    var counts = [];
+    for (topic of Object.keys(topics)) {
+      var doc = await firebase
+        .firestore()
+        .collection("topics")
+        .doc(topic)
+        .get();
+      var data = doc.data();
+      counts.push(data.tutorialCount);
+    }
+    this.setState({ counts });
 
     // page finished loading
     this.setState({ isLoading: false });
@@ -180,13 +201,12 @@ class SearchScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Ask and it will be given to you; look and you will find" />
           ) : (
             <View
               style={{
-                marginBottom: postids.length > 2 ? 20 : 0,
+                paddingBottom: postids.length > 2 ? 20 : 0,
                 flex: 1,
                 justifyContent: "center",
               }}
@@ -239,20 +259,38 @@ class SearchScreen extends React.Component {
                     }}
                   >
                     {topics.map((topic, index) => {
+                      switch (topic) {
+                        case "Art":
+                          var image = require("../assets/Art-cover.jpg");
+                          break;
+                        case "Health & beauty":
+                          var image = require("../assets/Health-cover.jpg");
+                          break;
+                        case "Other":
+                          var image = require("../assets/Other-cover.jpg");
+                          break;
+                        case "Sport":
+                          var image = require("../assets/Sport-cover.jpg");
+                          break;
+                        default:
+                          var image = require("../assets/Cooking-cover.jpg");
+                      }
                       return (
                         <TouchableOpacity
                           key={index}
                           onPress={() => this.clickedTopic(topic)}
-                          style={styles.square}
                         >
-                          <MaterialCommunityIcons
-                            name={this.state.topics[topic].icon}
-                            size={40}
-                            color="#2274A5"
-                          />
-                          <View>
-                            <Text style={styles.text}>{topic}</Text>
-                          </View>
+                          <ImageBackground style={styles.topic} source={image}>
+                            <LinearGradient
+                              style={styles.topic}
+                              colors={["#2274A5", "transparent"]}
+                            >
+                              <Text style={styles.topicTitle}>{topic}</Text>
+                              <Text style={styles.tutorialCount}>
+                                {this.state.counts[index]} Tutorials
+                              </Text>
+                            </LinearGradient>
+                          </ImageBackground>
                         </TouchableOpacity>
                       );
                     })}
@@ -302,16 +340,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderColor: "#0b5c87",
   },
-  square: {
-    margin: 10,
-    width: Dimensions.get("window").width / 3 - 30,
-    height: Dimensions.get("window").width / 3 - 30,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    borderRadius: 5,
-    backgroundColor: "#fff",
-  },
   text: {
     textAlign: "center",
     color: "#2274A5",
@@ -324,11 +352,18 @@ const styles = StyleSheet.create({
     padding: 2,
     alignSelf: "center",
   },
-  line: {
-    borderBottomColor: "white",
-    borderBottomWidth: 1,
-    alignSelf: "center",
-    width: "100%",
+  topic: {
+    width: Dimensions.get("window").width,
+    height: 170,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topicTitle: {
+    ...human.title1WhiteObject,
+    ...systemWeights.semibold,
+  },
+  tutorialCount: {
+    ...human.headlineWhiteObject,
   },
 });
 

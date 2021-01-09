@@ -13,7 +13,6 @@ export default class CustomLoading extends React.Component {
         <Text
           style={{
             textAlign: "center",
-            fontFamily: "serif",
             color: this.props.color ? this.props.color : "#2274A5",
             fontSize: 20,
             padding: 20,

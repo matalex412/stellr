@@ -4,10 +4,10 @@
     "slug": "stellr",
     "privacy": "public",
     "platforms": ["ios", "android", "web"],
-    "version": "1.1.3",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "primaryColor": "#6da9c9",
+    "primaryColor": "#2274A5",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover"
@@ -19,6 +19,10 @@
     "androidStatusBar": {
       "barStyle": "light-content"
     },
+    "ios": {
+      "bundleIdentifier": "com.iam.stellr",
+      "buildNumber": "1.0.0"
+    },
     "android": {
       "splash": {
         "statusBar": {
@@ -28,7 +32,7 @@
         "image": "./assets/splash.png"
       },
       "adaptiveIcon": {
-        "backgroundColor": "#6da9c9"
+        "backgroundColor": "#2274A5"
       },
       "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "package": "com.iam.skoach",

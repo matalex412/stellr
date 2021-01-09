@@ -81,6 +81,8 @@ class SearchScreen extends React.Component {
 
     // removes icon key
     delete new_topics.icon;
+    delete new_topics.count;
+    delete new_topics.color;
 
     if (Object.keys(new_topics).length == 0) {
       var post = this.props.tutorials.userpost;
@@ -146,10 +148,9 @@ class SearchScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           <Text style={styles.heading}>Topics</Text>
           {this.state.isLoading ? (
-            <ActivityIndicator color="#fff" size="large" />
+            <ActivityIndicator color="#2274A5" size="large" />
           ) : (
             <View style={{ justifyContent: "center", alignItems: "center" }}>
               <View

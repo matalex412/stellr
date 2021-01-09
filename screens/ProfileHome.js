@@ -14,7 +14,6 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { AdMobBanner } from "expo-ads-admob";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
-import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -29,7 +28,37 @@ class ProfileHome extends React.Component {
   };
 
   componentDidMount = () => {
+    this.updateProfilePic();
     this.setup();
+  };
+
+  updateProfilePic = async () => {
+    // get friends data from firestore
+    var { currentUser } = await firebase.auth();
+    var doc = await firebase
+      .firestore()
+      .collection("users")
+      .doc(this.props.tutorials.profile.uid)
+      .get();
+    var data = doc.data();
+
+    // check if friends data has changed
+    if (data.profilePic != this.props.tutorials.profile.profilePic) {
+      var update = { ...this.props.tutorials.profile };
+      update.profilePic = data.profilePic;
+
+      delete update["uid"];
+      await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("people")
+        .update({
+          [this.props.tutorials.profile.uid]: update,
+        });
+
+      update.uid = this.props.tutorials.profile.uid;
+      await store.dispatch(updateTutorials({ profile: update }));
+    }
   };
 
   setup = async () => {
@@ -50,10 +79,12 @@ class ProfileHome extends React.Component {
         .database()
         .ref(`categories/${name}/icon`)
         .once("value");
-      if (icon != null) {
+      if (icon != "null") {
         topics[name] = icon.toJSON();
+        console.log(icon);
       }
     }
+    delete topics["Meta"];
     await this.setState({ topics });
 
     // get users most popular post
@@ -92,7 +123,6 @@ class ProfileHome extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Love is patient, love is kind" />
           ) : (
@@ -100,7 +130,7 @@ class ProfileHome extends React.Component {
               <ProfileBanner
                 bio={this.state.user.bio}
                 user={this.state.user}
-                size={100}
+                size={26}
               />
               {this.state.popular && (
                 <View style={{ padding: 10 }}>
@@ -149,7 +179,7 @@ const styles = StyleSheet.create({
   },
   text: {
     textAlign: "center",
-    color: "white",
+    color: "#ffb52b",
     fontSize: 15,
   },
   contentContainer: {
@@ -160,23 +190,24 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   heading: {
-    fontSize: 20,
     alignSelf: "center",
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#2274A5",
   },
   square: {
-    margin: 10,
-    width: Dimensions.get("window").width / 3 - 30,
-    height: Dimensions.get("window").width / 3 - 30,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "black",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    elevation: 10,
-    backgroundColor: "black",
+    margin: 10,
+    width: Dimensions.get("window").width / 3 - 30,
+    height: Dimensions.get("window").width / 3 - 30,
+    elevation: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 5,
+    backgroundColor: "#fff",
   },
 });
 

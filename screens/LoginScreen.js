@@ -10,8 +10,8 @@ import {
 import { connect } from "react-redux";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { human, systemWeights } from "react-native-typography";
+import { LinearGradient } from "expo-linear-gradient";
 
-import Background from "./components/Background";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
 import { firebase } from "./../src/config";
@@ -72,7 +72,16 @@ class LoginScreen extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Background />
+        <LinearGradient
+          colors={["#2274A5", "#fff"]}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: "100%",
+          }}
+        />
         <Text style={[human.title1White, systemWeights.bold]}>Login</Text>
         <View
           style={{
@@ -82,7 +91,11 @@ class LoginScreen extends React.Component {
             width: "80%",
             marginTop: 10,
             borderRadius: 5,
-            elevation: 1,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.5,
+            shadowRadius: 2,
+            elevation: 2,
           }}
         >
           <View
@@ -160,15 +173,20 @@ class LoginScreen extends React.Component {
           >
             <Text style={{ color: "#2274A5" }}>Forgot Password?</Text>
           </TouchableOpacity>
-          <View style={styles.submitButton}>
-            {!this.state.isLoading ? (
-              <TouchableOpacity activeOpacity={0.5} onPress={this.handleLogin}>
-                <Text style={{ color: "white", fontSize: 20 }}>Login</Text>
-              </TouchableOpacity>
-            ) : (
+
+          {!this.state.isLoading ? (
+            <TouchableOpacity
+              style={styles.submitButton}
+              activeOpacity={0.5}
+              onPress={this.handleLogin}
+            >
+              <Text style={{ color: "white", fontSize: 20 }}>Login</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.submitButton}>
               <ActivityIndicator color="white" />
-            )}
-          </View>
+            </View>
+          )}
         </View>
         {this.state.errorMessage ? (
           <Text
@@ -202,7 +220,11 @@ class LoginScreen extends React.Component {
               padding: 4,
               backgroundColor: "white",
               borderRadius: 4,
-              elevation: 1,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 2,
+              elevation: 2,
             }}
             onPress={() => this.props.navigation.navigate("SignUp")}
           >
@@ -214,7 +236,11 @@ class LoginScreen extends React.Component {
               padding: 4,
               backgroundColor: "white",
               borderRadius: 4,
-              elevation: 1,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 2,
+              elevation: 2,
             }}
             onPress={() => this.props.navigation.navigate("App")}
           >

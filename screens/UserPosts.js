@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { connect } from "react-redux";
 
-import Background from "./components/Background";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -72,7 +71,6 @@ class UserPosts extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Do you see a man skilled in his work? He will stand before kings" />
           ) : this.state.keys.length < 1 ? (
