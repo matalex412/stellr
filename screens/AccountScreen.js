@@ -15,7 +15,9 @@ import * as ImagePicker from "expo-image-picker";
 import * as Permissions from "expo-permissions";
 import Modal from "react-native-modal";
 import Firebase from "firebase";
+import NetInfo from "@react-native-community/netinfo";
 
+import NoInternet from "./components/NoInternet";
 import LinkSection from "./components/LinkSection";
 import ProfileBanner from "./components/ProfileBanner";
 import { firebase } from "./../src/config";
@@ -31,7 +33,15 @@ export default class AccountScreen extends React.Component {
     this.setup();
   };
 
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({ isConnected: state.isConnected });
+    });
+    unsubscribe();
+  };
+
   setup = async () => {
+    await this.checkConnectivity();
     // store current user data
     const { currentUser } = await firebase.auth();
     this.setState({ currentUser });
@@ -209,7 +219,7 @@ export default class AccountScreen extends React.Component {
       <View style={styles.container}>
         {this.state.isLoading ? (
           <ActivityIndicator size="large" />
-        ) : (
+        ) : this.state.isConnected ? (
           <View style={styles.subContainer}>
             <Modal isVisible={this.state.isModalVisible}>
               <TouchableOpacity onPress={this.hideModal}>
@@ -372,6 +382,11 @@ export default class AccountScreen extends React.Component {
                 icon="logout"
               />
               <LinkSection
+                onPress={this.delete}
+                text="Legal"
+                icon="book-open-page-variant"
+              />
+              <LinkSection
                 onPress={this.share}
                 text="Share Skoach"
                 icon="share"
@@ -389,6 +404,8 @@ export default class AccountScreen extends React.Component {
               </Text>
             )}
           </View>
+        ) : (
+          <NoInternet refresh={this.setup} />
         )}
       </View>
     );
@@ -400,6 +417,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "white",
   },
   subContainer: {
     alignItems: "center",

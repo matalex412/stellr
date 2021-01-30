@@ -202,6 +202,40 @@ class TutorialScreen extends React.Component {
     this.setState({ isModalVisible: visible });
   };
 
+  blockUser = async () => {
+    const { currentUser } = await firebase.auth();
+
+    var doc = await firebase
+      .firestore()
+      .collection("users")
+      .doc(currentUser.uid)
+      .get();
+    var userData = doc.data();
+    if (userData.blocked) {
+      var blocked = userData.blocked;
+    } else {
+      var blocked = [];
+    }
+
+    blocked.push(this.props.tutorials.current.uid);
+
+    await firebase.firestore().collection("users").doc(currentUser.uid).update({
+      blocked: blocked,
+    });
+
+    this.props.navigation.navigate("Search");
+  };
+
+  reportPost = () => {
+    firebase
+      .firestore()
+      .collection(this.props.tutorials.current.topic)
+      .doc(this.props.tutorials.current_key)
+      .update({
+        reports: Firebase.firestore.FieldValue.increment(1),
+      });
+  };
+
   _renderItem = ({ item, index }) => {
     var width = Dimensions.get("window").width;
     return (
@@ -244,6 +278,7 @@ class TutorialScreen extends React.Component {
       </View>
     );
   };
+
   render() {
     var rating = (
       this.props.tutorials.current.stars /
@@ -352,6 +387,22 @@ class TutorialScreen extends React.Component {
                     />
                     <Text>{rating}</Text>
                   </View>
+                  <TouchableOpacity onPress={this.reportPost}>
+                    <Ionicons
+                      name="md-flag"
+                      size={25}
+                      color="#2274A5"
+                      style={{ marginRight: 3 }}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={this.blockUser}>
+                    <Ionicons
+                      name="md-flag"
+                      size={25}
+                      color="#2274A5"
+                      style={{ marginRight: 3 }}
+                    />
+                  </TouchableOpacity>
                   <LearnModal learnt={this.learnt} />
                 </View>
                 {!(this.props.tutorials.current.topic == "/topics/Meta") && (
@@ -385,6 +436,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#fff",
   },
   heading: {
     ...human.headlineObject,

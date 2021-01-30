@@ -179,13 +179,9 @@ class UserPostScreen extends React.Component {
       // if topic hasn't changed
       if (old_topic == topic) {
         // update base tutorial info
-        await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .doc(id)
-          .update({
-            title: this.props.tutorials.userpost.title,
-          });
+        await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
+          title: this.props.tutorials.userpost.title,
+        });
       } else {
         // remove old version of user's tutorial
         await firebase
@@ -220,18 +216,15 @@ class UserPostScreen extends React.Component {
         }
 
         // create updated tutorial in new topic section
-        var doc = await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .add({
-            title: this.props.tutorials.userpost.title,
-            username: this.props.tutorials.userpost.username,
-            uid: currentUser.uid,
-            topic: topic,
-            stars: this.props.tutorials.userpost.stars,
-            incomplete: this.props.tutorials.userpost.stars,
-            learns: this.props.tutorials.userpost.stars,
-          });
+        var doc = await firebase.firestore().collection(`${topic}/posts`).add({
+          title: this.props.tutorials.userpost.title,
+          username: this.props.tutorials.userpost.username,
+          uid: currentUser.uid,
+          topic: topic,
+          stars: this.props.tutorials.userpost.stars,
+          incomplete: this.props.tutorials.userpost.stars,
+          learns: this.props.tutorials.userpost.stars,
+        });
 
         id = doc.id;
       }
@@ -279,31 +272,20 @@ class UserPostScreen extends React.Component {
         // store thumbnail and get reference
         const response = await fetch(this.props.tutorials.userpost.thumbnail);
         const blob = await response.blob();
-        ref = await firebase
-          .storage()
-          .ref()
-          .child(`${topic}/${id}/Thumbnail`);
+        ref = await firebase.storage().ref().child(`${topic}/${id}/Thumbnail`);
         await ref.put(blob);
         thumbnail = await ref.getDownloadURL();
 
-        await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .doc(id)
-          .update({
-            thumbnail: thumbnail,
-            steps: steps,
-            time: Date.now(),
-          });
+        await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
+          thumbnail: thumbnail,
+          steps: steps,
+          time: Date.now(),
+        });
       } else {
-        await firebase
-          .firestore()
-          .collection(`${topic}/posts`)
-          .doc(id)
-          .update({
-            steps: steps,
-            time: Date.now(),
-          });
+        await firebase.firestore().collection(`${topic}/posts`).doc(id).update({
+          steps: steps,
+          time: Date.now(),
+        });
       }
 
       // update tutorial in made section
@@ -535,12 +517,6 @@ class UserPostScreen extends React.Component {
                       onPress={() => this._pickMedia(index, "Images")}
                     >
                       <Ionicons name="md-image" size={25} color="#ffb52b" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.button}
-                      onPress={() => this._pickMedia(index, "Videos")}
-                    >
-                      <Ionicons name="ios-videocam" size={25} color="#ffb52b" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.button}

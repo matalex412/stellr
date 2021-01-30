@@ -1,7 +1,9 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { connect } from "react-redux";
+import NetInfo from "@react-native-community/netinfo";
 
+import NoInternet from "./components/NoInternet";
 import CustomLoading from "./components/CustomLoading";
 import { updateTutorials } from "./../redux/actions";
 import { store } from "./../redux/store";
@@ -11,6 +13,14 @@ class MessageScreen extends React.Component {
   state = {
     messages: {},
     isLoading: true,
+  };
+
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({ isLoading: true });
+      this.setState({ isConnected: state.isConnected });
+    });
+    unsubscribe();
   };
 
   componentDidMount = () => {
@@ -28,22 +38,24 @@ class MessageScreen extends React.Component {
   };
 
   read = async () => {
-    // change status of all messages to "read"
-    var time;
-    var data = this.state.data;
-    for (time of Object.keys(data)) {
-      if (data[time].status != "read") {
-        data[time].status = "read";
+    if (this.state.isConnected) {
+      // change status of all messages to "read"
+      var time;
+      var data = this.state.data;
+      for (time of Object.keys(data)) {
+        if (data[time].status != "read") {
+          data[time].status = "read";
+        }
       }
-    }
 
-    // update database
-    const { currentUser } = firebase.auth();
-    firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc("messages")
-      .update(data);
+      // update database
+      const { currentUser } = firebase.auth();
+      firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("messages")
+        .update(data);
+    }
   };
 
   timeDifference(current, previous) {
@@ -71,20 +83,21 @@ class MessageScreen extends React.Component {
   }
 
   getMessages = async () => {
-    const { currentUser } = firebase.auth();
+    await this.checkConnectivity();
+    if (this.state.isConnected) {
+      const { currentUser } = firebase.auth();
 
-    // get user's messages
-    var doc = await firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc("messages")
-      .get();
+      // get user's messages
+      var doc = await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc("messages")
+        .get();
 
-    this.setState({ isLoading: true });
-    // check if user has messages
-    if (doc.exists) {
-      // store messages in state
-      if (doc.data()) {
+      this.setState({ isLoading: true });
+      // check if user has messages
+      if (doc.exists) {
+        // store messages in state
         this.setState({ data: doc.data() });
         var keys = Object.keys(doc.data());
         var d,
@@ -92,7 +105,7 @@ class MessageScreen extends React.Component {
           times = [];
 
         // sort messages chronologically
-        keys.sort(function(a, b) {
+        keys.sort(function (a, b) {
           return a - b;
         });
         this.setState({ keys });
@@ -105,15 +118,15 @@ class MessageScreen extends React.Component {
           times.push(timeAgo);
         }
         this.setState({ times });
-      } else {
-        alert("Sorry, you aren't connected to internet. Don't Panic");
       }
+
+      this.setState({ isLoading: false });
+
+      // update messagebox status
+      await store.dispatch(updateTutorials({ unread: false }));
+    } else {
+      this.setState({ isLoading: false });
     }
-
-    this.setState({ isLoading: false });
-
-    // update messagebox status
-    await store.dispatch(updateTutorials({ unread: false }));
   };
 
   render() {
@@ -122,6 +135,8 @@ class MessageScreen extends React.Component {
         <ScrollView contentContainerStyle={styles.contentContainer}>
           {this.state.isLoading ? (
             <CustomLoading verse="Your word is a lamp to my feet and a light to my path" />
+          ) : !this.state.isConnected ? (
+            <NoInternet refresh={this.getMessages} />
           ) : this.state.times.length == 0 ? (
             <Text style={{ color: "#2274A5" }}>No Messages</Text>
           ) : (

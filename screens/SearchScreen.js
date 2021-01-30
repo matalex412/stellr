@@ -16,7 +16,9 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { human, systemWeights } from "react-native-typography";
+import NetInfo from "@react-native-community/netinfo";
 
+import NoInternet from "./components/NoInternet";
 import CustomLoading from "./components/CustomLoading";
 import TutorialCover from "./components/TutorialCover";
 import { store } from "./../redux/store";
@@ -26,6 +28,14 @@ import { firebase } from "./../src/config";
 class SearchScreen extends React.Component {
   state = {
     isLoading: true,
+    isConnected: true,
+  };
+
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({ isConnected: state.isConnected });
+    });
+    unsubscribe();
   };
 
   backAction = () => {
@@ -57,90 +67,110 @@ class SearchScreen extends React.Component {
   }
 
   setup = async () => {
-    // page items loading
-    this.setState({ isLoading: true });
+    await this.checkConnectivity();
 
-    // refresh items
-    this.setState({ errorMessage: null });
+    if (this.state.isConnected) {
+      // page items loading
+      this.setState({ isLoading: true });
 
-    // get current topic folder and dictionary of all existing topic folders
-    const current_topic = this.props.tutorials.current_topic;
-    var topics = await firebase
-      .database()
-      .ref("categories")
-      .once("value");
-    topics = topics.toJSON();
+      // refresh items
+      this.setState({ errorMessage: null });
 
-    // store the subtopics of the current topic folder
-    var step;
-    for (step of current_topic) {
-      topics = topics[step];
-    }
+      // get current topic folder and dictionary of all existing topic folders
+      const current_topic = this.props.tutorials.current_topic;
+      var topics = await firebase.database().ref("categories").once("value");
+      topics = topics.toJSON();
 
-    // removes icon key
-    if (topics["icon"]) {
-      delete topics.icon;
-    }
+      // store the subtopics of the current topic folder
+      var step;
+      for (step of current_topic) {
+        topics = topics[step];
+      }
 
-    // removes color key
-    if (topics["color"]) {
-      delete topics.color;
-    }
-    // removes color key
-    if (topics["count"]) {
-      delete topics.count;
-    }
+      // removes icon key
+      if (topics["icon"]) {
+        delete topics.icon;
+      }
 
-    await this.setState({ topics });
-    await this.setState({ topicnames: Object.keys(topics) });
+      // removes color key
+      if (topics["color"]) {
+        delete topics.color;
+      }
+      // removes color key
+      if (topics["count"]) {
+        delete topics.count;
+      }
 
-    // create string showing route to current topic folder
-    var route;
-    var topic = "";
-    for (route of current_topic) {
-      topic = topic + "/topics/" + route;
-    }
-    await store.dispatch(updateTutorials({ tutorial_topic: topic }));
+      await this.setState({ topics });
+      await this.setState({ topicnames: Object.keys(topics) });
 
-    if (topic != "") {
-      // find posts in topic folder
-      var posts = await firebase
-        .firestore()
-        .collection(topic + "/posts")
-        .get();
+      // create string showing route to current topic folder
+      var route;
+      var topic = "";
+      for (route of current_topic) {
+        topic = topic + "/topics/" + route;
+      }
+      await store.dispatch(updateTutorials({ tutorial_topic: topic }));
 
-      var contents = {};
-      var postids = [];
-      if (posts.docs.length > 0) {
-        posts.forEach((doc) => {
-          postids.push(doc.id);
-          contents[doc.id] = doc.data();
-        });
-        await this.setState({ contents });
-        await this.setState({ postids });
+      if (topic != "") {
+        // find posts in topic folder
+        var posts = await firebase
+          .firestore()
+          .collection(topic + "/posts")
+          .get();
+
+        var { currentUser } = await firebase.auth();
+        var doc = await firebase
+          .firestore()
+          .collection("users")
+          .doc(currentUser.uid)
+          .get();
+        var userData = doc.data();
+        if (!userData.blocked) {
+          userData.blocked = [];
+        }
+
+        var contents = {};
+        var postids = [];
+        if (posts.docs.length > 0) {
+          posts.forEach((doc) => {
+            var post = doc.data();
+            if (
+              !(userData.blocked.includes(post.uid) && userData.blocked) ||
+              post.reports > 2
+            ) {
+              postids.push(doc.id);
+              contents[doc.id] = post;
+            }
+          });
+          await this.setState({ contents });
+          await this.setState({ postids });
+        } else {
+          this.setState({ contents: {} });
+          this.setState({ postids: [] });
+        }
       } else {
         this.setState({ contents: {} });
         this.setState({ postids: [] });
       }
+
+      var counts = [];
+      for (topic of Object.keys(topics)) {
+        var doc = await firebase
+          .firestore()
+          .collection("topics")
+          .doc(topic)
+          .get();
+        var data = doc.data();
+        counts.push(data.tutorialCount);
+      }
+      this.setState({ counts });
+
+      // page finished loading
+      this.setState({ isLoading: false });
     } else {
-      this.setState({ contents: {} });
-      this.setState({ postids: [] });
+      this.setState({ isLoading: false });
     }
-
-    var counts = [];
-    for (topic of Object.keys(topics)) {
-      var doc = await firebase
-        .firestore()
-        .collection("topics")
-        .doc(topic)
-        .get();
-      var data = doc.data();
-      counts.push(data.tutorialCount);
-    }
-    this.setState({ counts });
-
-    // page finished loading
-    this.setState({ isLoading: false });
   };
 
   clickedTopic = async (topic) => {
@@ -203,7 +233,7 @@ class SearchScreen extends React.Component {
         <ScrollView contentContainerStyle={styles.contentContainer}>
           {this.state.isLoading ? (
             <CustomLoading verse="Ask and it will be given to you; look and you will find" />
-          ) : (
+          ) : this.state.isConnected ? (
             <View
               style={{
                 paddingBottom: postids.length > 2 ? 20 : 0,
@@ -321,6 +351,8 @@ class SearchScreen extends React.Component {
                 </View>
               )}
             </View>
+          ) : (
+            <NoInternet refresh={this.setup} />
           )}
         </ScrollView>
       </View>
@@ -331,6 +363,7 @@ class SearchScreen extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
   },
   contentContainer: {
     flexGrow: 1,

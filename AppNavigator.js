@@ -19,7 +19,6 @@ import ProfileMade from "./screens/ProfileMade";
 import StarCount from "./screens/components/StarCount";
 import AppHeader from "./screens/components/AppHeader";
 import HomeScreen from "./screens/HomeScreen";
-import AddedScreen from "./screens/AddedScreen";
 import CreateScreen from "./screens/CreateScreen";
 import SearchScreen from "./screens/SearchScreen";
 import LoginScreen from "./screens/LoginScreen";
@@ -31,11 +30,9 @@ import TopicScreen from "./screens/TopicScreen";
 import UserPosts from "./screens/UserPosts";
 import UserPostScreen from "./screens/UserPostScreen";
 import HistoryScreen from "./screens/HistoryScreen";
-import AskScreen from "./screens/AskScreen";
 import ForgotScreen from "./screens/ForgotScreen";
 import MessageScreen from "./screens/MessageScreen";
 import PeopleScreen from "./screens/PeopleScreen";
-import ProfileScreen from "./screens/ProfileScreen";
 import LeaderboardScreen from "./screens/LeaderboardScreen";
 
 const CreateStack = createSwitchNavigator(
@@ -203,9 +200,6 @@ const AppStack = createStackNavigator(
         />
       ),
       headerTintColor: "#fff",
-      headerStyle: {
-        height: 75,
-      },
     },
     initialRouteName: "Tabs",
   }
@@ -297,17 +291,6 @@ PeopleScreen.navigationOptions = {
       style={{ alignSelf: "center", padding: 10 }}
       name="account-group"
       size={40}
-      color={tintColor}
-    />
-  ),
-};
-
-AskScreen.navigationOptions = {
-  tabBarIcon: ({ tintColor }) => (
-    <MaterialCommunityIcons
-      style={{ alignSelf: "center", padding: 10 }}
-      name="android-messages"
-      size={35}
       color={tintColor}
     />
   ),

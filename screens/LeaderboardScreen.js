@@ -11,7 +11,9 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { connect } from "react-redux";
 import { AdMobBanner } from "expo-ads-admob";
 import { human, systemWeights } from "react-native-typography";
+import NetInfo from "@react-native-community/netinfo";
 
+import NoInternet from "./components/NoInternet";
 import ProfileBanner from "./components/ProfileBanner";
 import { store } from "./../redux/store";
 import { updateTutorials } from "./../redux/actions";
@@ -23,10 +25,18 @@ class LeaderboardScreen extends React.Component {
     isLoading: true,
     showLeaderboard: false,
     current: {},
+    isConnected: true,
   };
 
   componentDidMount = () => {
     this.setup();
+  };
+
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({ isConnected: state.isConnected });
+    });
+    unsubscribe();
   };
 
   clickedUser = async (user) => {
@@ -35,45 +45,51 @@ class LeaderboardScreen extends React.Component {
   };
 
   setup = async () => {
-    var { currentUser } = await firebase.auth();
+    await this.checkConnectivity();
+    if (this.state.isConnected) {
+      this.setState({ isLoading: true });
+      var { currentUser } = await firebase.auth();
 
-    var docs = await firebase
-      .firestore()
-      .collection("users")
-      .orderBy("weeklyStars", "desc")
-      .limit(5)
-      .get();
-
-    var user,
-      users = [];
-    docs.forEach((doc) => {
-      user = doc.data();
-      user.uid = doc.id;
-      users.push(user);
-    });
-
-    // check day so leaderboard is only displayed on sunday
-    var d = new Date().getDay();
-    if (d == 0) {
-      this.setState({ showLeaderboard: true });
-    }
-
-    if (!currentUser.isAnonymous) {
-      var doc2 = await firebase
+      var docs = await firebase
         .firestore()
         .collection("users")
-        .doc(currentUser.uid)
+        .orderBy("weeklyStars", "desc")
+        .limit(5)
         .get();
 
-      var current = doc2.data();
-      current.uid = doc2.id;
-      this.setState({ current });
-    } else {
-      await this.setState({ isAnonymous: true });
-    }
+      var user,
+        users = [];
+      docs.forEach((doc) => {
+        user = doc.data();
+        user.uid = doc.id;
+        users.push(user);
+      });
 
-    this.setState({ users });
-    this.setState({ isLoading: false });
+      // check day so leaderboard is only displayed on sunday
+      var d = new Date().getDay();
+      if (d == 0) {
+        this.setState({ showLeaderboard: true });
+      }
+
+      if (!currentUser.isAnonymous) {
+        var doc2 = await firebase
+          .firestore()
+          .collection("users")
+          .doc(currentUser.uid)
+          .get();
+
+        var current = doc2.data();
+        current.uid = doc2.id;
+        this.setState({ current });
+      } else {
+        await this.setState({ isAnonymous: true });
+      }
+
+      this.setState({ users });
+      this.setState({ isLoading: false });
+    } else {
+      this.setState({ isLoading: false });
+    }
   };
 
   render() {
@@ -174,97 +190,108 @@ class LeaderboardScreen extends React.Component {
                 <View style={[styles.bar, { height: 50 }]} />
               </View>
             </View>
-            {this.state.users.map((user, index) => {
-              return (
-                <View
-                  key={index}
-                  style={{ alignItems: "center", flexDirection: "row" }}
-                >
+            {this.state.isConnected ? (
+              <View style={{ width: "100%", alignItems: "center" }}>
+                {this.state.users.map((user, index) => {
+                  return (
+                    <View
+                      key={index}
+                      style={{ alignItems: "center", flexDirection: "row" }}
+                    >
+                      <View
+                        style={[
+                          styles.rank,
+                          {
+                            backgroundColor:
+                              user.uid == this.state.current.uid
+                                ? "#ffb52b"
+                                : "#fff",
+                          },
+                        ]}
+                      >
+                        <Text>{index + 1}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => this.clickedUser(user)}
+                        style={{
+                          width: "70%",
+                          marginVertical: 7,
+                          padding: 8,
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexDirection: "row",
+                          elevation: 5,
+                          backgroundColor:
+                            user.uid == this.state.current.uid
+                              ? "#ffb52b"
+                              : "#fff",
+                          borderRadius: 40,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.5,
+                          shadowRadius: 2,
+                        }}
+                      >
+                        <ProfileBanner
+                          style={styles.profile}
+                          user={user}
+                          onPress={() => this.clickedUser(user)}
+                        />
+                        <View
+                          style={{ alignItems: "center", flexDirection: "row" }}
+                        >
+                          <Ionicons
+                            name="md-star"
+                            size={25}
+                            style={{ margin: 3 }}
+                            color={
+                              user.uid == this.state.current.uid
+                                ? "#000"
+                                : "#ffb52b"
+                            }
+                          />
+                          <Text style={{ fontSize: 15 }}>
+                            {user.weeklyStars}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+                {this.state.users.some(
+                  (e) => e.uid == this.state.current.uid
+                ) || this.state.isAnonymous ? null : (
                   <View
-                    style={[
-                      styles.rank,
-                      {
-                        backgroundColor:
-                          user.uid == this.state.current.uid
-                            ? "#ffb52b"
-                            : "#fff",
-                      },
-                    ]}
-                  >
-                    <Text>{index + 1}</Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => this.clickedUser(user)}
                     style={{
-                      width: "70%",
-                      marginVertical: 7,
-                      padding: 8,
+                      margin: 20,
+                      justifyContent: "center",
                       alignItems: "center",
-                      justifyContent: "space-between",
                       flexDirection: "row",
-                      elevation: 5,
-                      backgroundColor:
-                        user.uid == this.state.current.uid ? "#ffb52b" : "#fff",
-                      borderRadius: 40,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.5,
-                      shadowRadius: 2,
+                      width: "80%",
+                      elevation: 1,
+                      backgroundColor: "#ffb52b",
                     }}
                   >
                     <ProfileBanner
                       style={styles.profile}
-                      user={user}
-                      onPress={() => this.clickedUser(user)}
+                      user={this.state.current}
                     />
-                    <View
-                      style={{ alignItems: "center", flexDirection: "row" }}
-                    >
-                      <Ionicons
-                        name="md-star"
-                        size={25}
-                        style={{ margin: 3 }}
-                        color={
-                          user.uid == this.state.current.uid
-                            ? "#000"
-                            : "#ffb52b"
-                        }
-                      />
-                      <Text style={{ fontSize: 15 }}>{user.weeklyStars}</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-            {this.state.users.some((e) => e.uid == this.state.current.uid) ||
-            this.state.isAnonymous ? null : (
-              <View
-                style={{
-                  margin: 20,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flexDirection: "row",
-                  width: "80%",
-                  elevation: 1,
-                  backgroundColor: "#ffb52b",
-                }}
-              >
-                <ProfileBanner
-                  style={styles.profile}
-                  user={this.state.current}
-                />
-                <Ionicons
-                  name="md-star"
-                  size={20}
-                  style={{ margin: 3 }}
-                  color="#000"
-                />
-                <Text style={{ fontSize: 15 }}>
-                  {this.state.current.weeklyStars
-                    ? this.state.current.weeklyStars
-                    : 0}
-                </Text>
+                    <Ionicons
+                      name="md-star"
+                      size={20}
+                      style={{ margin: 3 }}
+                      color="#000"
+                    />
+                    <Text style={{ fontSize: 15 }}>
+                      {this.state.current.weeklyStars
+                        ? this.state.current.weeklyStars
+                        : 0}
+                    </Text>
+                  </View>
+                )}
               </View>
+            ) : (
+              <NoInternet refresh={this.setup} />
             )}
           </View>
         )}

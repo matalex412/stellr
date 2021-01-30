@@ -51,10 +51,7 @@ class SearchScreen extends React.Component {
 
     // get topics
     const current_topic = this.state.current_topic;
-    var topics = await firebase
-      .database()
-      .ref("categories")
-      .once("value");
+    var topics = await firebase.database().ref("categories").once("value");
     topics = topics.toJSON();
     var step;
     for (step of current_topic) {

@@ -32,10 +32,7 @@ class SignUp extends React.Component {
 
   setup = async () => {
     // get array of taken usernames
-    var names = await firebase
-      .database()
-      .ref("names")
-      .once("value");
+    var names = await firebase.database().ref("names").once("value");
     names = names.toJSON();
     if (names == null) {
       names = [];
@@ -89,16 +86,12 @@ class SignUp extends React.Component {
           // create base user data in firestore firestore
           var lower = this.state.username.toLowerCase();
           lower = lower.trim();
-          await firebase
-            .firestore()
-            .collection("users/")
-            .doc(user.uid)
-            .set({
-              lowercaseName: lower,
-              username: this.state.username,
-              interests: interests,
-              minas: 15,
-            });
+          await firebase.firestore().collection("users/").doc(user.uid).set({
+            lowercaseName: lower,
+            username: this.state.username,
+            interests: interests,
+            minas: 15,
+          });
 
           // add help tutorials to user screen
           await firebase
@@ -135,10 +128,7 @@ class SignUp extends React.Component {
 
           // update list of taken usernames
           names.push(this.state.username);
-          firebase
-            .database()
-            .ref("/")
-            .update({ names: names });
+          firebase.database().ref("/").update({ names: names });
 
           // send user email verification
           user.sendEmailVerification();

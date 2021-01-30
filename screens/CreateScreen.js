@@ -20,6 +20,7 @@ import { AdMobBanner } from "expo-ads-admob";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { human, systemWeights } from "react-native-typography";
 import { ProgressSteps, ProgressStep } from "react-native-progress-steps";
+import NetInfo from "@react-native-community/netinfo";
 
 import ModalAlert from "./components/ModalAlert";
 import Background from "./components/Background";
@@ -182,189 +183,203 @@ class CreateScreen extends React.Component {
     await store.dispatch(updateTutorials({ title: title }));
   };
 
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({ isConnected: state.isConnected });
+    });
+    unsubscribe();
+  };
+
   handleSubmit = async () => {
-    //  await this.validateForm();
-    if (!this.state.errors) {
-      this.setState({ isLoading: true });
-      const { currentUser } = firebase.auth();
-      if (currentUser.isAnonymous) {
-        // redirect user
-        this.setState({ alertTitle: "Account Needed" });
-        this.setState({ alertIcon: "md-person" });
-        this.setState({
-          alertMessage:
-            "To post your own tutorials and to gain access to other features, please create an account",
-        });
-        this.setState({ isModalVisible: true });
-      } else {
-        // redirect user
-        this.setState({ alertIcon: null });
-        this.setState({ alertTitle: "Thanks!" });
-        this.setState({
-          alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
-        });
-        this.setState({ isModalVisible: true });
-
-        // store tutorial data
-        var tutorial = {};
-        var steps = this.props.tutorials.steps;
-        tutorial.request = this.props.tutorials.request;
-        tutorial.title = this.props.tutorials.title;
-        tutorial.create_topic = this.props.tutorials.create_topic;
-        tutorial.thumbnail = this.props.tutorials.thumbnail;
-        var topic = this.props.tutorials.create_topic;
-        var info = this.props.tutorials.info;
-
-        if (!info || info == "") {
-          info = null;
-        }
-
-        // reset screen data
-        // await store.dispatch(updateTutorials({ page: 0 }));
-        await store.dispatch(updateTutorials({ request: null }));
-        await store.dispatch(updateTutorials({ title: "" }));
-        await store.dispatch(updateTutorials({ info: "" }));
-        await store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
-        await store.dispatch(updateTutorials({ create_topic: [] }));
-        await store.dispatch(updateTutorials({ create_topic_string: null }));
-        await store.dispatch(updateTutorials({ thumbnail: null }));
-
-        this.setState({ isFormValid: false });
-        this.setState({ isLoading: false });
-
-        //  this.props.navigation.navigate("Home");
-
-        // get topic route
-        var topic_route = tutorial.create_topic;
-        var route;
-        var topic = "";
-        for (route of topic_route) {
-          topic = topic + "/topics/" + route;
-        }
-
-        // add base for tutorial
-        var docRef = await firebase
-          .firestore()
-          .collection(topic + "/posts")
-          .add({
-            title: tutorial.title,
-            username: currentUser.displayName,
-            uid: currentUser.uid,
-            topic: topic,
-            stars: 0,
-            incomplete: 0,
-            learns: 0,
-            info: info,
+    await this.checkConnectivity;
+    if (this.state.isConnected) {
+      //  await this.validateForm();
+      if (!this.state.errors) {
+        this.setState({ isLoading: true });
+        const { currentUser } = firebase.auth();
+        if (currentUser.isAnonymous) {
+          // redirect user
+          this.setState({ alertTitle: "Account Needed" });
+          this.setState({ alertIcon: "md-person" });
+          this.setState({
+            alertMessage:
+              "To post your own tutorials and to gain access to other features, please create an account",
           });
+          this.setState({ isModalVisible: true });
+        } else {
+          // redirect user
+          this.setState({ alertIcon: null });
+          this.setState({ alertTitle: "Thanks!" });
+          this.setState({
+            alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
+          });
+          this.setState({ isModalVisible: true });
 
-        // store thumbnail and get route
-        const response = await fetch(tutorial.thumbnail);
-        const blob = await response.blob();
-        var ref = await firebase
-          .storage()
-          .ref()
-          .child(`${topic}/${docRef.id}/Thumbnail`);
-        await ref.put(blob);
-        var thumbnail = await ref.getDownloadURL();
+          // store tutorial data
+          var tutorial = {};
+          var steps = this.props.tutorials.steps;
+          tutorial.request = this.props.tutorials.request;
+          tutorial.title = this.props.tutorials.title;
+          tutorial.create_topic = this.props.tutorials.create_topic;
+          tutorial.thumbnail = this.props.tutorials.thumbnail;
+          var topic = this.props.tutorials.create_topic;
+          var info = this.props.tutorials.info;
 
-        // iterate over steps and store all media in Firebase Storage
-        var i;
-        for (i = 0; i < steps.length; i++) {
-          // remove error messages
-          delete steps[i].error;
-
-          if (steps[i].Images != null) {
-            const response = await fetch(steps[i].Images);
-            const blob = await response.blob();
-
-            ref = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Image`);
-            await ref.put(blob);
-
-            var url = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Image`)
-              .getDownloadURL();
-            steps[i].Images = url;
-          } else if (steps[i].Videos != null) {
-            const response = await fetch(steps[i].Videos);
-            const blob = await response.blob();
-
-            ref = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Video`);
-            await ref.put(blob);
-
-            var url = await firebase
-              .storage()
-              .ref()
-              .child(`${topic}/${docRef.id}/steps/${i}/Video`)
-              .getDownloadURL();
-            steps[i].Videos = url;
+          if (!info || info == "") {
+            info = null;
           }
-        }
 
-        // update tutorial with valid links to media
-        await firebase
-          .firestore()
-          .collection(topic + "/posts")
-          .doc(docRef.id)
-          .update({
-            steps: steps,
-            thumbnail: thumbnail,
-            time: Date.now(),
-          });
+          // reset screen data
+          // await store.dispatch(updateTutorials({ page: 0 }));
+          await store.dispatch(updateTutorials({ request: null }));
+          await store.dispatch(updateTutorials({ title: "" }));
+          await store.dispatch(updateTutorials({ info: "" }));
+          await store.dispatch(updateTutorials({ steps: [{ step: "" }] }));
+          await store.dispatch(updateTutorials({ create_topic: [] }));
+          await store.dispatch(updateTutorials({ create_topic_string: null }));
+          await store.dispatch(updateTutorials({ thumbnail: null }));
 
-        // add tutorial to made document for user
-        await firebase
-          .firestore()
-          .collection("users/" + currentUser.uid + "/data")
-          .doc("made")
-          .set(
-            {
-              [docRef.id]: {
-                topic: topic,
-                thumbnail: thumbnail,
-                title: tutorial.title,
-              },
-            },
-            { merge: true }
-          );
+          this.setState({ isFormValid: false });
+          this.setState({ isLoading: false });
 
-        // update request list
-        if (tutorial.request == tutorial.title) {
-          await firebase
-            .database()
-            .ref("requests")
-            .update({
-              [tutorial.request]: {
-                topic: topic,
-                postid: docRef.id,
-              },
+          //  this.props.navigation.navigate("Home");
+
+          // get topic route
+          var topic_route = tutorial.create_topic;
+          var route;
+          var topic = "";
+          for (route of topic_route) {
+            topic = topic + "/topics/" + route;
+          }
+
+          // add base for tutorial
+          var docRef = await firebase
+            .firestore()
+            .collection(topic + "/posts")
+            .add({
+              title: tutorial.title,
+              username: currentUser.displayName,
+              uid: currentUser.uid,
+              topic: topic,
+              stars: 0,
+              incomplete: 0,
+              learns: 0,
+              info: info,
             });
-        }
 
-        // notify user that tutorial has been made
-        const message = `You're tutorial "${tutorial.title}" has been made!`;
-        firebase
-          .firestore()
-          .collection(`users/${currentUser.uid}/data`)
-          .doc("messages")
-          .set(
-            {
-              [Date.now()]: {
-                message: message,
-                status: "unread",
+          // store thumbnail and get route
+          const response = await fetch(tutorial.thumbnail);
+          const blob = await response.blob();
+          var ref = await firebase
+            .storage()
+            .ref()
+            .child(`${topic}/${docRef.id}/Thumbnail`);
+          await ref.put(blob);
+          var thumbnail = await ref.getDownloadURL();
+
+          // iterate over steps and store all media in Firebase Storage
+          var i;
+          for (i = 0; i < steps.length; i++) {
+            // remove error messages
+            delete steps[i].error;
+
+            if (steps[i].Images != null) {
+              const response = await fetch(steps[i].Images);
+              const blob = await response.blob();
+
+              ref = await firebase
+                .storage()
+                .ref()
+                .child(`${topic}/${docRef.id}/steps/${i}/Image`);
+              await ref.put(blob);
+
+              var url = await firebase
+                .storage()
+                .ref()
+                .child(`${topic}/${docRef.id}/steps/${i}/Image`)
+                .getDownloadURL();
+              steps[i].Images = url;
+            } else if (steps[i].Videos != null) {
+              const response = await fetch(steps[i].Videos);
+              const blob = await response.blob();
+
+              ref = await firebase
+                .storage()
+                .ref()
+                .child(`${topic}/${docRef.id}/steps/${i}/Video`);
+              await ref.put(blob);
+
+              var url = await firebase
+                .storage()
+                .ref()
+                .child(`${topic}/${docRef.id}/steps/${i}/Video`)
+                .getDownloadURL();
+              steps[i].Videos = url;
+            }
+          }
+
+          // update tutorial with valid links to media
+          await firebase
+            .firestore()
+            .collection(topic + "/posts")
+            .doc(docRef.id)
+            .update({
+              steps: steps,
+              thumbnail: thumbnail,
+              time: Date.now(),
+            });
+
+          // add tutorial to made document for user
+          await firebase
+            .firestore()
+            .collection("users/" + currentUser.uid + "/data")
+            .doc("made")
+            .set(
+              {
+                [docRef.id]: {
+                  topic: topic,
+                  thumbnail: thumbnail,
+                  title: tutorial.title,
+                },
               },
-            },
-            { merge: true }
-          );
-        await store.dispatch(updateTutorials({ unread: true }));
+              { merge: true }
+            );
+
+          // update request list
+          if (tutorial.request == tutorial.title) {
+            await firebase
+              .database()
+              .ref("requests")
+              .update({
+                [tutorial.request]: {
+                  topic: topic,
+                  postid: docRef.id,
+                },
+              });
+          }
+
+          // notify user that tutorial has been made
+          const message = `You're tutorial "${tutorial.title}" has been made!`;
+          firebase
+            .firestore()
+            .collection(`users/${currentUser.uid}/data`)
+            .doc("messages")
+            .set(
+              {
+                [Date.now()]: {
+                  message: message,
+                  status: "unread",
+                },
+              },
+              { merge: true }
+            );
+          await store.dispatch(updateTutorials({ unread: true }));
+        }
       }
+    } else {
+      alert(
+        "Sorry, you need to be connected to the Internet to upload your tutorial"
+      );
     }
   };
 
@@ -691,16 +706,6 @@ class CreateScreen extends React.Component {
                           onPress={() => this._pickMedia("Images", index)}
                         >
                           <Ionicons name="md-image" size={25} color="#ffb52b" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.button}
-                          onPress={() => this._pickMedia("Videos", index)}
-                        >
-                          <Ionicons
-                            name="ios-videocam"
-                            size={25}
-                            color="#ffb52b"
-                          />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.button}
