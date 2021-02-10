@@ -71,7 +71,7 @@ async function blurImage(filePath, bucketName, metadata) {
         await bucket
             .upload(tempLocalFile, {
                 destination: `${BLURRED_FOLDER}/${filePath}`,
-                metadata: {metadata: metadata}, // Keeping custom metadata.
+                metadata: {contentType: "image/jpeg"},
             })
             .then(async (data) => {
                 const file = data[0];
@@ -113,14 +113,12 @@ async function blurImage(filePath, bucketName, metadata) {
 
                     post.steps[editPath[4]]["Images"] = downloadUrl;
 
-                    console.log(post.steps);
-
                     admin
                         .firestore()
                         .collection(`${editPath[0]}/${editPath[1]}/posts`)
                         .doc(editPath[2])
                         .update({
-                            post: post,
+                            steps: post.steps,
                         });
                 }
             });

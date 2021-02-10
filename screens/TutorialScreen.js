@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from "react-native";
 import { Video } from "expo-av";
 import { connect } from "react-redux";
@@ -62,16 +63,20 @@ class TutorialScreen extends React.Component {
     };
     this.setState({ creatorProfile });
 
+    if (this.props.tutorials.current.uid == currentUser.uid) {
+      this.setState({ isCreator: true });
+    }
+
     if (this.props.tutorials.current) {
       this.setState({ currentUser });
       this.setState({ isLoading: false });
 
       // Display an interstitial
-      await AdMobInterstitial.setAdUnitID(
+      /*  await AdMobInterstitial.setAdUnitID(
         "ca-app-pub-3800661518525298/2568980529"
       );
       await AdMobInterstitial.requestAdAsync({ servePersonalizedAds: true });
-      AdMobInterstitial.showAdAsync();
+      AdMobInterstitial.showAdAsync();*/
     }
   };
 
@@ -202,38 +207,68 @@ class TutorialScreen extends React.Component {
     this.setState({ isModalVisible: visible });
   };
 
-  blockUser = async () => {
-    const { currentUser } = await firebase.auth();
+  blockUser = () => {
+    Alert.alert("Block User", "Are you sure you want to block this user?", [
+      {
+        text: "Yes",
+        onPress: async () => {
+          const { currentUser } = await firebase.auth();
 
-    var doc = await firebase
-      .firestore()
-      .collection("users")
-      .doc(currentUser.uid)
-      .get();
-    var userData = doc.data();
-    if (userData.blocked) {
-      var blocked = userData.blocked;
-    } else {
-      var blocked = [];
-    }
+          var doc = await firebase
+            .firestore()
+            .collection("users")
+            .doc(currentUser.uid)
+            .get();
+          var userData = doc.data();
+          if (userData.blocked) {
+            var blocked = userData.blocked;
+          } else {
+            var blocked = [];
+          }
 
-    blocked.push(this.props.tutorials.current.uid);
+          blocked.push(this.props.tutorials.current.uid);
 
-    await firebase.firestore().collection("users").doc(currentUser.uid).update({
-      blocked: blocked,
-    });
+          await firebase
+            .firestore()
+            .collection("users")
+            .doc(currentUser.uid)
+            .update({
+              blocked: blocked,
+            });
 
-    this.props.navigation.navigate("Search");
+          this.props.navigation.navigate("Search");
+        },
+      },
+      {
+        text: "Cancel",
+        onPress: () => {},
+        style: "cancel",
+      },
+    ]);
   };
 
   reportPost = () => {
-    firebase
-      .firestore()
-      .collection(this.props.tutorials.current.topic)
-      .doc(this.props.tutorials.current_key)
-      .update({
-        reports: Firebase.firestore.FieldValue.increment(1),
-      });
+    Alert.alert("Report Post", "Are you sure you want to flag this post?", [
+      {
+        text: "Yes",
+        onPress: () => {
+          firebase
+            .firestore()
+            .collection(`${this.props.tutorials.current.topic}/posts`)
+            .doc(this.props.tutorials.current_key)
+            .update({
+              reports: Firebase.firestore.FieldValue.increment(1),
+            });
+
+          alert("This post has been flagged for review by our moderators.");
+        },
+      },
+      {
+        text: "Cancel",
+        onPress: () => {},
+        style: "cancel",
+      },
+    ]);
   };
 
   _renderItem = ({ item, index }) => {
@@ -387,23 +422,27 @@ class TutorialScreen extends React.Component {
                     />
                     <Text>{rating}</Text>
                   </View>
-                  <TouchableOpacity onPress={this.reportPost}>
-                    <Ionicons
-                      name="md-flag"
-                      size={25}
-                      color="#2274A5"
-                      style={{ marginRight: 3 }}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={this.blockUser}>
-                    <Ionicons
-                      name="md-flag"
-                      size={25}
-                      color="#2274A5"
-                      style={{ marginRight: 3 }}
-                    />
-                  </TouchableOpacity>
-                  <LearnModal learnt={this.learnt} />
+                  {!this.state.isCreator && (
+                    <TouchableOpacity onPress={this.reportPost}>
+                      <Ionicons
+                        name="md-flag"
+                        size={25}
+                        color="#2274A5"
+                        style={{ marginRight: 3 }}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {!this.state.isCreator && (
+                    <TouchableOpacity onPress={this.blockUser}>
+                      <MaterialCommunityIcons
+                        name="block-helper"
+                        size={25}
+                        color="#2274A5"
+                        style={{ marginRight: 3 }}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {!this.state.isCreator && <LearnModal learnt={this.learnt} />}
                 </View>
                 {!(this.props.tutorials.current.topic == "/topics/Meta") && (
                   <ProfileBanner

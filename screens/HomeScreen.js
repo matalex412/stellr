@@ -35,18 +35,7 @@ class HomeScreen extends React.Component {
   };
 
   componentDidMount = () => {
-    this.getMetadata();
     this.setup();
-  };
-
-  getMetadata = async () => {
-    var ref = await firebase
-      .storage()
-      .ref()
-      .child("/topics/Art/4HPjRwjjTkPOCckxJG7J/Thumbnail");
-
-    var metadata = await ref.getMetadata();
-    console.log(metadata);
   };
 
   checkConnectivity = () => {
@@ -204,7 +193,7 @@ class HomeScreen extends React.Component {
       docs.forEach((doc) => {
         post = doc.data();
 
-        if (!userData.blocked.includes(post.uid)) {
+        if (!blocked.includes(post.uid)) {
           post.key = doc.id;
 
           if (!posts.some((p) => p.key == post.key)) {

@@ -136,8 +136,10 @@ class SearchScreen extends React.Component {
           posts.forEach((doc) => {
             var post = doc.data();
             if (
-              !(userData.blocked.includes(post.uid) && userData.blocked) ||
-              post.reports > 2
+              !(
+                (userData.blocked.includes(post.uid) && userData.blocked) ||
+                post.reports > 3
+              )
             ) {
               postids.push(doc.id);
               contents[doc.id] = post;

@@ -14,6 +14,9 @@ import React from "react";
 import { human } from "react-native-typography";
 import { LinearGradient } from "expo-linear-gradient";
 
+import LegalScreen from "./screens/LegalScreen";
+import EULA from "./screens/EULA";
+import PrivacyPolicy from "./screens/PrivacyPolicy";
 import ProfileHome from "./screens/ProfileHome";
 import ProfileMade from "./screens/ProfileMade";
 import StarCount from "./screens/components/StarCount";
@@ -42,6 +45,17 @@ const CreateStack = createSwitchNavigator(
   },
   {
     initialRouteName: "Create",
+  }
+);
+
+const LegalStack = createStackNavigator(
+  {
+    Legal: LegalScreen,
+    EULA: EULA,
+    Policy: PrivacyPolicy,
+  },
+  {
+    initialRouteName: "Legal",
   }
 );
 
@@ -122,12 +136,41 @@ const AppTabs = createBottomTabNavigator(
   }
 );
 
+const SignUpStack = createStackNavigator(
+  {
+    SignUp: {
+      screen: SignUp,
+      navigationOptions: {
+        headerShown: false,
+      },
+    },
+    EULA: {
+      screen: EULA,
+      navigationOptions: { title: "EULA" },
+    },
+    Policy: {
+      screen: PrivacyPolicy,
+      navigationOptions: { title: "Privacy Policy" },
+    },
+  },
+  {
+    defaultNavigationOptions: {
+      headerStyle: { backgroundColor: "#2274A5" },
+      headerTitleStyle: {
+        color: "white",
+      },
+      headerTintColor: "#fff",
+    },
+    initialRouteName: "SignUp",
+  }
+);
+
 const AuthStack = createSwitchNavigator(
   {
     Loading: LoadingScreen,
     Login: LoginStack,
     SignUp: {
-      screen: SignUp,
+      screen: SignUpStack,
       navigationOptions: {
         title: "Create Your Account",
       },
@@ -165,6 +208,10 @@ const AppStack = createStackNavigator(
           />
         ),
       },
+    },
+    Legal: {
+      screen: LegalStack,
+      navigationOptions: { title: "" },
     },
     Messages: {
       screen: MessageScreen,

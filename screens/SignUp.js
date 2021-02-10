@@ -277,6 +277,23 @@ class SignUp extends React.Component {
               />
             </TouchableOpacity>
           </View>
+          <Text style={{ textAlign: "center", paddingTop: 10 }}>
+            By creating an account, you agree with our{" "}
+            <Text
+              style={{ color: "#2274A5" }}
+              onPress={() => this.props.navigation.navigate("Policy")}
+            >
+              Privacy Policy
+            </Text>{" "}
+            and{" "}
+            <Text
+              style={{ color: "#2274A5" }}
+              onPress={() => this.props.navigation.navigate("EULA")}
+            >
+              Terms
+            </Text>
+          </Text>
+
           {!this.state.isLoading ? (
             <TouchableOpacity
               style={styles.submitButton}

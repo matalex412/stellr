@@ -382,7 +382,7 @@ export default class AccountScreen extends React.Component {
                 icon="logout"
               />
               <LinkSection
-                onPress={this.delete}
+                onPress={() => this.props.navigation.navigate("Legal")}
                 text="Legal"
                 icon="book-open-page-variant"
               />
