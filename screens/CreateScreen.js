@@ -20,6 +20,7 @@ import VideoPlayer from 'react-native-video-controls';
 import MediaMeta from 'react-native-media-meta';
 import RNFetchBlob from 'rn-fetch-blob';
 import Firebase from 'firebase';
+import NetInfo from '@react-native-community/netinfo';
 
 import ModalAlert from './components/ModalAlert';
 import Background from './components/Background';
@@ -40,6 +41,13 @@ class CreateScreen extends React.Component {
     errors: false,
     isModalVisible: false,
     alertIcon: null,
+  };
+
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({isConnected: state.isConnected});
+    });
+    unsubscribe();
   };
 
   componentDidMount = () => {
@@ -104,21 +112,6 @@ class CreateScreen extends React.Component {
     await this.setState({pickThumbnail: true});
     await this._pickMedia('Images');
   };
-
-  /* getPermissionAsync = async () => {
-    // ask for permission to access camera roll
-    const permission1 = Permissions.getAsync(Permissions.CAMERA_ROLL);
-    if (permission1.status !== "granted") {
-      const permission = await Permissions.askAsync(Permissions.CAMERA_ROLL);
-      const status = permission.status;
-      if (status !== "granted") {
-        alert("Sorry, we need camera roll permissions to make this work!");
-      }
-      await this.setState({ permission: status === "granted" });
-    } else {
-      await this.setState({ permission: true });
-    }
-  };*/
 
   _pickMedia = async (type, index) => {
     if (type == 'Videos') {
@@ -224,178 +217,187 @@ class CreateScreen extends React.Component {
   };
 
   handleSubmit = async () => {
-    await this.validateForm();
-    if (!this.state.errors) {
-      this.setState({isLoading: true});
-      const {currentUser} = firebase.auth();
-      if (currentUser.isAnonymous) {
-        // redirect user
-        this.setState({alertTitle: 'Account Needed'});
-        this.setState({alertIcon: 'md-person'});
-        this.setState({
-          alertMessage:
-            'To post your own tutorials and to gain access to other features, please create an account',
-        });
-        this.setState({isModalVisible: true});
-      } else {
-        // redirect user
-        this.setState({alertIcon: null});
-        this.setState({alertTitle: 'Thanks!'});
-        this.setState({
-          alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
-        });
-        this.setState({isModalVisible: true});
+    await this.checkConnectivity;
+    if (this.state.isConnected) {
+      await this.validateForm();
 
-        // store tutorial data
-        var tutorial = {};
-        var steps = this.props.tutorials.steps;
-        tutorial.request = this.props.tutorials.request;
-        tutorial.title = this.props.tutorials.title;
-        tutorial.create_topic = this.props.tutorials.create_topic;
-        tutorial.thumbnail = this.props.tutorials.thumbnail;
-        var topic = this.props.tutorials.create_topic;
-        var info = this.props.tutorials.info;
-
-        if (!info || info == '') {
-          info = null;
-        }
-
-        // reset screen data
-        // await store.dispatch(updateTutorials({ page: 0 }));
-        await store.dispatch(updateTutorials({request: null}));
-        await store.dispatch(updateTutorials({title: ''}));
-        await store.dispatch(updateTutorials({info: ''}));
-        await store.dispatch(updateTutorials({steps: [{step: ''}]}));
-        await store.dispatch(updateTutorials({create_topic: []}));
-        await store.dispatch(updateTutorials({create_topic_string: null}));
-        await store.dispatch(updateTutorials({thumbnail: null}));
-
-        this.setState({isFormValid: false});
-        this.setState({isLoading: false});
-
-        //this.props.navigation.navigate('Home');
-
-        // get topic route
-        var topic_route = tutorial.create_topic;
-        var route;
-        var topic = '';
-        for (route of topic_route) {
-          topic = topic + '/topics/' + route;
-        }
-
-        // add base for tutorial
-        var docRef = await firebase
-          .firestore()
-          .collection(topic + '/posts')
-          .add({
-            title: tutorial.title,
-            username: currentUser.displayName,
-            uid: currentUser.uid,
-            topic: topic,
-            stars: 0,
-            incomplete: 0,
-            learns: 0,
-            info: info,
+      if (!this.state.errors) {
+        this.setState({isLoading: true});
+        const {currentUser} = firebase.auth();
+        if (currentUser.isAnonymous) {
+          // redirect user
+          this.setState({alertTitle: 'Account Needed'});
+          this.setState({alertIcon: 'md-person'});
+          this.setState({
+            alertMessage:
+              'To post your own tutorials and to gain access to other features, please create an account',
           });
+          this.setState({isModalVisible: true});
+        } else {
+          // redirect user
+          this.setState({alertIcon: null});
+          this.setState({alertTitle: 'Thanks!'});
+          this.setState({
+            alertMessage: `Hi ${currentUser.displayName}, thanks for posting a tutorial. It's being made live as we speak and we'll send you a message when it's done`,
+          });
+          this.setState({isModalVisible: true});
 
-        var refName = `${topic}/${docRef.id}/Thumbnail`;
-        var thumbnail = await this.uploadImage(
-          tutorial.thumbnail,
-          'image/jpeg',
-          refName,
-        );
+          // store tutorial data
+          var tutorial = {};
+          var steps = this.props.tutorials.steps;
+          tutorial.request = this.props.tutorials.request;
+          tutorial.title = this.props.tutorials.title;
+          tutorial.create_topic = this.props.tutorials.create_topic;
+          tutorial.thumbnail = this.props.tutorials.thumbnail;
+          var topic = this.props.tutorials.create_topic;
+          var info = this.props.tutorials.info;
 
-        // iterate over steps and store all media in Firebase Storage
-        var i;
-        for (i = 0; i < steps.length; i++) {
-          // remove error messages
-          delete steps[i].error;
-
-          if (steps[i].Images != null) {
-            var refName = `${topic}/${docRef.id}/steps/${i}/Image`;
-            var url = await this.uploadImage(
-              steps[i].Images,
-              'image/jpeg',
-              refName,
-            );
-
-            steps[i].Images = url;
-          } else if (steps[i].Videos != null) {
-            var refName = `${topic}/${docRef.id}/steps/${i}/Video`;
-            var url = await this.uploadImage(
-              steps[i].Videos,
-              'video/mp4',
-              refName,
-            );
-            steps[i].Videos = url;
+          if (!info || info == '') {
+            info = null;
           }
-        }
 
-        // update tutorial with valid links to media
-        await firebase
-          .firestore()
-          .collection(topic + '/posts')
-          .doc(docRef.id)
-          .update({
-            steps: steps,
-            thumbnail: thumbnail,
-            time: Date.now(),
-          });
+          // reset screen data
+          // await store.dispatch(updateTutorials({ page: 0 }));
+          await store.dispatch(updateTutorials({request: null}));
+          await store.dispatch(updateTutorials({title: ''}));
+          await store.dispatch(updateTutorials({info: ''}));
+          await store.dispatch(updateTutorials({steps: [{step: ''}]}));
+          await store.dispatch(updateTutorials({create_topic: []}));
+          await store.dispatch(updateTutorials({create_topic_string: null}));
+          await store.dispatch(updateTutorials({thumbnail: null}));
 
-        // add tutorial to made document for user
-        await firebase
-          .firestore()
-          .collection('users/' + currentUser.uid + '/data')
-          .doc('made')
-          .set(
-            {
-              [docRef.id]: {
-                topic: topic,
-                thumbnail: thumbnail,
-                title: tutorial.title,
-              },
-            },
-            {merge: true},
-          );
+          this.setState({isFormValid: false});
+          this.setState({isLoading: false});
 
-        // update request list
-        if (tutorial.request == tutorial.title) {
-          await firebase
-            .database()
-            .ref('requests')
-            .update({
-              [tutorial.request]: {
-                topic: topic,
-                postid: docRef.id,
-              },
+          //this.props.navigation.navigate('Home');
+
+          // get topic route
+          var topic_route = tutorial.create_topic;
+          var route;
+          var topic = '';
+          for (route of topic_route) {
+            topic = topic + '/topics/' + route;
+          }
+
+          // add base for tutorial
+          var docRef = await firebase
+            .firestore()
+            .collection(topic + '/posts')
+            .add({
+              title: tutorial.title,
+              username: currentUser.displayName,
+              uid: currentUser.uid,
+              topic: topic,
+              stars: 0,
+              incomplete: 0,
+              learns: 0,
+              info: info,
             });
-        }
 
-        await firebase()
-          .firestore()
-          .collection('topics')
-          .doc(this.props.tutorials.create_topic_string)
-          .update({
-            tutorialCount: Firebase.firestore.FieldValue.increment(1),
-          });
-
-        // notify user that tutorial has been made
-        const message = `You're tutorial "${tutorial.title}" has been made!`;
-        firebase
-          .firestore()
-          .collection(`users/${currentUser.uid}/data`)
-          .doc('messages')
-          .set(
-            {
-              [Date.now()]: {
-                message: message,
-                status: 'unread',
-              },
-            },
-            {merge: true},
+          var refName = `${topic}/${docRef.id}/Thumbnail`;
+          var thumbnail = await this.uploadImage(
+            tutorial.thumbnail,
+            'image/jpeg',
+            refName,
           );
-        await store.dispatch(updateTutorials({unread: true}));
+
+          // iterate over steps and store all media in Firebase Storage
+          var i;
+          for (i = 0; i < steps.length; i++) {
+            // remove error messages
+            delete steps[i].error;
+
+            if (steps[i].Images != null) {
+              var refName = `${topic}/${docRef.id}/steps/${i}/Image`;
+              var url = await this.uploadImage(
+                steps[i].Images,
+                'image/jpeg',
+                refName,
+              );
+
+              steps[i].Images = url;
+            } else if (steps[i].Videos != null) {
+              var refName = `${topic}/${docRef.id}/steps/${i}/Video`;
+              var url = await this.uploadImage(
+                steps[i].Videos,
+                'video/mp4',
+                refName,
+              );
+              steps[i].Videos = url;
+            }
+          }
+
+          // update tutorial with valid links to media
+          await firebase
+            .firestore()
+            .collection(topic + '/posts')
+            .doc(docRef.id)
+            .update({
+              steps: steps,
+              thumbnail: thumbnail,
+              time: Date.now(),
+            });
+
+          // add tutorial to made document for user
+          await firebase
+            .firestore()
+            .collection('users/' + currentUser.uid + '/data')
+            .doc('made')
+            .set(
+              {
+                [docRef.id]: {
+                  topic: topic,
+                  thumbnail: thumbnail,
+                  title: tutorial.title,
+                },
+              },
+              {merge: true},
+            );
+
+          // update request list
+          if (tutorial.request == tutorial.title) {
+            await firebase
+              .database()
+              .ref('requests')
+              .update({
+                [tutorial.request]: {
+                  topic: topic,
+                  postid: docRef.id,
+                },
+              });
+          }
+
+          await firebase()
+            .firestore()
+            .collection('topics')
+            .doc(this.props.tutorials.create_topic_string)
+            .update({
+              tutorialCount: Firebase.firestore.FieldValue.increment(1),
+            });
+
+          // notify user that tutorial has been made
+          const message = `You're tutorial "${tutorial.title}" has been made!`;
+          firebase
+            .firestore()
+            .collection(`users/${currentUser.uid}/data`)
+            .doc('messages')
+            .set(
+              {
+                [Date.now()]: {
+                  message: message,
+                  status: 'unread',
+                },
+              },
+              {merge: true},
+            );
+          await store.dispatch(updateTutorials({unread: true}));
+        }
       }
+    } else {
+      Alert.alert(
+        'No Internet',
+        'Sorry, you need to be connected to the Internet to upload your tutorial',
+      );
     }
   };
 
@@ -496,7 +498,6 @@ class CreateScreen extends React.Component {
                 completedCheckColor="white"
                 completedLabelColor="#2274A5">
                 <ProgressStep
-                  onPrevious={() => this.setState({errors: false})}
                   scrollViewProps={this.defaultScrollViewProps}
                   label="Display"
                   previousBtnTextStyle={styles.toggleProgress}

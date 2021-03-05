@@ -13,6 +13,7 @@ import React from 'react';
 import {human} from 'react-native-typography';
 import LinearGradient from 'react-native-linear-gradient';
 
+import PostList from './screens/PostList';
 import ProfileHome from './screens/ProfileHome';
 import ProfileMade from './screens/ProfileMade';
 import LoginScreen from './screens/LoginScreen';
@@ -21,7 +22,6 @@ import SignUp from './screens/SignUp';
 import StarCount from './screens/components/StarCount';
 import AppHeader from './screens/components/AppHeader';
 import HomeScreen from './screens/HomeScreen';
-import AddedScreen from './screens/AddedScreen';
 import CreateScreen from './screens/CreateScreen';
 import SearchScreen from './screens/SearchScreen';
 import TutorialScreen from './screens/TutorialScreen';
@@ -43,26 +43,6 @@ const CreateStack = createSwitchNavigator(
   },
   {
     initialRouteName: 'Create',
-  },
-);
-
-const HomeTabs = createMaterialTopTabNavigator(
-  {
-    Home: {screen: HomeScreen, navigationOptions: {title: 'Recommended'}},
-    Added: {screen: AddedScreen, navigationOptions: {title: 'Added'}},
-  },
-  {
-    tabBarOptions: {
-      upperCaseLabel: false,
-      labelStyle: {...human.headlineObject, color: '#2274A5'},
-      tabStyle: {alignItems: 'flex-start'},
-      style: {
-        backgroundColor: '#fff',
-      },
-      indicatorStyle: {
-        backgroundColor: '#2274A5',
-      },
-    },
   },
 );
 
@@ -202,6 +182,7 @@ const AppStack = createStackNavigator(
       navigationOptions: {title: 'Your Posts'},
     },
     Profile: {screen: ProfileTabs, navigationOptions: {title: ''}},
+    Posts: {screen: PostList, navigationOptions: {title: ''}},
     Tutorial: {screen: TutorialScreen, navigationOptions: {title: ''}},
     UserTopic: {screen: TopicScreen, navigationOptions: {title: 'Topic'}},
     UserTutorial: {screen: UserPostScreen, navigationOptions: {title: ''}},

@@ -13,7 +13,6 @@ import {
 import {connect} from 'react-redux';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import Background from './components/Background';
 import {store} from './../redux/store';
 import {updateTutorials} from './../redux/actions';
 import {firebase} from './../src/config';
@@ -143,7 +142,6 @@ class SearchScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           <Text style={styles.heading}>Topics</Text>
           {this.state.isLoading ? (
             <ActivityIndicator color="#2274A5" size="large" />

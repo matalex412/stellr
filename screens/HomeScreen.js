@@ -14,8 +14,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Firebase from 'firebase';
 import {AdMobBanner} from 'react-native-admob';
 import {human, systemWeights} from 'react-native-typography';
+import NetInfo from '@react-native-community/netinfo';
 
-import Background from './components/Background';
+import NoInternet from './components/NoInternet';
 import ModalAlert from './components/ModalAlert';
 import CustomLoading from './components/CustomLoading';
 import {updateTutorials} from './../redux/actions';
@@ -28,6 +29,7 @@ class HomeScreen extends React.Component {
     isLoading: true,
     posts: {},
     keys: [],
+    isConnected: true,
     isModalVisible: false,
   };
 
@@ -35,12 +37,11 @@ class HomeScreen extends React.Component {
     this.setup();
   };
 
-  componentWillUnmount = () => {
-    // turn off tutorial listener
-    var learnRef = this.state.learnRef;
-    if (learnRef) {
-      learnRef();
-    }
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({isConnected: state.isConnected});
+    });
+    unsubscribe();
   };
 
   changeModalVisibility = (visible) => {
@@ -68,53 +69,59 @@ class HomeScreen extends React.Component {
   };
 
   setup = async () => {
-    this.setState({isLoading: true});
-    var {currentUser} = await firebase.auth();
-    if (this.props.tutorials.newAccount) {
-      this.setState({alertTitle: 'Welcome!'});
-      this.setState({
-        alertMessage: `Hi and welcome to Skoach! To get started, why not try out the "Using Skoach" tutorials on the "Added" page`,
-      });
-      this.changeModalVisibility(true);
-      store.dispatch(updateTutorials({newAccount: false}));
-    }
+    await this.checkConnectivity();
 
-    if (!currentUser) {
-      // sign user in
-      await firebase
-        .auth()
-        .signInAnonymously()
-        .catch((err) => {
-          console.log(err.message);
+    if (this.state.isConnected) {
+      this.setState({isLoading: true});
+      var {currentUser} = await firebase.auth();
+      if (this.props.tutorials.newAccount) {
+        this.setState({alertTitle: 'Welcome!'});
+        this.setState({
+          alertMessage: `Hi and welcome to Stellr! To get started, why not try out the "Using Skoach" tutorials on the "Added" page`,
         });
+        this.changeModalVisibility(true);
+        store.dispatch(updateTutorials({newAccount: false}));
+      }
 
-      // get new currentUser info
-      currentUser = await firebase.auth().currentUser;
-    }
+      if (!currentUser) {
+        // sign user in
+        await firebase
+          .auth()
+          .signInAnonymously()
+          .catch((err) => {
+            console.log(err.message);
+          });
 
-    this.getPosts();
+        // get new currentUser info
+        currentUser = await firebase.auth().currentUser;
+      }
 
-    // check user is verified
-    if (currentUser.isVerified) {
-      // get user's messages
-      var doc = await firebase
-        .firestore()
-        .collection(`users/${currentUser.uid}/data`)
-        .doc('messages')
-        .get();
-      if (doc.exists) {
-        var messages = doc.data();
+      this.getPosts();
 
-        if (messages['Please verify your email']) {
-          firebase
-            .firestore()
-            .collection(`users/${currentUser.uid}/data`)
-            .doc('messages')
-            .update({
-              'Please verify your email': Firebase.firestore.FieldValue.delete(),
-            });
+      // check user is verified
+      if (currentUser.isVerified) {
+        // get user's messages
+        var doc = await firebase
+          .firestore()
+          .collection(`users/${currentUser.uid}/data`)
+          .doc('messages')
+          .get();
+        if (doc.exists) {
+          var messages = doc.data();
+
+          if (messages['Please verify your email']) {
+            firebase
+              .firestore()
+              .collection(`users/${currentUser.uid}/data`)
+              .doc('messages')
+              .update({
+                'Please verify your email': Firebase.firestore.FieldValue.delete(),
+              });
+          }
         }
       }
+    } else {
+      this.setState({isLoading: false});
     }
   };
 
@@ -132,17 +139,22 @@ class HomeScreen extends React.Component {
       if (doc.exists) {
         var data = doc.data();
         var interests = data.interests;
+
+        if (data.blocked) {
+          var {blocked} = data;
+        } else {
+          var blocked = [];
+        }
       } else {
         var interests = {
           creators: ['4CRlxvD9rpZB3ASqJriEwEJbDQ92'],
           topics: ['/topics/Meta', '/topics/Art'],
         };
+        var blocked = [];
       }
     } else if (currentUser.isAnonymous) {
-      var interests = {
-        creators: ['4CRlxvD9rpZB3ASqJriEwEJbDQ92'],
-        topics: ['/topics/Meta', '/topics/Art'],
-      };
+      var interests = {creators: [], topics: ['/topics/Meta', '/topics/Art']};
+      var blocked = [];
     }
     // fetch tutorials related to user's interests
     var creator,
@@ -164,8 +176,10 @@ class HomeScreen extends React.Component {
         .get();
       docs.forEach((doc) => {
         post = doc.data();
-        post.key = doc.id;
-        posts.push(post);
+        if (!blocked.includes(post.uid)) {
+          post.key = doc.id;
+          posts.push(post);
+        }
       });
     }
 
@@ -182,10 +196,13 @@ class HomeScreen extends React.Component {
         .get();
       docs.forEach((doc) => {
         post = doc.data();
-        post.key = doc.id;
 
-        if (!posts.some((p) => p.key == post.key)) {
-          posts.push(post);
+        if (!blocked.includes(post.uid)) {
+          post.key = doc.id;
+
+          if (!posts.some((p) => p.key == post.key)) {
+            posts.push(post);
+          }
         }
       });
     }
@@ -202,6 +219,19 @@ class HomeScreen extends React.Component {
     this.props.navigation.navigate('Tutorial');
   };
 
+  offModal = () => {
+    this.setState({isModalVisible: false});
+  };
+
+  refresh = async () => {
+    await this.checkConnectivity();
+    if (this.state.isConnected) {
+      this.getPosts();
+    } else {
+      this.setState({isLoading: false});
+    }
+  };
+
   render() {
     var width = Dimensions.get('window').width;
     return (
@@ -209,21 +239,20 @@ class HomeScreen extends React.Component {
         <ScrollView
           contentContainerStyle={styles.contentContainer}
           refreshControl={
-            <RefreshControl refreshing={false} onRefresh={this.getPosts} />
+            <RefreshControl refreshing={false} onRefresh={this.refresh} />
           }>
-          <Background />
           <ModalAlert
             title={this.state.alertTitle}
             message={this.state.alertMessage}
             isModalVisible={this.state.isModalVisible}
-            onDismiss={() => this.changeModalVisibility(false)}
+            onDismiss={this.offModal}
           />
           {this.state.isLoading ? (
             <CustomLoading
               color="#2274A5"
               verse="Do you see a man skilled in his work? He will stand before kings"
             />
-          ) : (
+          ) : this.state.isConnected ? (
             <View>
               <View style={{alignItems: 'center', marginBottom: 5}}>
                 <AdMobBanner
@@ -280,6 +309,8 @@ class HomeScreen extends React.Component {
                 })}
               </View>
             </View>
+          ) : (
+            <NoInternet refresh={this.refresh} />
           )}
         </ScrollView>
       </View>

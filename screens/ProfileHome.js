@@ -12,7 +12,6 @@ import {connect} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import Background from './components/Background';
 import CustomLoading from './components/CustomLoading';
 import {store} from './../redux/store';
 import {updateTutorials} from './../redux/actions';
@@ -120,7 +119,6 @@ class ProfileHome extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="Love is patient, love is kind" />
           ) : (
@@ -197,9 +195,9 @@ const styles = StyleSheet.create({
     margin: 10,
     width: Dimensions.get('window').width / 3 - 30,
     height: Dimensions.get('window').width / 3 - 30,
+    elevation: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 5,
     borderRadius: 5,
     backgroundColor: '#fff',
   },

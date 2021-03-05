@@ -13,10 +13,11 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import ImagePicker from 'react-native-image-picker';
 import Modal from 'react-native-modal';
 import RNFetchBlob from 'rn-fetch-blob';
-
 import Share from 'react-native-share';
 import Firebase from 'firebase';
-import Background from './components/Background';
+import NetInfo from '@react-native-community/netinfo';
+
+import NoInternet from './components/NoInternet';
 import LinkSection from './components/LinkSection';
 import ProfileBanner from './components/ProfileBanner';
 import {firebase} from './../src/config';
@@ -37,7 +38,16 @@ export default class AccountScreen extends React.Component {
     this.setup();
   };
 
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({isConnected: state.isConnected});
+    });
+    unsubscribe();
+  };
+
   setup = async () => {
+    await this.checkConnectivity();
+
     // store current user data
     const {currentUser} = await firebase.auth();
     this.setState({currentUser});
@@ -227,10 +237,9 @@ export default class AccountScreen extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Background />
         {this.state.isLoading ? (
           <ActivityIndicator size="large" />
-        ) : (
+        ) : this.state.isConnected ? (
           <View style={styles.subContainer}>
             <Modal isVisible={this.state.isModalVisible}>
               <TouchableOpacity onPress={this.hideModal}>
@@ -398,6 +407,8 @@ export default class AccountScreen extends React.Component {
               <Text style={styles.error}>{this.state.errorMessage}</Text>
             )}
           </View>
+        ) : (
+          <NoInternet refresh={this.setup} />
         )}
       </View>
     );
@@ -409,6 +420,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'white',
   },
   subContainer: {
     alignItems: 'center',

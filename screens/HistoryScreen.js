@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import {connect} from 'react-redux';
 
-import Background from './components/Background';
 import CustomLoading from './components/CustomLoading';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import TutorialCover from './components/TutorialCover';
@@ -90,7 +89,6 @@ class UserPosts extends React.Component {
   render() {
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Background />
         {this.state.isLoading ? (
           <CustomLoading verse="Trust in the Lord with all your heart, and do not lean on your own understanding" />
         ) : this.state.postids.length < 1 ? (

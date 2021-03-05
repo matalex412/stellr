@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {connect} from 'react-redux';
 import {AdMobBanner, AdMobInterstitial} from 'react-native-admob';
@@ -21,7 +22,6 @@ import {human, systemWeights} from 'react-native-typography';
 import ProfileBanner from './components/ProfileBanner';
 import Step from './components/Step';
 import ModalAlert from './components/ModalAlert';
-import Background from './components/Background';
 import CustomLoading from './components/CustomLoading';
 import LearnModal from './components/LearnModal';
 import {store} from './../redux/store';
@@ -61,14 +61,18 @@ class TutorialScreen extends React.Component {
     };
     this.setState({creatorProfile});
 
+    if (this.props.tutorials.current.uid == currentUser.uid) {
+      this.setState({isCreator: true});
+    }
+
     if (this.props.tutorials.current) {
       this.setState({currentUser});
       this.setState({isLoading: false});
 
-      // Load an interstitial
+      /* // Load an interstitial
       AdMobInterstitial.setAdUnitID('ca-app-pub-3800661518525298/2568980529');
       await AdMobInterstitial.requestAd();
-      AdMobInterstitial.showAd();
+      AdMobInterstitial.showAd();*/
     }
   };
 
@@ -199,6 +203,70 @@ class TutorialScreen extends React.Component {
     this.setState({isModalVisible: visible});
   };
 
+  blockUser = () => {
+    Alert.alert('Block User', 'Are you sure you want to block this user?', [
+      {
+        text: 'Yes',
+        onPress: async () => {
+          const {currentUser} = await firebase.auth();
+
+          var doc = await firebase
+            .firestore()
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+          var userData = doc.data();
+          if (userData.blocked) {
+            var blocked = userData.blocked;
+          } else {
+            var blocked = [];
+          }
+
+          blocked.push(this.props.tutorials.current.uid);
+
+          await firebase
+            .firestore()
+            .collection('users')
+            .doc(currentUser.uid)
+            .update({
+              blocked: blocked,
+            });
+
+          this.props.navigation.navigate('Search');
+        },
+      },
+      {
+        text: 'Cancel',
+        onPress: () => {},
+        style: 'cancel',
+      },
+    ]);
+  };
+
+  reportPost = () => {
+    Alert.alert('Report Post', 'Are you sure you want to flag this post?', [
+      {
+        text: 'Yes',
+        onPress: () => {
+          firebase
+            .firestore()
+            .collection(`${this.props.tutorials.current.topic}/posts`)
+            .doc(this.props.tutorials.current_key)
+            .update({
+              reports: Firebase.firestore.FieldValue.increment(1),
+            });
+
+          alert('This post has been flagged for review by our moderators.');
+        },
+      },
+      {
+        text: 'Cancel',
+        onPress: () => {},
+        style: 'cancel',
+      },
+    ]);
+  };
+
   _renderItem = ({item, index}) => {
     var width = Dimensions.get('window').width;
     return <Step key={index} index={index} item={item} width={width} />;
@@ -217,7 +285,6 @@ class TutorialScreen extends React.Component {
     var width = Dimensions.get('window').width;
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Background />
         <ModalAlert
           title={this.state.alertTitle}
           message={this.state.alertMessage}
@@ -307,7 +374,27 @@ class TutorialScreen extends React.Component {
                     />
                     <Text>{rating}</Text>
                   </View>
-                  <LearnModal learnt={this.learnt} />
+                  {!this.state.isCreator && (
+                    <TouchableOpacity onPress={this.reportPost}>
+                      <Ionicons
+                        name="md-flag"
+                        size={25}
+                        color="#2274A5"
+                        style={{marginRight: 3}}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {!this.state.isCreator && (
+                    <TouchableOpacity onPress={this.blockUser}>
+                      <MaterialCommunityIcons
+                        name="block-helper"
+                        size={25}
+                        color="#2274A5"
+                        style={{marginRight: 3}}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  {!this.state.isCreator && <LearnModal learnt={this.learnt} />}
                 </View>
                 {!(this.props.tutorials.current.topic == '/topics/Meta') && (
                   <ProfileBanner
@@ -340,6 +427,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   heading: {
     ...human.headlineObject,

@@ -15,8 +15,9 @@ import {connect} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Carousel, {Pagination} from 'react-native-snap-carousel';
 import {human} from 'react-native-typography';
+import NetInfo from '@react-native-community/netinfo';
 
-import Background from './components/Background';
+import NoInternet from './components/NoInternet';
 import CustomLoading from './components/CustomLoading';
 import ProfileBanner from './components/ProfileBanner';
 import {store} from './../redux/store';
@@ -40,38 +41,51 @@ class PeopleScreen extends React.Component {
     this.setup();
   };
 
+  checkConnectivity = () => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      this.setState({isConnected: state.isConnected});
+    });
+    unsubscribe();
+  };
+
   setup = async () => {
-    // get users already added by currentUser
-    var {currentUser} = firebase.auth();
-    var doc2 = await firebase
-      .firestore()
-      .collection(`users/${currentUser.uid}/data`)
-      .doc('people')
-      .get();
-    var people = doc2.data();
+    await this.checkConnectivity();
 
-    // separate currentUser's added profiles into friends and following
-    var i,
-      person,
-      friends = [],
-      following = [];
+    if (this.state.isConnected) {
+      // get users already added by currentUser
+      var {currentUser} = firebase.auth();
+      var doc2 = await firebase
+        .firestore()
+        .collection(`users/${currentUser.uid}/data`)
+        .doc('people')
+        .get();
+      var people = doc2.data();
 
-    for (i in people) {
-      person = people[i];
-      person.uid = i;
+      // separate currentUser's added profiles into friends and following
+      var i,
+        person,
+        friends = [],
+        following = [];
 
-      if (person.status == 'friend') {
-        friends.push(person);
-      } else {
-        following.push(person);
+      for (i in people) {
+        person = people[i];
+        person.uid = i;
+
+        if (person.status == 'friend') {
+          friends.push(person);
+        } else {
+          following.push(person);
+        }
       }
+
+      this.setState({friends});
+      this.setState({following});
+      this.setState({isLoading: false});
+
+      this.getOtherUsers(9);
+    } else {
+      this.setState({isLoading: false});
     }
-
-    this.setState({friends});
-    this.setState({following});
-    this.setState({isLoading: false});
-
-    this.getOtherUsers(9);
   };
 
   getOtherUsers = async (n) => {
@@ -258,6 +272,15 @@ class PeopleScreen extends React.Component {
     }
   };
 
+  refresh = async () => {
+    await this.checkConnectivity();
+    if (this.state.isConnected) {
+      this.getOtherUsers(9);
+    } else {
+      this.setState({isLoading: false});
+    }
+  };
+
   _renderItem = ({item, index}) => {
     return (
       <ScrollView
@@ -269,10 +292,7 @@ class PeopleScreen extends React.Component {
           justifyContent: 'center',
         }}
         refreshControl={
-          <RefreshControl
-            refreshing={false}
-            onRefresh={() => this.getOtherUsers(9)}
-          />
+          <RefreshControl refreshing={false} onRefresh={this.refresh} />
         }>
         {item == 'toAdd' ? (
           <Text style={[human.title2, styles.heading, {color: '#2274A5'}]}>
@@ -374,16 +394,14 @@ class PeopleScreen extends React.Component {
       <View style={styles.container}>
         {this.state.isLoading ? (
           <View style={styles.contentContainer}>
-            <Background />
             <CustomLoading verse="Therefore encourage one another and build one another up" />
           </View>
-        ) : (
+        ) : this.state.isConnected ? (
           <View
             style={[
               styles.contentContainer,
               {paddingTop: 20, paddingBottom: 10},
             ]}>
-            <Background />
             <View style={{alignItems: 'center', flexDirection: 'row'}}>
               <TextInput
                 value={this.state.usernameQuery}
@@ -474,6 +492,8 @@ class PeopleScreen extends React.Component {
               onSnapToItem={(index) => this.setState({activeIndex: index})}
             />
           </View>
+        ) : (
+          <NoInternet refresh={this.setup} />
         )}
       </View>
     );

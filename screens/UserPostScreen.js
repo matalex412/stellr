@@ -17,7 +17,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Firebase from 'firebase';
 import RNFetchBlob from 'rn-fetch-blob';
 
-import Background from './components/Background';
 import CustomLoading from './components/CustomLoading';
 import {store} from './../redux/store';
 import {updateTutorials} from './../redux/actions';
@@ -253,7 +252,6 @@ class UserPostScreen extends React.Component {
         id = doc.id;
       }
 
-      console.log('0');
       // iterate over steps and store all media in Firebase Storage
       var i;
       for (i = 0; i < steps.length; i++) {
@@ -282,7 +280,6 @@ class UserPostScreen extends React.Component {
         }
         delete steps[i].changed;
       }
-      console.log('1');
 
       var thumbnail = this.props.tutorials.userpost.thumbnail;
       // if thumbnail was changed
@@ -475,7 +472,6 @@ class UserPostScreen extends React.Component {
     return (
       <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
-          <Background />
           {this.state.isLoading ? (
             <CustomLoading verse="For everything there is a season, and a time for every matter" />
           ) : (
